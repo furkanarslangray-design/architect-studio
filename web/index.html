@@ -35,6 +35,23 @@
         </p>
       </section>
 
+      <section class="panel analysis">
+        <details>
+          <summary data-i18n="ui.analysisTitle">Project analysis (reverse engineering)</summary>
+          <p class="hint" data-i18n="ui.analysisHint"></p>
+          <div class="grid-2">
+            <label class="field">
+              <span data-i18n="ui.repoPath">Repository path</span>
+              <input id="repoPath" type="text" spellcheck="false" data-i18n-placeholder="ui.analysisPlaceholder" placeholder="/path/to/project" />
+            </label>
+            <div class="actions">
+              <button id="analyzeBtn" class="secondary" type="button" data-i18n="ui.analyze">Analyse project</button>
+            </div>
+          </div>
+          <div id="analysisStatus" class="status" role="status" aria-live="polite"></div>
+        </details>
+      </section>
+
       <section class="panel">
         <label class="field">
           <span data-i18n="ui.ideaLabel">Your idea</span>
@@ -85,6 +102,18 @@
               <span data-i18n="ui.baseUrl">Base URL</span>
               <input id="baseUrl" type="url" placeholder="https://api.openai.com/v1" autocomplete="off" />
             </label>
+            <label class="field">
+              <span data-i18n="ui.sandbox">Sandbox</span>
+              <select id="sandbox"></select>
+              <small class="hint" data-i18n="ui.sandboxHint"></small>
+            </label>
+            <div class="switch-row">
+              <input type="checkbox" id="webSearch" />
+              <div class="copy">
+                <strong data-i18n="ui.webSearch">Use live web search</strong>
+                <small data-i18n="ui.webSearchHint">Looks up current API and library documentation before designing the architecture.</small>
+              </div>
+            </div>
           </div>
         </details>
 
@@ -106,11 +135,13 @@
           <h2 data-i18n="ui.previewTitle">Preview</h2>
           <div class="actions">
             <button id="editStateBtn" class="ghost" type="button" data-i18n="ui.editState">Edit this state</button>
+            <button id="sandboxBtn" class="ghost" type="button" data-i18n="ui.sandboxTest">Verify in sandbox</button>
             <button id="downloadBtn" class="primary" type="button" data-i18n="ui.download">Download ZIP</button>
           </div>
         </div>
 
         <div class="chips" id="chips"></div>
+        <p id="sandboxStatus" class="status hidden" role="status" aria-live="polite"></p>
 
         <div class="tabs" role="tablist">
           <button class="tab" role="tab" id="tab-diagram" data-tab="diagram" aria-selected="true" data-i18n="ui.tabDiagram">Diagram</button>

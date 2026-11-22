@@ -6,6 +6,15 @@ import type { PackageManager, TaskBuildOptions, TestRunner } from "../../core/sr
 import { isLocale, LOCALES, normalizeLocale } from "../../core/src/i18n";
 import type { PackageResult } from "../../packager/src";
 import { buildPackage } from "../../packager/src";
+import { repoToState, summarizeReverse, type ReverseResult } from "../../reverse/src";
+import {
+  isSandboxType,
+  SANDBOX_TYPES,
+  verifyPackage,
+  type SandboxRun,
+  type SandboxType,
+} from "../../sandbox/src";
+import { isSearchProvider, WEB_SEARCH_PROVIDERS, type SearchProvider } from "./web-search";
 import { runPipeline } from "./pipeline";
 
 async function main(): Promise<void> {
@@ -19,12 +28,24 @@ async function main(): Promise<void> {
 
   let state: ArchState;
   let result: PackageResult;
+  let reversed: ReverseResult | undefined;
 
-  if (args.json) {
+  if (args.reverse) {
+    reversed = repoToState(args.reverse);
+    state = reversed.state;
+    result = await buildPackage(state, { taskOptions, locale });
+    console.log(`Reverse engineering: ${summarizeReverse(reversed)}`);
+    for (const finding of reversed.findings.slice(0, 40)) {
+      console.log(`  ${finding.kind.padEnd(9)} ${finding.source}: ${finding.detail}`);
+    }
+    if (reversed.warnings.length > 0) {
+      console.log(`  warnings: ${reversed.warnings.join("; ")}`);
+    }
+  } else if (args.json) {
     state = parseState(JSON.parse(readFileSync(args.json, "utf8")));
     result = await buildPackage(state, { taskOptions, locale });
   } else {
-    if (!args.idea) throw new Error("Provide --idea <text> or --json <path>");
+    if (!args.idea) throw new Error("Provide --idea <text>, --json <path> or --reverse <dir>");
     const pipelineResult = await runPipeline(args.idea, {
       demo: args.demo,
       apiKey: args.apiKey,
@@ -32,9 +53,17 @@ async function main(): Promise<void> {
       model: args.model,
       taskOptions,
       locale,
+      webSearch: args.webSearch,
+      searchProvider: args.searchProvider,
     });
     state = pipelineResult.state;
     result = pipelineResult;
+    if (pipelineResult.research) {
+      console.log(
+        `Web search: ${pipelineResult.research.provider} returned ${pipelineResult.research.results.length} reference(s)`,
+      );
+    }
+    if (pipelineResult.searchNote) console.log(`Web search note: ${pipelineResult.searchNote}`);
   }
 
   if (args.preview) {
@@ -42,6 +71,7 @@ async function main(): Promise<void> {
       JSON.stringify(
         {
           state,
+          ...(reversed ? { reverse: { summary: summarizeReverse(reversed), findings: reversed.findings } } : {}),
           tasks: result.packets.map((packet) => ({
             id: packet.id,
             title: packet.title,
@@ -56,6 +86,19 @@ async function main(): Promise<void> {
         2,
       ),
     );
+  }
+
+  let sandboxRun: SandboxRun | undefined;
+  if (args.sandbox) {
+    sandboxRun = await verifyPackage(result.files, {
+      sandbox: args.sandbox,
+      fallback: true,
+      ...(args.sandboxCommand ? { command: args.sandboxCommand, args: [] } : {}),
+    });
+    console.log(`Sandbox: ${sandboxRun.driver} (${sandboxRun.isolation}) exit=${String(sandboxRun.exitCode)}`);
+    if (sandboxRun.stdout.trim()) console.log(sandboxRun.stdout.trim());
+    if (sandboxRun.stderr.trim()) console.error(sandboxRun.stderr.trim());
+    if (sandboxRun.timedOut || sandboxRun.exitCode !== 0) process.exitCode = 3;
   }
 
   if (!args.preview || args.out !== undefined) {
@@ -96,6 +139,7 @@ function parseArgs(argv: string[]) {
   const result: {
     idea?: string;
     json?: string;
+    reverse?: string;
     out?: string;
     extract?: string;
     demo: boolean;
@@ -106,7 +150,11 @@ function parseArgs(argv: string[]) {
     packageManager?: PackageManager;
     testRunner?: TestRunner;
     locale?: string;
-  } = { demo: false, preview: false };
+    sandbox?: SandboxType;
+    sandboxCommand?: string;
+    webSearch: boolean;
+    searchProvider?: SearchProvider;
+  } = { demo: false, preview: false, webSearch: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -117,6 +165,9 @@ function parseArgs(argv: string[]) {
         break;
       case "--json":
         result.json = next();
+        break;
+      case "--reverse":
+        result.reverse = next();
         break;
       case "--out":
         result.out = next();
@@ -148,6 +199,28 @@ function parseArgs(argv: string[]) {
       case "--locale":
         result.locale = next();
         break;
+      case "--sandbox": {
+        const value = next();
+        if (!isSandboxType(value)) {
+          throw new Error(`Unsupported sandbox: ${value}. Use one of ${SANDBOX_TYPES.join(", ")}.`);
+        }
+        result.sandbox = value;
+        break;
+      }
+      case "--sandbox-command":
+        result.sandboxCommand = next();
+        break;
+      case "--web-search":
+        result.webSearch = true;
+        break;
+      case "--search-provider": {
+        const value = next();
+        if (!isSearchProvider(value)) {
+          throw new Error(`Unsupported search provider: ${value}. Use one of ${WEB_SEARCH_PROVIDERS.join(", ")}.`);
+        }
+        result.searchProvider = value;
+        break;
+      }
       case "--help":
       case "-h":
         printHelp();
@@ -165,11 +238,13 @@ function printHelp(): void {
 Usage:
   pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
   pnpm generate -- --json architecture.json --out out/package.zip
-  pnpm generate -- --idea "..." --api-key sk-... --model gpt-4o-mini
+  pnpm generate -- --reverse ../my-project --sandbox auto
+  pnpm generate -- --idea "..." --web-search --search-provider auto
 
 Options:
   --idea <text>              Natural-language architecture idea
   --json <path>              Import an existing ArchState JSON file
+  --reverse <dir>            Derive the ArchState from an existing repository
   --out <path>               Output ZIP path (default: out/agent-package.zip)
   --extract <dir>            Also write every package file into a directory
   --preview                  Print the state, tasks, metrics and validation as JSON
@@ -180,6 +255,10 @@ Options:
   --package-manager <name>   pnpm | npm | yarn | bun (default: pnpm)
   --test-runner <name>       vitest | jest | node (default: vitest)
   --locale <code>            ${LOCALES.join(" | ")} (default: en)
+  --sandbox <type>           ${SANDBOX_TYPES.join(" | ")}
+  --sandbox-command <cmd>    Run a custom command instead of the built-in package check
+  --web-search               Look up current references before generating
+  --search-provider <name>   ${WEB_SEARCH_PROVIDERS.join(" | ")} (default: auto)
 `);
 }
 

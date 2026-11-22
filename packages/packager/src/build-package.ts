@@ -89,11 +89,12 @@ export async function buildPackage(state: ArchState, options: BuildOptions = {})
     validation = validateArtifacts(files, { requireTaskFiles: true });
   }
 
-  const generatedTokens = estimateTokens(
-    Object.entries(files)
-      .map(([path, content]) => `${path}\n${content}`)
-      .join("\n"),
-  );
+  // Count incrementally: joining every artifact into one string would double
+  // peak memory for large packages for no benefit.
+  let generatedTokens = 0;
+  for (const [path, content] of Object.entries(files)) {
+    generatedTokens += estimateTokens(`${path}\n${content}`);
+  }
   const taskMetrics = computeTaskMetrics(state, packets, taskOptions, generatedTokens);
   const depth = dependencyDepth(state);
   const waves = new Set(packets.map((packet) => packet.parallelGroup)).size;

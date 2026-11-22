@@ -21,12 +21,41 @@ import {
 } from "../../core/src/i18n";
 import { buildPackage, type PackageResult } from "../../packager/src";
 import { generateMermaid } from "../../generators/src";
-import { runPipeline, type PipelineOptions } from "./pipeline";
+import { repoToState, summarizeReverse } from "../../reverse/src";
+import {
+  detectSandboxes,
+  isSandboxType,
+  resolveSandbox,
+  SandboxUnavailableError,
+  verifyPackage,
+  type SandboxType,
+} from "../../sandbox/src";
+import { runPipeline, type PipelineOptions, type PipelineResult } from "./pipeline";
+import { isSearchProvider, type WebSearchResult } from "./web-search";
 
 const MAX_BODY_BYTES = 256 * 1024;
-export const APP_VERSION = "0.2.0";
+export const APP_VERSION = "2.0.0";
 
-type BuiltPackage = PackageResult & { state: ArchState };
+type BuiltPackage = PackageResult & {
+  state: ArchState;
+  research?: WebSearchResult;
+  searchNote?: string;
+};
+
+function researchOf(result: BuiltPackage | PipelineResult) {
+  return {
+    ...(result.research
+      ? {
+          research: {
+            provider: result.research.provider,
+            query: result.research.query,
+            results: result.research.results,
+          },
+        }
+      : {}),
+    ...(result.searchNote ? { searchNote: result.searchNote } : {}),
+  };
+}
 
 export function createServer(options: { rateLimitPerMinute?: number } = {}) {
   const rateLimit = options.rateLimitPerMinute ?? Number(process.env.RATE_LIMIT_PER_MIN ?? 120);
@@ -61,6 +90,12 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
           locales: localeNames(),
           messages: messagesFor(requested),
         });
+        return;
+      }
+
+      if (request.method === "GET" && request.url === "/api/sandboxes") {
+        const sandboxes = await detectSandboxes();
+        sendJson(response, 200, { sandboxes });
         return;
       }
 
@@ -99,6 +134,70 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
         return;
       }
 
+      if (request.method === "POST" && request.url === "/api/reverse") {
+        enforceRateLimit(buckets, rateLimit, clientKey(request));
+        const body = await readJsonBody(request);
+        const pathValue = typeof body.path === "string" ? body.path.trim() : "";
+        if (!pathValue) {
+          throw new HttpError(400, { key: "error.invalidPath", vars: { path: "" }, code: "invalid_path" });
+        }
+        try {
+          const result = repoToState(pathValue, {
+            maxFiles: typeof body.maxFiles === "number" ? body.maxFiles : undefined,
+            maxDepth: typeof body.maxDepth === "number" ? body.maxDepth : undefined,
+          });
+          sendJson(response, 200, {
+            summary: summarizeReverse(result),
+            root: result.root,
+            state: result.state,
+            findings: result.findings,
+            warnings: result.warnings,
+            scannedFiles: result.scannedFiles,
+          });
+        } catch (error) {
+          const detail = error instanceof Error ? error.message : "unknown error";
+          const key = /does not exist or is not a directory/i.test(detail) ? "error.invalidPath" : "error.reverseFailed";
+          throw new HttpError(400, {
+            key,
+            vars: key === "error.invalidPath" ? { path: pathValue } : { detail },
+            code: "invalid_path",
+          });
+        }
+        return;
+      }
+
+      if (request.method === "POST" && request.url === "/api/sandbox") {
+        enforceRateLimit(buckets, rateLimit, clientKey(request));
+        const body = await readJsonBody(request);
+        locale = normalizeLocale(typeof body.locale === "string" ? body.locale : request.headers["accept-language"], locale);
+        const taskOptions = readTaskOptions(body);
+        const result = await buildFromBody(body, { ...taskOptions, locale });
+        const requested: SandboxType =
+          body.sandbox === undefined ? "auto" : isSandboxType(body.sandbox) ? body.sandbox : "auto";
+        if (body.sandbox !== undefined && !isSandboxType(body.sandbox)) {
+          throw new HttpError(400, {
+            key: "error.sandboxUnavailable",
+            vars: { detail: `Unsupported sandbox: ${String(body.sandbox)}` },
+            code: "invalid_sandbox",
+          });
+        }
+        try {
+          const run = await verifyPackage(result.files, {
+            sandbox: requested,
+            fallback: body.fallback !== false,
+          });
+          sendJson(response, 200, { ...run, validation: result.validation });
+        } catch (error) {
+          if (error instanceof SandboxUnavailableError) throw error;
+          throw new HttpError(400, {
+            key: "error.sandboxFailed",
+            vars: { detail: error instanceof Error ? error.message : "unknown error" },
+            code: "sandbox_failed",
+          });
+        }
+        return;
+      }
+
       if (request.method === "POST" && (request.url === "/api/generate" || request.url === "/api/preview")) {
         enforceRateLimit(buckets, rateLimit, clientKey(request));
         const body = await readJsonBody(request);
@@ -110,7 +209,11 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
         const result = await buildFromBody(body, { ...taskOptions, locale });
 
         if (request.url === "/api/preview") {
-          sendJson(response, 200, previewPayload(result, locale));
+          const sandbox = await describeSandbox(body.sandbox);
+          sendJson(response, 200, {
+            ...previewPayload(result, locale),
+            ...(sandbox ? { sandbox } : {}),
+          });
           return;
         }
 
@@ -144,6 +247,14 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
           { error: error.key ? t(locale, error.key, error.vars) : message, code: error.code },
           error.headers,
         );
+        return;
+      }
+      if (error instanceof SandboxUnavailableError) {
+        sendJson(response, 400, {
+          error: t(locale, "error.sandboxUnavailable", { detail: message }),
+          code: "sandbox_unavailable",
+          details: error.details,
+        });
         return;
       }
       if (/^Invalid architecture state/.test(message)) {
@@ -211,13 +322,35 @@ async function buildFromBody(
     model: typeof body.model === "string" && body.model.length > 0 ? body.model : undefined,
     taskOptions,
     locale: taskOptions.locale,
+    webSearch: body.webSearch === true,
+    searchProvider: isSearchProvider(body.searchProvider) ? body.searchProvider : undefined,
+    searchApiKey:
+      typeof body.searchApiKey === "string" && body.searchApiKey.length > 0 ? body.searchApiKey : undefined,
   };
   return runPipeline(idea, options);
+}
+
+async function describeSandbox(requested: unknown) {
+  if (requested === undefined) return undefined;
+  const type: SandboxType = isSandboxType(requested) ? requested : "auto";
+  const resolved = await resolveSandbox(type, { fallback: true });
+  return {
+    requested: type,
+    resolved: resolved.id,
+    fallback: resolved.fallback,
+    drivers: resolved.details.map((item) => ({
+      id: item.id,
+      available: item.available,
+      isolation: item.isolation,
+      version: item.version,
+    })),
+  };
 }
 
 function previewPayload(result: BuiltPackage, locale: Locale) {
   return {
     locale,
+    ...researchOf(result),
     state: result.state,
     diagram: generateMermaid(result.state),
     files: result.files,

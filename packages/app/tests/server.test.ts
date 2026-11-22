@@ -1,10 +1,14 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer } from "../src/server";
 
 let server: Server;
 let baseUrl: string;
+const fixtures = mkdtempSync(join(tmpdir(), "server-fixtures-"));
 
 beforeAll(async () => {
   server = createServer();
@@ -15,6 +19,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  rmSync(fixtures, { recursive: true, force: true });
 });
 
 describe("HTTP server", () => {
@@ -29,10 +34,10 @@ describe("HTTP server", () => {
   it("reports health and version", async () => {
     const response = await fetch(`${baseUrl}/api/health`);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, version: "0.2.0" });
+    expect(await response.json()).toEqual({ ok: true, version: "2.0.0" });
 
     const version = await fetch(`${baseUrl}/api/version`);
-    expect(await version.json()).toMatchObject({ name: "architect-studio", version: "0.2.0" });
+    expect(await version.json()).toMatchObject({ name: "architect-studio", version: "2.0.0" });
   });
 
   it("generates a ZIP in demo mode", async () => {
@@ -151,6 +156,81 @@ describe("HTTP server", () => {
     });
     expect(response.status).toBe(400);
     expect((await response.json()).code).toBe("invalid_state");
+  });
+});
+
+describe("v2 endpoints", () => {
+  it("reports the detected sandbox drivers", async () => {
+    const response = await fetch(`${baseUrl}/api/sandboxes`);
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as any;
+    expect(payload.sandboxes.map((item: any) => item.id)).toEqual([
+      "bwrap",
+      "podman",
+      "docker",
+      "firejail",
+      "systemd-run",
+      "temp-dir",
+    ]);
+    expect(payload.sandboxes.find((item: any) => item.id === "temp-dir").available).toBe(true);
+  });
+
+  it("reverse-engineers a repository from the HTTP API", async () => {
+    const root = join(fixtures, "service");
+    mkdirSync(join(root, "prisma"), { recursive: true });
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ name: "service", dependencies: { express: "^4.0.0", "@prisma/client": "^5.0.0" } }),
+    );
+    writeFileSync(join(root, "prisma/schema.prisma"), "model Invoice {\n  id String @id\n  amount Decimal\n}\n");
+
+    const response = await fetch(`${baseUrl}/api/reverse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: root }),
+    });
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as any;
+    expect(payload.summary).toContain("files scanned");
+    expect(payload.state.nodes.length).toBeGreaterThanOrEqual(2);
+    expect(payload.state.entities[0].name).toBe("Invoice");
+  });
+
+  it("rejects a missing reverse-engineering path", async () => {
+    const response = await fetch(`${baseUrl}/api/reverse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: join(fixtures, "missing") }),
+    });
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as any;
+    expect(payload.code).toBe("invalid_path");
+  });
+
+  it("verifies a package inside the temporary-directory sandbox", async () => {
+    const response = await fetch(`${baseUrl}/api/sandbox`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea: "postgres orders api", demo: true, sandbox: "temp-dir" }),
+    });
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as any;
+    expect(payload.driver).toBe("temp-dir");
+    expect(payload.exitCode).toBe(0);
+    expect(payload.stdout).toContain("package ok");
+    expect(payload.validation.ok).toBe(true);
+  });
+
+  it("includes sandbox availability in previews", async () => {
+    const response = await fetch(`${baseUrl}/api/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea: "postgres orders api", demo: true, sandbox: "temp-dir" }),
+    });
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as any;
+    expect(payload.sandbox.resolved).toBe("temp-dir");
+    expect(payload.sandbox.drivers).toHaveLength(6);
   });
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "architect-studio",
-  "version": "0.2.0",
+  "version": "2.0.0",
   "private": true,
   "description": "AI Principal Architect — idea to a verified, entity-aware agent package",
   "scripts": {
@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vitest run",
-    "generate": "tsx packages/app/src/cli.ts"
+    "generate": "tsx packages/app/src/cli.ts",
+    "mcp": "tsx packages/mcp/src/index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

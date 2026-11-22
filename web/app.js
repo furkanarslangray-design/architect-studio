@@ -22,6 +22,13 @@
     stateSection: $("#stateSection"),
     packageManager: $("#packageManager"),
     testRunner: $("#testRunner"),
+    sandbox: $("#sandbox"),
+    webSearch: $("#webSearch"),
+    repoPath: $("#repoPath"),
+    analyzeBtn: $("#analyzeBtn"),
+    analysisStatus: $("#analysisStatus"),
+    sandboxBtn: $("#sandboxBtn"),
+    sandboxStatus: $("#sandboxStatus"),
     demo: $("#demo"),
     apiKey: $("#apiKey"),
     model: $("#model"),
@@ -50,6 +57,7 @@
   let busy = false;
   let diagramToken = 0;
   let activeFile = null;
+  let sandboxes = [];
   let originalButtonLabels = { preview: "", generate: "" };
 
   function t(key, vars = {}) {
@@ -138,6 +146,8 @@
       demo: els.demo.checked,
       packageManager: els.packageManager.value,
       testRunner: els.testRunner.value,
+      sandbox: els.sandbox.value || "auto",
+      webSearch: els.webSearch.checked,
     };
     if (!els.demo.checked) {
       if (els.apiKey.value.trim()) body.apiKey = els.apiKey.value.trim();
@@ -445,6 +455,95 @@
     els.validationList.append(heading, list);
   }
 
+  function setAnalysisStatus(text, kind = "") {
+    els.analysisStatus.className = "status" + (kind ? ` ${kind}` : "");
+    els.analysisStatus.textContent = text;
+  }
+
+  async function analyzeProject() {
+    if (busy) return;
+    const path = els.repoPath.value.trim();
+    if (!path) {
+      setAnalysisStatus(t("ui.repoPath"), "error");
+      els.repoPath.focus();
+      return;
+    }
+    els.analyzeBtn.disabled = true;
+    setAnalysisStatus(t("ui.analyzing"), "loading");
+    try {
+      const data = await requestJson("/api/reverse", { path });
+      els.stateJson.value = JSON.stringify(data.state, null, 2);
+      els.stateSection.open = true;
+      const summary = t("ui.reverseSummary", {
+        nodes: data.state.nodes.length,
+        entities: data.state.entities.length,
+        decisions: data.state.decisions.length,
+      });
+      setAnalysisStatus(`${summary} ${t("ui.analysisDone")}`, "ok");
+      await preview();
+    } catch (error) {
+      setAnalysisStatus(error.message, "error");
+    } finally {
+      els.analyzeBtn.disabled = false;
+    }
+  }
+
+  async function verifyInSandbox() {
+    if (busy) return;
+    let body;
+    try {
+      body = buildBody();
+    } catch (error) {
+      setStatus(error.message, "error");
+      return;
+    }
+    els.sandboxBtn.disabled = true;
+    els.sandboxStatus.classList.remove("hidden");
+    els.sandboxStatus.className = "status loading";
+    els.sandboxStatus.textContent = t("ui.sandboxHint");
+    try {
+      const data = await requestJson("/api/sandbox", body);
+      const ok = data.exitCode === 0;
+      els.sandboxStatus.className = `status ${ok ? "ok" : "error"}`;
+      els.sandboxStatus.textContent = ok
+        ? t("ui.sandboxOk", { driver: data.driver })
+        : `${data.driver}: exit ${data.exitCode}${data.stderr ? ` — ${data.stderr.split("\n")[0]}` : ""}`;
+    } catch (error) {
+      els.sandboxStatus.className = "status error";
+      els.sandboxStatus.textContent = error.message;
+    } finally {
+      els.sandboxBtn.disabled = false;
+    }
+  }
+
+  function fillSandboxes(items) {
+    sandboxes = Array.isArray(items) ? items : [];
+    const selected = els.sandbox.value || "auto";
+    els.sandbox.textContent = "";
+    const auto = document.createElement("option");
+    auto.value = "auto";
+    auto.textContent = t("ui.sandboxAuto");
+    els.sandbox.append(auto);
+    for (const item of sandboxes) {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.available ? item.label : `${item.label} — ${item.reason || "unavailable"}`;
+      els.sandbox.append(option);
+    }
+    els.sandbox.value = sandboxes.some((item) => item.id === selected) || selected === "auto" ? selected : "auto";
+  }
+
+  async function loadSandboxes() {
+    try {
+      const response = await fetch("/api/sandboxes", { headers: { "Accept-Language": locale } });
+      if (!response.ok) return;
+      const data = await response.json();
+      fillSandboxes(data.sandboxes);
+    } catch {
+      /* detection is optional for the UI */
+    }
+  }
+
   function switchTab(tab) {
     for (const button of $$(".tab")) {
       button.setAttribute("aria-selected", String(button.dataset.tab === tab));
@@ -469,10 +568,13 @@
     els.previewBtn.addEventListener("click", preview);
     els.generateBtn.addEventListener("click", generate);
     els.downloadBtn.addEventListener("click", generate);
+    els.analyzeBtn.addEventListener("click", analyzeProject);
+    els.sandboxBtn.addEventListener("click", verifyInSandbox);
     els.demo.addEventListener("change", updateDemoUi);
     els.locale.addEventListener("change", async () => {
       try {
         await loadLocale(els.locale.value);
+        fillSandboxes(sandboxes);
       } catch (error) {
         setStatus(error.message, "error");
       }
@@ -505,6 +607,7 @@
       applyI18n();
       setStatus(error.message, "error");
     }
+    await loadSandboxes();
   }
 
   init();
