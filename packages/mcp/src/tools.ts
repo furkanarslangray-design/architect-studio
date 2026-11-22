@@ -4,7 +4,7 @@ import { pipeline } from "node:stream/promises";
 import { generateMermaid } from "../../generators/src";
 import { validateArtifacts } from "../../validators/src";
 import { buildPackage } from "../../packager/src";
-import { repoToState, summarizeReverse } from "../../reverse/src";
+import { repoToState, repoToStateWithRea, summarizeReverse } from "../../reverse/src";
 import { safeParseState, type ArchState } from "../../core/src/state";
 import type { Locale } from "../../core/src/i18n";
 import { runPipeline } from "../../app/src/pipeline";
@@ -55,6 +55,8 @@ export interface ReverseEngineerInput {
   path: string;
   maxFiles?: number;
   maxDepth?: number;
+  /** Bridge morluto/rea (or the built-in artifact analyzer) into the result. */
+  useRea?: boolean;
 }
 
 function ok(payload: unknown): ToolResult {
@@ -186,13 +188,25 @@ export async function architectValidate(input: ValidateInput): Promise<ToolResul
 /** `architect_reverse_engineer` — derives an ArchState from an existing repository. */
 export async function architectReverseEngineer(input: ReverseEngineerInput): Promise<ToolResult> {
   try {
-    const result = repoToState(input.path, { maxFiles: input.maxFiles, maxDepth: input.maxDepth });
+    const options = { maxFiles: input.maxFiles, maxDepth: input.maxDepth };
+    const result =
+      input.useRea === true ? await repoToStateWithRea(input.path, options) : repoToState(input.path, options);
     return ok({
       summary: summarizeReverse(result),
       scannedFiles: result.scannedFiles,
       state: result.state,
       findings: result.findings,
       warnings: result.warnings,
+      ...(result.rea
+        ? {
+            rea: {
+              engine: result.rea.engine,
+              detection: result.rea.detection,
+              scannedArtifacts: result.rea.scannedArtifacts,
+              findings: result.rea.findings,
+            },
+          }
+        : {}),
     });
   } catch (error) {
     return fail(error instanceof Error ? error.message : "Reverse engineering failed");
@@ -203,5 +217,6 @@ export const TOOL_SUMMARIES = {
   architect_generate: "Build and verify an agent package from an idea, then write the ZIP.",
   architect_preview: "Preview architecture, tasks, metrics and validation without writing a ZIP.",
   architect_validate: "Run deterministic artifact validation on files or an architecture state.",
-  architect_reverse_engineer: "Derive an ArchState from an existing repository on disk.",
+  architect_reverse_engineer:
+    "Derive an ArchState from an existing repository on disk, optionally bridging morluto/rea artifact analysis.",
 };

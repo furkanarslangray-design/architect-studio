@@ -21,7 +21,7 @@ import {
 } from "../../core/src/i18n";
 import { buildPackage, type PackageResult } from "../../packager/src";
 import { generateMermaid } from "../../generators/src";
-import { repoToState, summarizeReverse } from "../../reverse/src";
+import { detectRea, repoToState, repoToStateWithRea, summarizeReverse } from "../../reverse/src";
 import {
   detectSandboxes,
   isSandboxType,
@@ -30,11 +30,12 @@ import {
   verifyPackage,
   type SandboxType,
 } from "../../sandbox/src";
+import { architectChat } from "./chat";
 import { runPipeline, type PipelineOptions, type PipelineResult } from "./pipeline";
 import { isSearchProvider, type WebSearchResult } from "./web-search";
 
 const MAX_BODY_BYTES = 256 * 1024;
-export const APP_VERSION = "2.0.0";
+export const APP_VERSION = "2.1.0";
 
 type BuiltPackage = PackageResult & {
   state: ArchState;
@@ -99,6 +100,12 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
         return;
       }
 
+      if (request.method === "GET" && request.url === "/api/rea") {
+        const detection = await detectRea(true);
+        sendJson(response, 200, { detection });
+        return;
+      }
+
       if (request.method === "GET" && request.url === "/vendor/mermaid.min.js") {
         const source = readFileSync(join(process.cwd(), "node_modules", "mermaid", "dist", "mermaid.min.js"));
         response.writeHead(200, {
@@ -142,10 +149,14 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
           throw new HttpError(400, { key: "error.invalidPath", vars: { path: "" }, code: "invalid_path" });
         }
         try {
-          const result = repoToState(pathValue, {
+          const reverseOptions = {
             maxFiles: typeof body.maxFiles === "number" ? body.maxFiles : undefined,
             maxDepth: typeof body.maxDepth === "number" ? body.maxDepth : undefined,
-          });
+          };
+          const result =
+            body.useRea === true
+              ? await repoToStateWithRea(pathValue, reverseOptions)
+              : repoToState(pathValue, reverseOptions);
           sendJson(response, 200, {
             summary: summarizeReverse(result),
             root: result.root,
@@ -153,6 +164,17 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
             findings: result.findings,
             warnings: result.warnings,
             scannedFiles: result.scannedFiles,
+            ...(result.rea
+              ? {
+                  rea: {
+                    engine: result.rea.engine,
+                    detection: result.rea.detection,
+                    scannedArtifacts: result.rea.scannedArtifacts,
+                    warnings: result.rea.warnings,
+                    findings: result.rea.findings,
+                  },
+                }
+              : {}),
           });
         } catch (error) {
           const detail = error instanceof Error ? error.message : "unknown error";
@@ -195,6 +217,45 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
             code: "sandbox_failed",
           });
         }
+        return;
+      }
+
+      if (request.method === "POST" && request.url === "/api/chat") {
+        enforceRateLimit(buckets, rateLimit, clientKey(request));
+        const body = await readJsonBody(request);
+        locale = normalizeLocale(
+          typeof body.locale === "string" ? body.locale : request.headers["accept-language"],
+          locale,
+        );
+        const parsed = safeParseState(body.state);
+        if (!parsed.success) {
+          const issue = parsed.error.issues[0];
+          const detail = issue ? `${issue.path.join(".") || "root"}: ${issue.message}` : "schema error";
+          throw new HttpError(400, { key: "error.invalidState", vars: { detail }, code: "invalid_state" });
+        }
+        const message = typeof body.message === "string" ? body.message.trim() : "";
+        if (message.length === 0) {
+          throw new HttpError(400, { key: "error.emptyMessage", code: "empty_message" });
+        }
+        const taskOptions = readTaskOptions(body);
+        const chat = await architectChat(parsed.data, message, {
+          locale,
+          demo: body.demo === true,
+          apiKey: typeof body.apiKey === "string" && body.apiKey.length > 0 ? body.apiKey : undefined,
+          baseUrl: typeof body.baseUrl === "string" && body.baseUrl.length > 0 ? body.baseUrl : undefined,
+          model: typeof body.model === "string" && body.model.length > 0 ? body.model : undefined,
+        });
+        const built = await buildFromBody({ state: chat.state }, { ...taskOptions, locale });
+        sendJson(response, 200, {
+          ...previewPayload(built, locale),
+          chat: {
+            reply: chat.reply,
+            changes: chat.changes,
+            source: chat.source,
+            intent: chat.intent,
+            notes: chat.notes,
+          },
+        });
         return;
       }
 

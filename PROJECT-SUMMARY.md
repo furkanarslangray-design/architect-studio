@@ -1,4 +1,4 @@
-# PROJECT-SUMMARY — AI Principal Architect (v2.0.0)
+# PROJECT-SUMMARY — AI Principal Architect (v2.1.0)
 
 Yeni geliştirici devir teslim notu. Son güncelleme: 2026-11-22.
 
@@ -6,7 +6,7 @@ Yeni geliştirici devir teslim notu. Son güncelleme: 2026-11-22.
 
 **Klasör:** `/home/furkanarslangray/architect-studio` (bu çalışma kopyasında worktree)
 **Branch:** `mvp` / `main` (worktree dalı `freebuff/dosya-devralma-ve-kodlamaya-devam`)
-**Durum:** v2.0.0 — tüm modüller tamamlandı, test/typecheck/build yeşil.
+**Durum:** v2.1.0 — sohbet motoru, morluto/rea köprüsü ve yeni Studio tamamlandı; test/typecheck/build yeşil.
 
 ```bash
 pnpm install
@@ -99,11 +99,55 @@ idea / ArchState / repository
 - `runPipeline` içinde `ideaToState` öncesi çalışır; sonuç 4.000 karakterle sınırlanır.
 - CLI `--web-search`, API `webSearch`, Studio anahtarı.
 
-## 4. Dosya yapısı
+## 4. v2.1'de eklenenler
+
+### Mimar sohbeti (`packages/app/src/chat.ts`)
+
+- `architectChat(state, message, options)` → `{ reply, state, changes, source, intent, notes }`.
+- Deterministik ayrıştırıcı (TR + EN) niyetleri: `add-cache`, `add-database`, `add-queue`,
+  `add-external`, `add-ui`, `add-field`, `remove-field`, `remove-component`,
+  `split-services`, `describe`.
+- Alan adı çıkarımı gürültüye dayanıklıdır: `Order entity'sine status alanı koy`,
+  `Order'a status ekle`, `Add a unique skuCode field to Product` aynı sonucu verir; tip
+  adı/`unique`/`required` gibi belirteçler alan adı sanılmaz. `priorityCount int` → `int`,
+  `price` → `decimal`, `isActive` → `boolean` gibi tip çıkarımı vardır.
+- `Mikroservislere böl` her entity için bir servis üretir, `serviceId` atamalarını yeniler,
+  veritabanı/kuyruk kenarlarını yeniden kurar ve ADR ekler.
+- Her sonuç `sanitizeState` + `validateState` ile denetlenir; geçersiz bir değişiklik geri
+  alınır ve not düşülür. `diffChanges` eklenen/silinen düğüm, kenar, entity ve alanları
+  raporlar.
+- BYOK modunda LLM `{reply, state}` döndürür; LLM hatası/geçersiz state durumunda
+  deterministik sonuca düşülür (`notes` içinde nedeni yazılır).
+
+### morluto/rea köprüsü (`packages/reverse/src/rea.ts`)
+
+- `detectRea()` → `{ available, engine, binary, version, modes }`; `rea` / `rea-agents`
+  PATH'te aranır, `ARCHITECT_REA_BIN` ile belirli bir kurulum gösterilebilir.
+- Kuruluysa `rea analyze-javascript-application <path> --json` (sırasıyla `rea analyze`,
+  `rea inspect`) çalıştırılır; stdout JSON'u `findings` listesine normalize edilir, REA
+  Evidence dokümanı modül/Electron sınırı/paket bulgularına projekte edilir.
+- Kurulu değilse yerleşik analizör: ELF/PE/Mach-O/WASM/SQLite imzaları, `.asar` başlığı,
+  minified bundle imzaları, `.env.example` anahtar adları (değer okunmaz), Dockerfile,
+  dış endpoint'ler. İki motor da aynı `evidence` şemasını üretir.
+- `mergeReaFindings` bulguları `ArchState`'e katar (veritabanı/kuyruk/dış servis düğümleri +
+  `props.evidence`), `repoToStateWithRea` kaynak taraması ile birleştirir ve sonucu doğrular.
+- Erişim: CLI `--use-rea`, `POST /api/reverse { useRea: true }`, MCP
+  `architect_reverse_engineer { useRea: true }`, Studio analiz paneli anahtarı.
+
+### Studio UI (`web/*`)
+
+- Sol/sağ bölünmüş çalışma alanı: solda sohbet + fikir/BYOK + analiz, sağda diyagram,
+  bileşen/entity kartları, dosya görüntüleyici, görev/metrik sekmeleri.
+- Karanlık/aydınlık tema (`localStorage`), 8 dilli seçici, canlı sandbox ve REA rozetleri.
+- Canlı Mermaid render (tema ile birlikte yeniden çizilir), tıklanabilir kartlar
+  (bileşen → bağlantılar, entity → alanlar/ilişkiler), sözdizimi vurgulu dosya önizleyici
+  (json/yaml/ts/prisma/md/sql/sh) ve panoya kopyalama.
+
+## 5. Dosya yapısı
 
 ```text
 architect-studio/
-├─ package.json                 # v2.0.0, dev/test/build/generate/mcp script'leri
+├─ package.json                 # v2.1.0, dev/test/build/generate/mcp script'leri
 ├─ tsconfig.json / vitest.config.ts
 ├─ Dockerfile / .env.example / LICENSE
 ├─ .github/workflows/ci.yml
@@ -116,32 +160,34 @@ architect-studio/
    ├─ generators/  # openapi, prisma, asyncapi, mermaid, docs
    ├─ validators/  # deterministik doğrulama + self-heal
    ├─ packager/    # stream ZIP, metrics, manifest, OpenCode agents
-   ├─ app/         # demo/LLM, web-search, pipeline, server, CLI
-   ├─ reverse/     # repoToState (REA)
+   ├─ app/         # demo/LLM, chat, web-search, pipeline, server, CLI
+   ├─ reverse/     # repoToState + rea.ts (morluto/rea köprüsü)
    ├─ sandbox/     # çoklu sandbox sürücüleri
    └─ mcp/         # MCP araçları + stdio sunucusu
 ```
 
-## 5. Doğrulanmış sonuçlar
+## 6. Doğrulanmış sonuçlar
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 15 dosya, 128/128 test geçti |
+| `pnpm test` | 17 dosya, 149/149 test geçti |
 | `pnpm typecheck` | temiz |
-| `pnpm build` | typecheck + 128 test geçti |
+| `pnpm build` | typecheck + 149 test geçti |
 | Stream ZIP bellek profili | 24 MB paket, canlı heap < yükün ½'si, chunk < 4 MB |
 | 54 düğümlü mimari | süre bütçesi içinde, 20 eşzamanlı önizleme, fuzz/E2E indirme |
 | CLI sandbox | `temp-dir` ve bu makinede `auto → bwrap`, çıkış 0 |
 | CLI reverse | mevcut repo analizi → geçerli `ArchState` + paket |
 | 8 dil | katalog parity + yerelleştirilmiş doküman/manifest doğrulaması |
-| API | preview/generate/reverse/sandbox/sandboxes uçları testli |
-| MCP | dört araç, ZIP yazımı ve hata içerikleri testli |
+| API | preview/generate/reverse/sandbox/sandboxes/chat/rea uçları testli |
+| MCP | dört araç, ZIP yazımı, hata içerikleri ve `useRea` testli |
+| Sohbet | TR/EN niyetler, tip çıkarımı, mikroservis bölme, LLM fallback ve `/api/chat` testli |
+| REA köprüsü | sahte `rea` CLI'ı, Evidence projeksiyonu, ASAR/ELF/env/Dockerfile analizi testli |
 
 Test dağılımı: core 32 (state/diff/task-packet/i18n), generators 10, validators 10,
 packager 11 (9 + 2 bellek), app 43 (app 10, server 20, web-search 7, stress 6),
 reverse 5, sandbox 11, mcp 6.
 
-## 6. Kalan sınırlar (bilinçli)
+## 7. Kalan sınırlar (bilinçli)
 
 - Kimlik doğrulama, kullanıcı/oturum, kalıcılık yok; sunucu tek süreç ve in-memory.
 - Rate limit süreç başına; çok örnekli dağıtımda paylaşılmaz.
@@ -153,7 +199,7 @@ reverse 5, sandbox 11, mcp 6.
 - Web araması anahtarsız modda DuckDuckGo instant-answer kalitesine bağlıdır.
 - Tam OpenAPI/AsyncAPI meta-şema doğrulaması yerine yapısal kontroller kullanılır.
 
-## 7. Yeni geliştirici için ilk adımlar
+## 8. Yeni geliştirici için ilk adımlar
 
 1. `pnpm test && pnpm typecheck`.
 2. `pnpm dev`; Studio'da demo moduyla önizle, dil değiştir, ZIP indir.
@@ -165,7 +211,7 @@ reverse 5, sandbox 11, mcp 6.
    - Sandbox içinde `install + test` çalıştıran paket doğrulama profilleri.
    - REA'da OpenAPI/SQL kaynaklarından ek entity çıkarımı.
 
-## 8. Faydalı komutlar
+## 9. Faydalı komutlar
 
 ```bash
 pnpm dev

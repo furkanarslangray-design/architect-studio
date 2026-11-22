@@ -6,7 +6,7 @@ import type { PackageManager, TaskBuildOptions, TestRunner } from "../../core/sr
 import { isLocale, LOCALES, normalizeLocale } from "../../core/src/i18n";
 import type { PackageResult } from "../../packager/src";
 import { buildPackage } from "../../packager/src";
-import { repoToState, summarizeReverse, type ReverseResult } from "../../reverse/src";
+import { repoToState, repoToStateWithRea, summarizeReverse, type ReverseResult } from "../../reverse/src";
 import {
   isSandboxType,
   SANDBOX_TYPES,
@@ -31,10 +31,21 @@ async function main(): Promise<void> {
   let reversed: ReverseResult | undefined;
 
   if (args.reverse) {
-    reversed = repoToState(args.reverse);
+    reversed = args.useRea ? await repoToStateWithRea(args.reverse) : repoToState(args.reverse);
     state = reversed.state;
     result = await buildPackage(state, { taskOptions, locale });
     console.log(`Reverse engineering: ${summarizeReverse(reversed)}`);
+    if (reversed.rea) {
+      const { detection, engine, scannedArtifacts } = reversed.rea;
+      console.log(
+        detection.available
+          ? `REA: ${detection.binary ?? engine} ${detection.version ?? ""} · ${reversed.rea.findings.length} findings · ${scannedArtifacts} artifacts`.trim()
+          : `REA: not installed (${detection.reason ?? "unknown"}), built-in analyzer used · ${reversed.rea.findings.length} findings · ${scannedArtifacts} artifacts`,
+      );
+      for (const finding of reversed.rea.findings.slice(0, 20)) {
+        console.log(`  rea/${finding.category} ${finding.title}: ${finding.detail}`);
+      }
+    }
     for (const finding of reversed.findings.slice(0, 40)) {
       console.log(`  ${finding.kind.padEnd(9)} ${finding.source}: ${finding.detail}`);
     }
@@ -154,7 +165,8 @@ function parseArgs(argv: string[]) {
     sandboxCommand?: string;
     webSearch: boolean;
     searchProvider?: SearchProvider;
-  } = { demo: false, preview: false, webSearch: false };
+    useRea: boolean;
+  } = { demo: false, preview: false, webSearch: false, useRea: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -213,6 +225,9 @@ function parseArgs(argv: string[]) {
       case "--web-search":
         result.webSearch = true;
         break;
+      case "--use-rea":
+        result.useRea = true;
+        break;
       case "--search-provider": {
         const value = next();
         if (!isSearchProvider(value)) {
@@ -238,13 +253,14 @@ function printHelp(): void {
 Usage:
   pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
   pnpm generate -- --json architecture.json --out out/package.zip
-  pnpm generate -- --reverse ../my-project --sandbox auto
+  pnpm generate -- --reverse ../my-project --use-rea --sandbox auto
   pnpm generate -- --idea "..." --web-search --search-provider auto
 
 Options:
   --idea <text>              Natural-language architecture idea
   --json <path>              Import an existing ArchState JSON file
   --reverse <dir>            Derive the ArchState from an existing repository
+  --use-rea                  Bridge morluto/rea when installed, built-in artifact analysis otherwise
   --out <path>               Output ZIP path (default: out/agent-package.zip)
   --extract <dir>            Also write every package file into a directory
   --preview                  Print the state, tasks, metrics and validation as JSON

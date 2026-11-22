@@ -3,6 +3,9 @@ import { basename, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { validateState } from "../../core/src/diff";
 import { sanitizeState, type ArchEdge, type ArchNode, type ArchState, type Decision, type Entity, type NodeKind } from "../../core/src/state";
+import { analyzeWithRea, type ReaAnalysis, type ReaFinding, type ReaOptions } from "./rea";
+
+export * from "./rea";
 
 export interface ReverseOptions {
   maxFiles?: number;
@@ -10,6 +13,10 @@ export interface ReverseOptions {
   ignore?: string[];
   /** Extra directories (for example monorepo packages) to treat as project roots. */
   roots?: string[];
+  /** Merge REA (Reverse Engineer Anything) findings into the derived state. */
+  useRea?: boolean;
+  /** Tuning for the REA bridge / built-in artifact analyzer. */
+  rea?: ReaOptions;
 }
 
 export interface ReverseFinding {
@@ -25,6 +32,8 @@ export interface ReverseResult {
   warnings: string[];
   scannedFiles: number;
   skipped: string[];
+  /** Present when REA analysis ran alongside the source scan. */
+  rea?: ReaAnalysis;
 }
 
 const IGNORED_DIRECTORIES = new Set([
@@ -547,11 +556,147 @@ export function repoToState(root: string, options: ReverseOptions = {}): Reverse
   };
 }
 
+const REA_NODE_KINDS: Partial<Record<ReaFinding["category"], NodeKind>> = {
+  datastore: "database",
+  messaging: "queue",
+  integration: "external",
+};
+
+function reaNodeKind(item: ReaFinding): NodeKind | undefined {
+  const direct = REA_NODE_KINDS[item.category];
+  if (direct) return direct;
+  if (item.category === "runtime" || item.category === "framework") {
+    return /electron|react native|flutter|desktop|web app|react application|vue application|svelte application/i.test(item.title)
+      ? "ui"
+      : undefined;
+  }
+  return undefined;
+}
+
+function reaNodeName(item: ReaFinding): string {
+  return item.title.match(/^External endpoint (.+)$/i)?.[1] ?? item.title;
+}
+
+/**
+ * Folds REA findings (from the CLI or the built-in analyzer) into an existing
+ * ArchState. Findings keep their evidence on the node props so a reviewer can
+ * trace every derived component back to an artifact.
+ */
+export function mergeReaFindings(state: ArchState, analysis: ReaAnalysis): { state: ArchState; added: ReaFinding[] } {
+  const nodes = [...state.nodes];
+  const edges = [...state.edges];
+  const decisions = [...state.decisions];
+  const existingNames = new Map(nodes.map((node) => [node.name.toLowerCase(), node]));
+  const ids = new Set(nodes.map((node) => node.id));
+  const added: ReaFinding[] = [];
+  const serviceNode = nodes.find((node) => node.kind === "service");
+
+  const addNode = (kind: NodeKind, name: string, item: ReaFinding) => {
+    const base = `${slug(name)}-${kind === "service" ? "svc" : slug(kind)}`;
+    let id = base;
+    let counter = 2;
+    while (ids.has(id)) id = `${base}-${counter++}`;
+    ids.add(id);
+    const evidencePaths = item.evidence
+      .map((evidence) => evidence.path)
+      .filter((path): path is string => typeof path === "string")
+      .slice(0, 3);
+    const created: ArchNode = {
+      id,
+      kind,
+      name,
+      props: {
+        detected: "rea",
+        confidence: Number(item.confidence.toFixed(2)),
+        ...(evidencePaths.length > 0 ? { evidence: evidencePaths.join(", ") } : {}),
+      },
+    };
+    nodes.push(created);
+    existingNames.set(name.toLowerCase(), created);
+    if (serviceNode && serviceNode.id !== created.id) {
+      const protocol: ArchEdge["protocol"] =
+        kind === "database" ? "sql" : kind === "queue" ? "event" : "http";
+      const edgeId = `edge-${serviceNode.id}-${created.id}`;
+      if (!edges.some((edge) => edge.id === edgeId)) {
+        edges.push({ id: edgeId, from: serviceNode.id, to: created.id, protocol });
+      }
+    }
+    return created;
+  };
+
+  for (const item of analysis.findings) {
+    const kind = reaNodeKind(item);
+    if (!kind) continue;
+    const name = reaNodeName(item);
+    if (existingNames.has(name.toLowerCase())) continue;
+    addNode(kind, name, item);
+    added.push(item);
+  }
+
+  const decisionSeed = analysis.findings.filter(
+    (item) => item.category === "artifact" || item.category === "architecture" || item.category === "package",
+  );
+  for (const item of decisionSeed.slice(0, 3)) {
+    if (decisions.length >= 12) break;
+    if (decisions.some((decision) => decision.title === item.title)) continue;
+    decisions.push({
+      id: `adr-${String(decisions.length + 1).padStart(3, "0")}`,
+      title: item.title,
+      context: item.detail,
+      decision: item.evidence.length > 0
+        ? `Keep this artifact (evidence: ${item.evidence.map((evidence) => evidence.path ?? evidence.source).slice(0, 3).join(", ")}).`
+        : "Keep this artifact in the target architecture.",
+      alternatives: [],
+    });
+  }
+
+  return { state: { ...state, nodes, edges, decisions }, added };
+}
+
+/**
+ * `repoToState` plus REA: source scan first, then artifact/binary analysis
+ * (the `rea` CLI when installed, the built-in analyzer otherwise).
+ */
+export async function repoToStateWithRea(root: string, options: ReverseOptions = {}): Promise<ReverseResult> {
+  const base = repoToState(root, options);
+  const analysis = await analyzeWithRea(base.root, {
+    maxFiles: options.maxFiles,
+    maxDepth: options.maxDepth,
+    ignore: options.ignore,
+    ...options.rea,
+  });
+  const merged = mergeReaFindings(base.state, analysis);
+  const sanitized = sanitizeState(merged.state);
+  const warnings = [...base.warnings, ...analysis.warnings, ...sanitized.removed.map((item) => `rea: ${item}`)];
+  const errors = validateState(sanitized.state);
+  if (errors.length > 0) {
+    warnings.push(`REA merge produced an invalid architecture, keeping the source scan: ${errors.join("; ")}`);
+    return { ...base, rea: analysis };
+  }
+  return {
+    ...base,
+    state: sanitized.state,
+    findings: [
+      ...base.findings,
+      ...merged.added.map((item) => ({
+        kind: (reaNodeKind(item) ?? "decision") as ReverseFinding["kind"],
+        source: item.evidence[0]?.path ?? "rea",
+        detail: `${item.title} (${Math.round(item.confidence * 100)}% confidence)`,
+      })),
+    ],
+    warnings,
+    rea: analysis,
+  };
+}
+
 export function summarizeReverse(result: ReverseResult): string {
   const kinds = new Map<string, number>();
   for (const node of result.state.nodes) kinds.set(node.kind, (kinds.get(node.kind) ?? 0) + 1);
   const parts = [...kinds.entries()].map(([kind, count]) => `${count} ${kind}`);
+  const rea = result.rea
+    ? ` · REA ${result.rea.engine} (${result.rea.findings.length} findings, ${result.rea.scannedArtifacts} artifacts)`
+    : "";
   return `${result.scannedFiles} files scanned · ${parts.join(", ") || "no components"} · ${
     result.state.entities.length
-  } entities · ${result.state.decisions.length} decisions`;
+  } entities · ${result.state.decisions.length} decisions${rea}`;
 }

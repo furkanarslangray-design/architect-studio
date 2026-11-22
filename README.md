@@ -1,4 +1,4 @@
-# AI Principal Architect — v2.0.0
+# AI Principal Architect — v2.1.0
 
 Fikrini (veya mevcut bir projeni), OpenCode/Cursor/Claude gibi kodlama ajanlarının düşük
 token ile inşa edebileceği **doğrulanmış bir ajan paketine** çeviren açık kaynak, BYOK
@@ -47,6 +47,13 @@ yalnızca istek süresince kullanılır; diske yazılmaz, loglanmaz ve pakete ko
 
 ## Web Studio
 
+- **Mimar sohbeti:** doğal dil komutları (`Redis cache ekle`, `Order entity'sine status alanı koy`,
+  `Mikroservislere böl`) `ArchState`'i canlı günceller; diyagram, entity kartları, görevler ve
+  ZIP aynı anda yenilenir. Demo modunda deterministik ayrıştırıcı, BYOK modunda LLM çalışır;
+  LLM hata verirse deterministik motora düşer.
+- Sol/sağ bölünmüş çalışma alanı, karanlık/aydınlık tema, canlı Mermaid render, tıklanabilir
+  bileşen ve entity kartları, sözdizimi vurgulu çoklu dosya önizleyici, canlı sandbox ve REA
+  durum rozetleri.
 - Fikir formu, demo/BYOK alanları, hedef **paket yöneticisi** ve **test runner**.
 - Üst menüde **8 dilli seçici**; seçim API isteklerine ve üretilen dokümanlara yansır.
 - **Proje analizi (tersine mühendislik):** yerel bir dizin yolu gir, `ArchState` otomatik
@@ -77,6 +84,22 @@ kataloğu kullanır. Eksik çeviri İngilizceye düşer, placeholder'lar korunur
 ve 512 KB üstü dosyalar atlanır. Sonuç `validateState` ile doğrulanır ve doğrudan
 paketlenebilir. CLI: `--reverse <dir>`, API: `POST /api/reverse`, Studio: proje analizi paneli.
 
+### morluto/rea köprüsü
+
+`--use-rea` (API'de `useRea: true`, MCP'de `useRea`, Studio'da analiz panelindeki anahtar)
+[`morluto/rea`](https://github.com/morluto/rea) ile köprü kurar:
+
+- `rea` veya `rea-agents` PATH'te varsa `rea analyze-javascript-application <path> --json`
+  (gerekirse `rea analyze` / `rea inspect`) çalıştırılır ve çıktı `findings` listesine,
+  REA'nın Evidence dokümanı ise modül/Electron sınırı/paket bulgularına projekte edilir.
+- Kurulu değilse yerleşik analizör devreye girer: dosya imzaları (ELF/PE/Mach-O/WASM/SQLite),
+  Electron `.asar` başlığı, minified bundle imzaları, `.env.example` anahtar adları (değerler
+  okunmaz), Dockerfile taban tabanı ve dış endpoint'ler. Bulgular aynı `evidence` şemasındadır,
+  böylece alt katman hangi motorun çalıştığını bilmek zorunda kalmaz.
+- Belirli bir kurulumu işaret etmek için `ARCHITECT_REA_BIN=/path/to/rea` kullan.
+- REA bulguları `mergeReaFindings` ile `ArchState`'e katılır: veritabanı, kuyruk ve dış servis
+  düğümleri kanıt yollarıyla (`props.evidence`) eklenir; mevcut adlar tekrar eklenmez.
+
 ## Sandbox sürücüleri
 
 `packages/sandbox` modüler bir `SandboxDriver` arayüzü sunar. Her sürücü komutu izole bir
@@ -105,7 +128,7 @@ pnpm mcp
 ```
 
 Dört araç stdio üzerinden sunulur: `architect_generate`, `architect_preview`,
-`architect_validate`, `architect_reverse_engineer`. Claude Code, Cursor, OpenCode ve
+`architect_validate`, `architect_reverse_engineer` (`useRea: true` ile morluto/rea köprüsü). Claude Code, Cursor, OpenCode ve
 Freebuff yapılandırma örnekleri: [`docs/mcp.md`](docs/mcp.md).
 
 ## Web araması
@@ -126,7 +149,9 @@ API gövdesinde `webSearch: true`, Studio'da "Canlı web araması" anahtarı.
 | GET | `/api/sandboxes` | Algılanan sandbox sürücüleri |
 | POST | `/api/preview` | State + diyagram + dosyalar + görevler + metrikler + doğrulama |
 | POST | `/api/generate` | ZIP (`application/zip`, `Content-Length` akıştan ölçülür) |
-| POST | `/api/reverse` | `{ path }` → `ArchState`, bulgular, özet |
+| GET | `/api/rea` | `rea` / `rea-agents` algılama sonucu (sürüm, mod) |
+| POST | `/api/chat` | `{ state, message }` → güncel state, diyagram, dosyalar, değişiklik listesi |
+| POST | `/api/reverse` | `{ path, useRea? }` → `ArchState`, bulgular, özet, REA raporu |
 | POST | `/api/sandbox` | Paketi seçilen sandbox'ta doğrular |
 
 Ortak gövde alanları: `idea` **veya** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
@@ -145,7 +170,7 @@ pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
 pnpm generate -- --json examples/architecture.json --out out/package.zip --extract out/package
 
 # Tersine mühendislik + sandbox doğrulaması
-pnpm generate -- --reverse ../my-project --sandbox auto --out out/reverse.zip
+pnpm generate -- --reverse ../my-project --use-rea --sandbox auto --out out/reverse.zip
 
 # Türkçe çıktı + canlı web araması
 pnpm generate -- --idea "..." --demo --locale tr --web-search --search-provider auto
@@ -159,7 +184,7 @@ pnpm generate -- --json examples/architecture.json --preview
 ```
 
 Bayraklar: `--out`, `--extract`, `--base-url`, `--sandbox`, `--sandbox-command`,
-`--web-search`, `--search-provider`, `--help`.
+`--web-search`, `--search-provider`, `--use-rea`, `--help`.
 
 ## Paket içeriği
 

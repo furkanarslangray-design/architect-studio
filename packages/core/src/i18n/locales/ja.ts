@@ -1,6 +1,18 @@
 import type { MessageKey } from "./en";
 
 export const ja: Record<MessageKey, string> = {
+  "error.emptyMessage": "まずアーキテクトへの指示を入力してください。",
+  "ui.reaHint": "CLIがインストールされていればmorluto/reaに接続し、なければ内蔵のアーティファクト解析を使用します。",
+  "ui.chatTitle": "アーキテクトチャット",
+  "ui.chatHint": "変更を自然言語で説明してください。図・エンティティ・パッケージが即時に更新されます。",
+  "ui.chatPlaceholder": "注文APIの前にRedisキャッシュを追加して",
+  "ui.chatSend": "送信",
+  "ui.chatWorking": "設計中…",
+  "ui.chatEmpty": "「Redisキャッシュを追加」「Orderにstatusフィールドを追加」「マイクロサービスに分割」を試してください。",
+  "ui.quickPrompts": "クイックコマンド",
+  "ui.entitiesTitle": "コンポーネントとエンティティ",
+  "ui.entityFields": "フィールド",
+  "ui.themeToggle": "テーマを切り替え",
   "common.id": "ID",
   "common.name": "名前",
   "common.kind": "種類",

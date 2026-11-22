@@ -1,6 +1,18 @@
 import type { MessageKey } from "./en";
 
 export const zh: Record<MessageKey, string> = {
+  "error.emptyMessage": "请先输入给架构师的指令。",
+  "ui.reaHint": "若已安装 CLI 则桥接 morluto/rea，否则使用内置的产物分析器。",
+  "ui.chatTitle": "架构师对话",
+  "ui.chatHint": "用自然语言描述变更，图表、实体和包会实时更新。",
+  "ui.chatPlaceholder": "在订单 API 前面加一个 Redis 缓存",
+  "ui.chatSend": "发送",
+  "ui.chatWorking": "设计中…",
+  "ui.chatEmpty": "试试“添加 Redis 缓存”“给 Order 增加 status 字段”或“拆分为微服务”。",
+  "ui.quickPrompts": "快捷指令",
+  "ui.entitiesTitle": "组件与实体",
+  "ui.entityFields": "字段",
+  "ui.themeToggle": "切换主题",
   "common.id": "ID",
   "common.name": "名称",
   "common.kind": "类型",

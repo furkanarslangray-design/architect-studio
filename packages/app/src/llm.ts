@@ -82,7 +82,7 @@ export async function ideaToState(idea: string, options: LlmOptions = {}): Promi
   throw new Error(lastError);
 }
 
-function extractJson(content: string): unknown {
+export function extractJson(content: string): unknown {
   const trimmed = content.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = fenced ? fenced[1] : trimmed;

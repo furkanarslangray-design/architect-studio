@@ -11,7 +11,7 @@ import {
   type ToolResult,
 } from "./tools";
 
-export const MCP_SERVER_VERSION = "2.0.0";
+export const MCP_SERVER_VERSION = "2.1.0";
 
 const locale = z.string().describe("Output language: en, tr, de, es, fr, pt, ja or zh").optional();
 const runtime = {
@@ -89,6 +89,10 @@ export function createMcpServer(): McpServer {
       path: z.string().describe("Absolute or relative path to the repository"),
       maxFiles: z.number().int().positive().max(20_000).optional(),
       maxDepth: z.number().int().positive().max(32).optional(),
+      useRea: z
+        .boolean()
+        .optional()
+        .describe("Bridge morluto/rea when the `rea` CLI is installed; falls back to the built-in artifact analyzer"),
     },
     (args) => architectReverseEngineer(args),
   );

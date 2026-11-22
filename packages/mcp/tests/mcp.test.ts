@@ -21,7 +21,7 @@ describe("MCP tools", () => {
   it("creates a stdio server with the four documented tools", () => {
     const server = createMcpServer();
     expect(server).toBeTruthy();
-    expect(MCP_SERVER_VERSION).toBe("2.0.0");
+    expect(MCP_SERVER_VERSION).toBe("2.1.0");
     expect(Object.keys(TOOL_SUMMARIES)).toEqual([
       "architect_generate",
       "architect_preview",

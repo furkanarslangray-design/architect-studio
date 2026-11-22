@@ -1,6 +1,18 @@
 import type { MessageKey } from "./en";
 
 export const fr: Record<MessageKey, string> = {
+  "error.emptyMessage": "Écrivez d'abord une instruction pour l'architecte.",
+  "ui.reaHint": "Relie morluto/rea si la CLI est installée ; sinon l'analyseur d'artefacts intégré s'exécute.",
+  "ui.chatTitle": "Chat de l'architecte",
+  "ui.chatHint": "Décrivez le changement en langage naturel. Le diagramme, les entités et le paquet se mettent à jour en direct.",
+  "ui.chatPlaceholder": "Ajoute un cache Redis devant l'API des commandes",
+  "ui.chatSend": "Envoyer",
+  "ui.chatWorking": "Conception…",
+  "ui.chatEmpty": "Essayez « Ajoute un cache Redis », « Ajoute un champ status à Order » ou « Découpe en microservices ».",
+  "ui.quickPrompts": "Commandes rapides",
+  "ui.entitiesTitle": "Composants et entités",
+  "ui.entityFields": "Champs",
+  "ui.themeToggle": "Changer de thème",
   "common.id": "ID",
   "common.name": "Nom",
   "common.kind": "Type",

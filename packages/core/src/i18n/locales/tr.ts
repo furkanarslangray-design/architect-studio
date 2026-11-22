@@ -1,6 +1,18 @@
 import type { MessageKey } from "./en";
 
 export const tr: Record<MessageKey, string> = {
+  "error.emptyMessage": "Önce mimara bir talimat yaz.",
+  "ui.reaHint": "CLI kuruluysa morluto/rea'ya köprü kurar; değilse yerleşik artifact analizörü çalışır.",
+  "ui.chatTitle": "Mimar sohbeti",
+  "ui.chatHint": "Değişikliği doğal dille anlat. Diyagram, entity'ler ve paket canlı güncellenir.",
+  "ui.chatPlaceholder": "Sipariş API'sinin önüne Redis cache ekle",
+  "ui.chatSend": "Gönder",
+  "ui.chatWorking": "Tasarlıyor…",
+  "ui.chatEmpty": "“Redis cache ekle”, “Order entity'sine status alanı koy” veya “Mikroservislere böl” deneyin.",
+  "ui.quickPrompts": "Hızlı komutlar",
+  "ui.entitiesTitle": "Bileşenler ve entity'ler",
+  "ui.entityFields": "Alanlar",
+  "ui.themeToggle": "Temayı değiştir",
   "common.id": "ID",
   "common.name": "Ad",
   "common.kind": "Tür",

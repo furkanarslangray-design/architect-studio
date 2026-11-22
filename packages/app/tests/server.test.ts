@@ -28,16 +28,16 @@ describe("HTTP server", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
-    expect(await response.text()).toContain("AI Principal Architect");
+    expect(await response.text()).toContain("Architect Studio");
   });
 
   it("reports health and version", async () => {
     const response = await fetch(`${baseUrl}/api/health`);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, version: "2.0.0" });
+    expect(await response.json()).toEqual({ ok: true, version: "2.1.0" });
 
     const version = await fetch(`${baseUrl}/api/version`);
-    expect(await version.json()).toMatchObject({ name: "architect-studio", version: "2.0.0" });
+    expect(await version.json()).toMatchObject({ name: "architect-studio", version: "2.1.0" });
   });
 
   it("generates a ZIP in demo mode", async () => {
@@ -309,7 +309,7 @@ describe("i18n", () => {
     const script = await fetch(`${baseUrl}/app.js`);
     expect(script.status).toBe(200);
     expect(script.headers.get("content-type")).toContain("javascript");
-    expect(await script.text()).toContain("renderPreview");
+    expect(await script.text()).toContain("/api/chat");
 
     const styles = await fetch(`${baseUrl}/styles.css`);
     expect(styles.status).toBe(200);
