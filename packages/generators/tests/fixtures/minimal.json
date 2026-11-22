@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "db-1", "kind": "database", "name": "App DB", "props": { "engine": "postgres" } },
+    { "id": "svc-1", "kind": "service", "name": "App API", "props": { "runtime": "node" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "svc-1", "to": "db-1", "protocol": "sql" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-1",
+      "title": "Use PostgreSQL",
+      "context": "Need transactions",
+      "decision": "Use PostgreSQL for the primary datastore",
+      "alternatives": ["SQLite", "MongoDB"]
+    }
+  ]
+}
