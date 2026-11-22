@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Principal Architect</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #111a33;
+        --panel-2: #0e162b;
+        --text: #e8eefc;
+        --muted: #93a4c8;
+        --accent: #5eead4;
+        --accent-2: #fbbf24;
+        --border: #233154;
+        --danger: #fb7185;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(900px 500px at 15% -10%, rgba(94, 234, 212, 0.18), transparent 60%),
+          radial-gradient(700px 400px at 95% 10%, rgba(251, 191, 36, 0.12), transparent 55%),
+          var(--bg);
+      }
+      main { max-width: 1040px; margin: 0 auto; padding: 56px 22px 72px; }
+      header { margin-bottom: 28px; }
+      .eyebrow {
+        display: inline-flex; gap: 8px; align-items: center;
+        color: var(--accent); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+        border: 1px solid rgba(94,234,212,.3); background: rgba(94,234,212,.08);
+        padding: 6px 10px; border-radius: 999px;
+      }
+      h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.05; margin: 18px 0 12px; letter-spacing: -0.03em; }
+      h1 span { color: var(--accent); }
+      .lede { color: var(--muted); font-size: 17px; line-height: 1.6; max-width: 760px; margin: 0; }
+      .grid { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; margin-top: 30px; }
+      @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+      .card {
+        background: linear-gradient(180deg, rgba(255,255,255,.03), transparent), var(--panel);
+        border: 1px solid var(--border); border-radius: 18px; padding: 22px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      }
+      label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+      textarea, input {
+        width: 100%; border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+        border-radius: 12px; padding: 13px 14px; font: inherit; outline: none;
+      }
+      textarea:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94,234,212,.12); }
+      textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+      .field { margin-bottom: 14px; }
+      .check { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px dashed var(--border); border-radius: 12px; background: rgba(94,234,212,.04); }
+      .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--accent); }
+      .check strong { display: block; font-size: 14px; margin-bottom: 2px; }
+      .check span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+      button {
+        width: 100%; border: 0; border-radius: 12px; padding: 15px 18px; font: inherit; font-weight: 700;
+        color: #06201c; background: linear-gradient(135deg, var(--accent), #a7f3d0); cursor: pointer;
+        transition: transform .12s ease, filter .12s ease;
+      }
+      button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+      button:disabled { opacity: .6; cursor: wait; transform: none; }
+      .side h2 { font-size: 15px; margin: 0 0 14px; }
+      .step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(35,49,84,.7); }
+      .step:last-child { border-bottom: 0; }
+      .num { flex: 0 0 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: rgba(94,234,212,.12); color: var(--accent); font-size: 12px; font-weight: 700; }
+      .step p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .step b { color: var(--text); }
+      .status { margin-top: 14px; min-height: 22px; font-size: 14px; color: var(--muted); }
+      .status.error { color: var(--danger); }
+      .result { margin-top: 16px; padding: 14px; border-radius: 12px; border: 1px solid rgba(94,234,212,.35); background: rgba(94,234,212,.08); display: none; }
+      .result.show { display: block; }
+      .result a { color: var(--accent); font-weight: 700; }
+      .meta { color: var(--muted); font-size: 13px; margin-top: 8px; }
+      details { margin-top: 22px; color: var(--muted); font-size: 13px; }
+      summary { cursor: pointer; color: var(--text); }
+      code { color: var(--accent-2); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">BYOK · açık kaynak · OpenCode ready</div>
+        <h1>Fikrini <span>ajan paketine</span> çevir.</h1>
+        <p class="lede">
+          Kafandaki sistemi yaz. AI Principal Architect mimariyi kurar, şemaları ve dokümanları üretir,
+          deterministik olarak doğrular ve OpenCode subagent’larının düşük token ile inşa edebileceği
+          dilimlenmiş görev paketleriyle birlikte ZIP olarak indirir.
+        </p>
+      </header>
+
+      <div class="grid">
+        <section class="card">
+          <form id="generate-form">
+            <div class="field">
+              <label for="idea">Fikrin</label>
+              <textarea id="idea" name="idea" placeholder="Örn: Postgres kullanan bir sipariş API'si, Redis Streams ile domain event'leri ve React storefront. Ödeme için Stripe entegrasyonu olsun." required></textarea>
+            </div>
+
+            <div class="field check">
+              <input id="demo" name="demo" type="checkbox" checked />
+              <div>
+                <strong>Demo modu</strong>
+                <span>API anahtarı olmadan çalışır. Anahtar kelimelerden deterministik bir mimari üretir; paketin tamamını yine oluşturur.</span>
+              </div>
+            </div>
+
+            <div id="byok-fields">
+              <div class="field">
+                <label for="apiKey">API anahtarı (BYOK)</label>
+                <input id="apiKey" name="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="model">Model</label>
+                  <input id="model" name="model" value="gpt-4o-mini" />
+                </div>
+                <div class="field">
+                  <label for="baseUrl">Base URL</label>
+                  <input id="baseUrl" name="baseUrl" value="https://api.openai.com/v1" />
+                </div>
+              </div>
+            </div>
+
+            <button id="submit" type="submit">Mimariyi üret ve paketi indir</button>
+            <div id="status" class="status" role="status"></div>
+            <div id="result" class="result">
+              <a id="download" href="#" download="agent-package.zip">agent-package.zip indir</a>
+              <div id="meta" class="meta"></div>
+            </div>
+          </form>
+        </section>
+
+        <aside class="card side">
+          <h2>Pakette ne var?</h2>
+          <div class="step"><div class="num">1</div><p><b>ARCHITECTURE.md + Whitepaper</b><br />Sistemin tam resmi ve karar gerekçeleri.</p></div>
+          <div class="step"><div class="num">2</div><p><b>TASKS.md + tasks/T-*.md</b><br />Her görev kendi kendine yeterli; ajan tüm repoyu okumaz.</p></div>
+          <div class="step"><div class="num">3</div><p><b>OpenAPI · Prisma · AsyncAPI · Mermaid</b><br />Deterministik parser’lardan geçmiş sözleşmeler.</p></div>
+          <div class="step"><div class="num">4</div><p><b>.opencode/agents/*.md</b><br />Implementer, validator ve reviewer subagent tanımları.</p></div>
+          <div class="step"><div class="num">5</div><p><b>metrics.json</b><br />Token bütçesi, kapsam ve doğrulama metrikleri.</p></div>
+
+          <details>
+            <summary>Nasıl çalışır?</summary>
+            <p>
+              Demo modunda anahtar gerekmez. BYOK modunda anahtar yalnızca istek süresince kullanılır;
+              diske yazılmaz, loglanmaz ve pakete konmaz. Üretilen her artifact deterministik doğrulayıcıdan geçer.
+            </p>
+          </details>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      const form = document.getElementById("generate-form");
+      const demo = document.getElementById("demo");
+      const byok = document.getElementById("byok-fields");
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+      const download = document.getElementById("download");
+      const meta = document.getElementById("meta");
+      const submit = document.getElementById("submit");
+
+      demo.addEventListener("change", () => {
+        byok.style.display = demo.checked ? "none" : "block";
+      });
+      byok.style.display = demo.checked ? "none" : "block";
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const idea = document.getElementById("idea").value.trim();
+        if (idea.length < 3) {
+          showError("Fikrini biraz daha açık yaz.");
+          return;
+        }
+
+        submit.disabled = true;
+        status.className = "status";
+        status.textContent = "Mimari üretiliyor, doğrulanıyor ve paketleniyor…";
+        result.classList.remove("show");
+
+        try {
+          const response = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              idea,
+              demo: demo.checked,
+              apiKey: document.getElementById("apiKey").value,
+              model: document.getElementById("model").value,
+              baseUrl: document.getElementById("baseUrl").value,
+            }),
+          });
+
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.error || "Üretim başarısız oldu.");
+          }
+
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          download.href = url;
+          meta.textContent = `Metrikler: ${response.headers.get("X-Metrics-Passed") || "-"} · Görev: ${response.headers.get("X-Task-Count") || "-"} · Doğrulama: ${response.headers.get("X-Validation") || "-"}`;
+          result.classList.add("show");
+          status.textContent = "Paket hazır. İndirebilirsin.";
+        } catch (error) {
+          showError(error instanceof Error ? error.message : "Beklenmeyen bir hata oluştu.");
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      function showError(message) {
+        status.className = "status error";
+        status.textContent = message;
+      }
+    </script>
+  </body>
+</html>
