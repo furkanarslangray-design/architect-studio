@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+*.zip
+.DS_Store
+.env
+.env.*
+!.env.example
+coverage/
