@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import { parseState } from "../../core/src/state";
+import { parseState, type ArchState } from "../../core/src/state";
 import { buildPackage } from "../src";
 
 function fixture() {
@@ -31,6 +31,20 @@ describe("packager", () => {
     const failed = result.metrics.filter((metric) => !metric.pass);
     expect(failed).toEqual([]);
     expect(result.metrics.find((metric) => metric.name === "package_size_kb")!.value).toBeLessThanOrEqual(500);
+  });
+
+  it("keeps every metric passing for a minimal two-node architecture", async () => {
+    const state: ArchState = {
+      version: 1,
+      nodes: [
+        { id: "svc", kind: "service", name: "API", props: {} },
+        { id: "db", kind: "database", name: "DB", props: { engine: "postgres" } },
+      ],
+      edges: [{ id: "e1", from: "svc", to: "db", protocol: "sql" }],
+      decisions: [],
+    };
+    const result = await buildPackage(state);
+    expect(result.metrics.filter((metric) => !metric.pass)).toEqual([]);
   });
 
   it("redacts API keys from every generated file", async () => {

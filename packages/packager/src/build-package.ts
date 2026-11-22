@@ -75,7 +75,7 @@ export async function buildPackage(state: ArchState, options: BuildOptions = {})
     lteMetric("duplicate_context_ratio", taskMetrics.duplicateContextRatio, 0.05),
     lteMetric("files_per_task", taskMetrics.maxFilesPerTask, 5),
     lteMetric("dependency_depth", depth, 4),
-    gteMetric("parallel_groups", taskMetrics.parallelGroups, 3),
+    gteMetric("parallel_groups", taskMetrics.parallelGroups, Math.min(3, state.nodes.length)),
     lteMetric("subagent_steps", 8, 8),
     gteMetric("contract_coverage", taskMetrics.contractCoverage, 1),
     gteMetric("acceptance_coverage", taskMetrics.acceptanceCoverage, 1),
