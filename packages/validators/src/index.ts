@@ -133,19 +133,19 @@ export function validateArtifacts(files: Record<string, string>, options: Valida
 
   check("TASKS.md", () => {
     const tasks = files["TASKS.md"] ?? "";
-    if (!tasks.includes("| ID | Task |")) throw new Error("missing task index table");
-    if (!tasks.includes("tasks/<ID>.md")) throw new Error("missing packet path instruction");
     const ids = tasks
       .split("\n")
       .map((line) => /^\|\s*(T-\d{3,})\s*\|/.exec(line)?.[1])
       .filter((id): id is string => Boolean(id));
+    if (ids.length === 0) throw new Error("missing task index rows");
+    if (!tasks.includes("tasks/")) throw new Error("missing packet path instruction");
     if (new Set(ids).size !== ids.length) throw new Error("duplicate task ids in the index");
     if (options.requireTaskFiles) {
       for (const id of ids) {
         const packet = files[`tasks/${id}.md`];
         if (!packet) throw new Error(`missing packet file tasks/${id}.md`);
-        if (!packet.includes("## Acceptance criteria")) throw new Error(`tasks/${id}.md is missing acceptance criteria`);
-        if (!packet.includes("## Verify")) throw new Error(`tasks/${id}.md is missing a verify command`);
+        if (!packet.includes("- [ ]")) throw new Error(`tasks/${id}.md is missing acceptance criteria`);
+        if ((packet.match(/^## /gm) ?? []).length < 4) throw new Error(`tasks/${id}.md is missing sections`);
       }
     }
   });
@@ -172,8 +172,8 @@ export function validateArtifacts(files: Record<string, string>, options: Valida
   check("MANIFEST.md", () => {
     if (files["MANIFEST.md"] === undefined) return;
     const manifest = files["MANIFEST.md"];
-    if (!manifest.includes("## Contents")) throw new Error("manifest is missing the contents section");
-    if (!manifest.includes("## Metrics")) throw new Error("manifest is missing the metrics section");
+    if ((manifest.match(/^## /gm) ?? []).length < 3) throw new Error("manifest is missing sections");
+    if (!manifest.includes("metrics.json")) throw new Error("manifest is missing the metrics section");
   });
 
   check(".cursorrules", () => {
@@ -184,20 +184,25 @@ export function validateArtifacts(files: Record<string, string>, options: Valida
 
   check("ARCHITECTURE.md", () => {
     if (files["ARCHITECTURE.md"] === undefined) return;
-    if (!files["ARCHITECTURE.md"].includes("## Diagram")) throw new Error("architecture doc is missing the diagram");
-    if (!files["ARCHITECTURE.md"].includes("## Components")) throw new Error("architecture doc is missing components");
+    const doc = files["ARCHITECTURE.md"];
+    if (!doc.includes("```mermaid")) throw new Error("architecture doc is missing the diagram");
+    if ((doc.match(/^## /gm) ?? []).length < 3) throw new Error("architecture doc is missing sections");
   });
 
   check("WHITEPAPER.md", () => {
     if (files["WHITEPAPER.md"] === undefined) return;
-    if (!files["WHITEPAPER.md"].includes("## Executive summary")) throw new Error("whitepaper is missing the summary");
-    if (!files["WHITEPAPER.md"].includes("## Delivery plan")) throw new Error("whitepaper is missing the delivery plan");
+    const doc = files["WHITEPAPER.md"];
+    if (!doc.includes("```mermaid")) throw new Error("whitepaper is missing the diagram");
+    if ((doc.match(/^## /gm) ?? []).length < 4) throw new Error("whitepaper is missing sections");
   });
 
   check("AGENTS.md", () => {
     if (files["AGENTS.md"] === undefined) return;
-    if (!files["AGENTS.md"].includes("Agent guide")) throw new Error("agent guide is missing");
-    if (!files["AGENTS.md"].includes("TASKS.md")) throw new Error("agent guide must point to TASKS.md");
+    const doc = files["AGENTS.md"];
+    if (!doc.includes("TASKS.md")) throw new Error("agent guide must point to TASKS.md");
+    if ((doc.match(/^## /gm) ?? []).length + (doc.match(/^# /gm) ?? []).length < 1) {
+      throw new Error("agent guide is missing");
+    }
   });
 
   check(".opencode/agents", () => {
@@ -218,8 +223,7 @@ export function validateArtifacts(files: Record<string, string>, options: Valida
     for (const [path, content] of Object.entries(files)) {
       if (!path.startsWith("adr/")) continue;
       if (!content.startsWith("# ADR-")) throw new Error(`${path} is missing an ADR heading`);
-      if (!content.includes("## Status")) throw new Error(`${path} is missing a status section`);
-      if (!content.includes("## Decision")) throw new Error(`${path} is missing a decision section`);
+      if ((content.match(/^## /gm) ?? []).length < 3) throw new Error(`${path} is missing sections`);
     }
   });
 
@@ -312,7 +316,7 @@ function repairOnce(files: Record<string, string>): Record<string, string> {
   } else if (!next["diagram.mmd"].split("\n").some((line) => line.trim().startsWith("n_") || line.includes("-->") )) {
     next["diagram.mmd"] = `${next["diagram.mmd"].trimEnd()}\n  n_placeholder["placeholder"]\n`;
   }
-  if (next["TASKS.md"] !== undefined && !next["TASKS.md"].includes("| ID | Task |")) {
+  if (next["TASKS.md"] !== undefined && !next["TASKS.md"].split("\n").some((line) => /^\|\s*T-\d{3,}\s*\|/.test(line))) {
     next["TASKS.md"] = `# TASKS\n\n| ID | Task |\n|---|---|\n\nPacket files live in \`tasks/<ID>.md\`.\n${next["TASKS.md"]}`;
   }
   if (!isValidMetrics(next["metrics.json"])) {
@@ -321,6 +325,10 @@ function repairOnce(files: Record<string, string>): Record<string, string> {
   if (!next["MANIFEST.md"]) {
     next["MANIFEST.md"] = [
       "# Package Manifest",
+      "",
+      "## Overview",
+      "",
+      "- Validation: repaired deterministically",
       "",
       "## Contents",
       "",

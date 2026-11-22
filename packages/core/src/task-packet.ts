@@ -2,6 +2,7 @@ import type { ArchNode, ArchState, Entity } from "./state";
 import { contractCoverage, dependencyDepth } from "./diff";
 import { slugify } from "./ids";
 import { estimateTokens, percentile } from "./metrics";
+import { normalizeLocale, t, type Locale } from "./i18n";
 
 export const PACKAGE_MANAGERS = ["pnpm", "npm", "yarn", "bun"] as const;
 export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
@@ -12,11 +13,13 @@ export type TestRunner = (typeof TEST_RUNNERS)[number];
 export interface TaskBuildOptions {
   packageManager?: PackageManager;
   testRunner?: TestRunner;
+  locale?: Locale;
 }
 
 export interface ResolvedTaskOptions {
   packageManager: PackageManager;
   testRunner: TestRunner;
+  locale: Locale;
 }
 
 export interface TaskPacket {
@@ -69,7 +72,7 @@ export function resolveTaskOptions(options: TaskBuildOptions = {}): ResolvedTask
   if (!TEST_RUNNERS.includes(testRunner)) {
     throw new Error(`Unsupported test runner: ${testRunner}. Use one of ${TEST_RUNNERS.join(", ")}.`);
   }
-  return { packageManager, testRunner };
+  return { packageManager, testRunner, locale: normalizeLocale(options.locale) };
 }
 
 export function buildTaskPackets(state: ArchState, options: TaskBuildOptions = {}): TaskPacket[] {
@@ -128,7 +131,7 @@ export function buildTaskPackets(state: ArchState, options: TaskBuildOptions = {
       },
       entities: owned.map((entity) => entity.id),
     };
-    packet.tokenCount = estimateTokens(renderTaskMarkdown(packet));
+    packet.tokenCount = estimateTokens(renderTaskMarkdown(packet, resolved));
     taskByNode.set(node.id, packet);
     return packet;
   });
@@ -167,40 +170,41 @@ export function buildTaskIndex(packets: TaskPacket[]): TaskIndex {
   };
 }
 
-export function renderTaskMarkdown(packet: TaskPacket): string {
+export function renderTaskMarkdown(packet: TaskPacket, options: TaskBuildOptions = {}): string {
+  const { locale } = resolveTaskOptions(options);
   return [
     `# ${packet.id} — ${packet.title}`,
     "",
-    "## Goal",
-    `Implement the ${packet.title.toLowerCase()} slice. This packet is self-contained.`,
+    `## ${t(locale, "docs.packet.goal")}`,
+    t(locale, "docs.packet.goalLine", { title: packet.title.toLowerCase() }),
     "",
-    "## Files",
+    `## ${t(locale, "common.files")}`,
     ...packet.files.map((file) => `- ${file}`),
     "",
-    "## Depends on",
-    packet.dependsOn.length > 0 ? packet.dependsOn.join(", ") : "none",
+    `## ${t(locale, "common.dependsOn")}`,
+    packet.dependsOn.length > 0 ? packet.dependsOn.join(", ") : t(locale, "common.none"),
     "",
     "## Context",
     "```json",
     packet.context,
     "```",
     "",
-    "## Acceptance criteria",
+    `## ${t(locale, "docs.packet.acceptance")}`,
     ...packet.acceptance.map((item) => `- [ ] ${item}`),
     "",
-    "## Verify",
-    `Run: \`${packet.verifyCommand}\``,
+    `## ${t(locale, "docs.whitepaper.verification")}`,
+    t(locale, "docs.packet.verify", { command: packet.verifyCommand }),
     "",
-    "## Rules",
-    "- Only touch the files listed above.",
-    "- Do not read the whole repository; this packet is the required context.",
-    "- Do not dispatch other subagents.",
+    `## ${t(locale, "docs.packet.rules")}`,
+    `- ${t(locale, "docs.rules.rule3")}`,
+    `- ${t(locale, "docs.rules.rule5")}`,
+    `- ${t(locale, "docs.rules.rule6")}`,
     "",
   ].join("\n");
 }
 
 export function renderTaskIndexMarkdown(packets: TaskPacket[], options: TaskBuildOptions = {}): string {
-  const { packageManager } = resolveTaskOptions(options);
+  const { packageManager, locale } = resolveTaskOptions(options);
   const installCommand =
     packageManager === "npm"
       ? "npm install"
@@ -211,20 +215,20 @@ export function renderTaskIndexMarkdown(packets: TaskPacket[], options: TaskBuil
           : "pnpm install";
 
   const lines = [
-    "# TASKS",
+    `# ${t(locale, "docs.tasks.title")}`,
     "",
-    "Execute one packet at a time. Each packet is self-contained and lists its own verification command.",
+    t(locale, "docs.tasks.intro"),
     "",
-    `Environment: run \`${installCommand}\` once before the first packet.`,
+    t(locale, "docs.tasks.environment", { command: installCommand }),
     "",
-    "| ID | Task | Depends on | Wave | Files | Tokens |",
+    `| ${t(locale, "common.id")} | ${t(locale, "common.task")} | ${t(locale, "common.dependsOn")} | ${t(locale, "common.wave")} | ${t(locale, "common.files")} | ${t(locale, "common.tokens")} |`,
     "|---|---|---|---|---|---|",
     ...packets.map(
       (packet) =>
         `| ${packet.id} | ${packet.title} | ${packet.dependsOn.join(", ") || "-"} | ${packet.parallelGroup} | ${packet.files.length} | ${packet.tokenCount} |`,
     ),
     "",
-    "Packet files live in `tasks/<ID>.md`.",
+    t(locale, "docs.tasks.location"),
     "",
   ];
   return lines.join("\n");

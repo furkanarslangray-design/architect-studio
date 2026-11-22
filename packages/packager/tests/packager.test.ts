@@ -9,10 +9,20 @@ function fixture(name: "ecommerce" | "domain" = "ecommerce") {
   return parseState(JSON.parse(readFileSync(join(__dirname, "../../generators/tests/fixtures", `${name}.json`), "utf8")));
 }
 
+async function collect(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream as AsyncIterable<Buffer | string>) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
 describe("packager", () => {
   it("builds a ZIP with tasks, OpenCode agents, docs, and metrics", async () => {
     const result = await buildPackage(fixture());
-    const zip = await JSZip.loadAsync(result.zip);
+    const buffer = await collect(result.zip.stream());
+    expect(buffer.length).toBe(result.zip.sizeBytes);
+    const zip = await JSZip.loadAsync(buffer);
 
     expect(result.files["TASKS.md"]).toBeDefined();
     expect(result.files["tasks/T-001.md"]).toBeDefined();
@@ -33,6 +43,18 @@ describe("packager", () => {
     expect(failed).toEqual([]);
     expect(result.metrics.find((metric) => metric.name === "package_size_kb")!.value).toBeLessThanOrEqual(500);
     expect(result.metrics.find((metric) => metric.name === "deterministic_checks")!.value).toBeGreaterThanOrEqual(10);
+  });
+
+  it("streams the archive without buffering and can regenerate it", async () => {
+    const result = await buildPackage(fixture());
+    const first = await collect(result.zip.stream());
+    const second = await collect(result.zip.stream());
+
+    expect(result.zip.sizeBytes).toBe(first.length);
+    expect(second.length).toBe(first.length);
+    const entries = Object.keys((await JSZip.loadAsync(first)).files).sort();
+    expect(entries).toContain("TASKS.md");
+    expect(entries).toContain("openapi.yaml");
   });
 
   it("keeps every metric passing for a minimal two-node architecture", async () => {

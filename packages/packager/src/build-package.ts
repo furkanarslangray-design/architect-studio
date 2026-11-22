@@ -1,6 +1,7 @@
 import type { ArchState } from "../../core/src/state";
 import { dependencyDepth, validateState } from "../../core/src/diff";
 import { eqMetric, estimateTokens, gteMetric, lteMetric, TOKENIZER_ID, type MetricReport } from "../../core/src/metrics";
+import { normalizeLocale, type Locale } from "../../core/src/i18n";
 import {
   buildTaskPackets,
   computeTaskMetrics,
@@ -18,16 +19,17 @@ import {
 import { repairArtifacts, validateArtifacts, type ValidationReport } from "../../validators/src";
 import { renderOpenCodeAgent } from "./opencode-agents";
 import { renderManifest } from "./report";
-import { zipFiles } from "./zip";
+import { createZipStream, type ZipStream } from "./zip";
 
 export interface BuildOptions {
   secrets?: string[];
   extraFiles?: Record<string, string>;
   taskOptions?: TaskBuildOptions;
+  locale?: Locale;
 }
 
 export interface PackageResult {
-  zip: Buffer;
+  zip: ZipStream;
   files: Record<string, string>;
   metrics: MetricReport[];
   validation: ValidationReport;
@@ -45,8 +47,10 @@ export async function buildPackage(state: ArchState, options: BuildOptions = {})
     throw new Error(`Invalid architecture state: ${stateErrors.join("; ")}`);
   }
 
-  const packets = buildTaskPackets(state, options.taskOptions);
-  const docs = generateDocs(state, packets, options.taskOptions);
+  const locale = normalizeLocale(options.locale ?? options.taskOptions?.locale);
+  const taskOptions: TaskBuildOptions = { ...options.taskOptions, locale };
+  const packets = buildTaskPackets(state, taskOptions);
+  const docs = generateDocs(state, packets, taskOptions);
   let files: Record<string, string> = {
     ...docs,
     ...(options.extraFiles ?? {}),
@@ -58,18 +62,23 @@ export async function buildPackage(state: ArchState, options: BuildOptions = {})
   };
 
   for (const packet of packets) {
-    files[`tasks/${packet.id}.md`] = renderTaskMarkdown(packet);
+    files[`tasks/${packet.id}.md`] = renderTaskMarkdown(packet, taskOptions);
   }
   files[".opencode/agents/implementer.md"] = renderOpenCodeAgent("implementer");
   files[".opencode/agents/validator.md"] = renderOpenCodeAgent("validator");
   files[".opencode/agents/reviewer.md"] = renderOpenCodeAgent("reviewer");
   files = redactSecrets(files, options.secrets ?? []);
-  files["MANIFEST.md"] = renderManifest(files, PLACEHOLDER_METRICS, {
-    components: state.nodes.length,
-    entities: state.entities.length,
-    tasks: packets.length,
-    waves: new Set(packets.map((packet) => packet.parallelGroup)).size,
-  });
+  files["MANIFEST.md"] = renderManifest(
+    files,
+    PLACEHOLDER_METRICS,
+    {
+      components: state.nodes.length,
+      entities: state.entities.length,
+      tasks: packets.length,
+      waves: new Set(packets.map((packet) => packet.parallelGroup)).size,
+    },
+    locale,
+  );
 
   let validation = validateArtifacts(files, { requireTaskFiles: true });
   let selfHealRounds = 0;
@@ -85,7 +94,7 @@ export async function buildPackage(state: ArchState, options: BuildOptions = {})
       .map(([path, content]) => `${path}\n${content}`)
       .join("\n"),
   );
-  const taskMetrics = computeTaskMetrics(state, packets, options.taskOptions, generatedTokens);
+  const taskMetrics = computeTaskMetrics(state, packets, taskOptions, generatedTokens);
   const depth = dependencyDepth(state);
   const waves = new Set(packets.map((packet) => packet.parallelGroup)).size;
   const baseMetrics: MetricReport[] = [
@@ -110,30 +119,40 @@ export async function buildPackage(state: ArchState, options: BuildOptions = {})
   ];
 
   files["metrics.json"] = JSON.stringify(baseMetrics, null, 2);
-  files["MANIFEST.md"] = renderManifest(files, baseMetrics, {
-    components: state.nodes.length,
-    entities: state.entities.length,
-    tasks: packets.length,
-    waves,
-    validation,
-  });
+  files["MANIFEST.md"] = renderManifest(
+    files,
+    baseMetrics,
+    {
+      components: state.nodes.length,
+      entities: state.entities.length,
+      tasks: packets.length,
+      waves,
+      validation,
+    },
+    locale,
+  );
 
-  const firstZip = await zipFiles(files);
-  const sizeKb = firstZip.length / 1024;
+  const measuredZip = await createZipStream(files);
+  const sizeKb = measuredZip.sizeBytes / 1024;
 
   const metrics = baseMetrics.map((metric) =>
     metric.name === "package_size_kb" ? lteMetric("package_size_kb", sizeKb, 500) : metric,
   );
   files["metrics.json"] = JSON.stringify(metrics, null, 2);
-  files["MANIFEST.md"] = renderManifest(files, metrics, {
-    components: state.nodes.length,
-    entities: state.entities.length,
-    tasks: packets.length,
-    waves,
-    validation,
-  });
+  files["MANIFEST.md"] = renderManifest(
+    files,
+    metrics,
+    {
+      components: state.nodes.length,
+      entities: state.entities.length,
+      tasks: packets.length,
+      waves,
+      validation,
+    },
+    locale,
+  );
   validation = validateArtifacts(files, { requireTaskFiles: true });
-  const zip = await zipFiles(files);
+  const zip = await createZipStream(files);
 
   return { zip, files, metrics, validation, packets };
 }

@@ -129,7 +129,7 @@ describe("BYOK state producer", () => {
 describe("end-to-end pipeline", () => {
   it("produces a verified ZIP in demo mode", async () => {
     const result = await runPipeline("postgres redis react api", { demo: true });
-    expect(result.zip.length).toBeGreaterThan(0);
+    expect(result.zip.sizeBytes).toBeGreaterThan(0);
     expect(result.files["TASKS.md"]).toBeDefined();
     expect(result.metrics.every((metric) => metric.pass)).toBe(true);
     expect(result.validation.ok).toBe(true);

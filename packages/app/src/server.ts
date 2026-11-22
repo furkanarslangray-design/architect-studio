@@ -10,8 +10,18 @@ import {
   type TestRunner,
 } from "../../core/src/task-packet";
 import { TOKENIZER_ID } from "../../core/src/tokenizer";
+import {
+  DEFAULT_LOCALE,
+  localeNames,
+  messagesFor,
+  normalizeLocale,
+  t,
+  type Locale,
+  type MessageKey,
+} from "../../core/src/i18n";
 import { buildPackage, type PackageResult } from "../../packager/src";
-import { runPipeline } from "./pipeline";
+import { generateMermaid } from "../../generators/src";
+import { runPipeline, type PipelineOptions } from "./pipeline";
 
 const MAX_BODY_BYTES = 256 * 1024;
 export const APP_VERSION = "0.2.0";
@@ -23,6 +33,7 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
   const buckets = new Map<string, { count: number; resetAt: number }>();
 
   return createHttpServer(async (request, response) => {
+    let locale = normalizeLocale(request.headers["accept-language"]);
     try {
       applySecurityHeaders(response);
 
@@ -32,7 +43,47 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
       }
 
       if (request.method === "GET" && request.url === "/api/version") {
-        sendJson(response, 200, { name: "architect-studio", version: APP_VERSION, tokenizer: TOKENIZER_ID });
+        sendJson(response, 200, {
+          name: "architect-studio",
+          version: APP_VERSION,
+          tokenizer: TOKENIZER_ID,
+          locales: localeNames(),
+        });
+        return;
+      }
+
+      if (request.method === "GET" && request.url?.startsWith("/api/i18n")) {
+        const url = new URL(request.url, "http://localhost");
+        const requested = normalizeLocale(url.searchParams.get("locale") ?? undefined, DEFAULT_LOCALE);
+        sendJson(response, 200, {
+          locale: requested,
+          defaultLocale: DEFAULT_LOCALE,
+          locales: localeNames(),
+          messages: messagesFor(requested),
+        });
+        return;
+      }
+
+      if (request.method === "GET" && request.url === "/vendor/mermaid.min.js") {
+        const source = readFileSync(join(process.cwd(), "node_modules", "mermaid", "dist", "mermaid.min.js"));
+        response.writeHead(200, {
+          "Content-Type": "application/javascript; charset=utf-8",
+          "Cache-Control": "public, max-age=86400",
+          "Content-Length": String(source.length),
+        });
+        response.end(source);
+        return;
+      }
+
+      if (request.method === "GET" && (request.url === "/app.js" || request.url === "/styles.css")) {
+        const file = request.url.slice(1);
+        const source = readFileSync(join(process.cwd(), "web", file));
+        response.writeHead(200, {
+          "Content-Type": file.endsWith(".js") ? "application/javascript; charset=utf-8" : "text/css; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Content-Length": String(source.length),
+        });
+        response.end(source);
         return;
       }
 
@@ -51,11 +102,15 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
       if (request.method === "POST" && (request.url === "/api/generate" || request.url === "/api/preview")) {
         enforceRateLimit(buckets, rateLimit, clientKey(request));
         const body = await readJsonBody(request);
+        locale = normalizeLocale(
+          typeof body.locale === "string" ? body.locale : request.headers["accept-language"],
+          locale,
+        );
         const taskOptions = readTaskOptions(body);
-        const result = await buildFromBody(body, taskOptions);
+        const result = await buildFromBody(body, { ...taskOptions, locale });
 
         if (request.url === "/api/preview") {
-          sendJson(response, 200, previewPayload(result));
+          sendJson(response, 200, previewPayload(result, locale));
           return;
         }
 
@@ -64,31 +119,56 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
         response.writeHead(200, {
           "Content-Type": "application/zip",
           "Content-Disposition": 'attachment; filename="agent-package.zip"',
-          "Content-Length": String(result.zip.length),
+          "Content-Length": String(result.zip.sizeBytes),
           "Cache-Control": "no-store",
           "X-Metrics-Passed": `${passed}/${result.metrics.length}`,
           "X-Task-Count": String(taskCount),
           "X-Validation": result.validation.ok ? "ok" : "failed",
           "X-Entities": String(result.state.entities.length),
           "X-Tokenizer": TOKENIZER_ID,
+          "X-Locale": locale,
         });
-        response.end(result.zip);
+        const archive = result.zip.stream();
+        archive.on("error", (error) => response.destroy(error));
+        archive.pipe(response);
         return;
       }
 
-      sendJson(response, 404, { error: "Not found", code: "not_found" });
+      throw new HttpError(404, { key: "error.notFound", code: "not_found" });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       if (error instanceof HttpError) {
-        sendJson(response, error.status, { error: message, code: error.code }, error.headers);
+        sendJson(
+          response,
+          error.status,
+          { error: error.key ? t(locale, error.key, error.vars) : message, code: error.code },
+          error.headers,
+        );
         return;
       }
-      const status = /^Invalid architecture state|^Unsupported/.test(message)
-        ? 400
-        : /^LLM /.test(message)
-          ? 502
-          : 500;
-      sendJson(response, status, { error: message });
+      if (/^Invalid architecture state/.test(message)) {
+        sendJson(response, 400, {
+          error: t(locale, "error.invalidState", { detail: message.replace(/^Invalid architecture state:?\s*/, "") }),
+          code: "invalid_state",
+        });
+        return;
+      }
+      if (/^LLM /.test(message)) {
+        sendJson(response, 502, {
+          error: t(locale, "error.llmFailed", { detail: message }),
+          code: "llm_failed",
+        });
+        return;
+      }
+      if (/^Unsupported /.test(message)) {
+        sendJson(response, 400, { error: message, code: "unsupported_runtime" });
+        return;
+      }
+      sendJson(response, 500, {
+        error: t(locale, "error.internal"),
+        code: "internal_error",
+        detail: process.env.NODE_ENV === "production" ? undefined : message,
+      });
     }
   });
 }
@@ -104,39 +184,43 @@ if (require.main === module) {
   startServer();
 }
 
-async function buildFromBody(body: Record<string, unknown>, taskOptions: TaskBuildOptions): Promise<BuiltPackage> {
+async function buildFromBody(
+  body: Record<string, unknown>,
+  taskOptions: TaskBuildOptions,
+): Promise<BuiltPackage> {
   if (body.state !== undefined) {
     const parsed = safeParseState(body.state);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
-      throw new HttpError(
-        400,
-        `Invalid architecture state payload: ${issue ? `${issue.path.join(".") || "root"}: ${issue.message}` : "schema error"}`,
-        "invalid_state",
-      );
+      const detail = issue ? `${issue.path.join(".") || "root"}: ${issue.message}` : "schema error";
+      throw new HttpError(400, { key: "error.invalidState", vars: { detail }, code: "invalid_state" });
     }
-    const result = await buildPackage(parsed.data, { taskOptions });
+    const result = await buildPackage(parsed.data, { taskOptions, locale: taskOptions.locale });
     return { state: parsed.data, ...result };
   }
 
   const idea = typeof body.idea === "string" ? body.idea.trim() : "";
   if (idea.length < 3) {
-    throw new HttpError(400, "Fikrini en az 3 karakterle yaz.", "invalid_idea");
+    throw new HttpError(400, { key: "error.invalidIdea", code: "invalid_idea" });
   }
 
-  const result = await runPipeline(idea, {
+  const options: PipelineOptions = {
     demo: body.demo === true,
     apiKey: typeof body.apiKey === "string" && body.apiKey.length > 0 ? body.apiKey : undefined,
     baseUrl: typeof body.baseUrl === "string" && body.baseUrl.length > 0 ? body.baseUrl : undefined,
     model: typeof body.model === "string" && body.model.length > 0 ? body.model : undefined,
     taskOptions,
-  });
-  return result;
+    locale: taskOptions.locale,
+  };
+  return runPipeline(idea, options);
 }
 
-function previewPayload(result: BuiltPackage) {
+function previewPayload(result: BuiltPackage, locale: Locale) {
   return {
+    locale,
     state: result.state,
+    diagram: generateMermaid(result.state),
+    files: result.files,
     summary: {
       nodes: result.state.nodes.length,
       edges: result.state.edges.length,
@@ -172,10 +256,18 @@ function readTaskOptions(body: Record<string, unknown>): TaskBuildOptions {
   const packageManager = body.packageManager;
   const testRunner = body.testRunner;
   if (packageManager !== undefined && !PACKAGE_MANAGERS.includes(packageManager as PackageManager)) {
-    throw new HttpError(400, `packageManager must be one of ${PACKAGE_MANAGERS.join(", ")}`, "invalid_package_manager");
+    throw new HttpError(400, {
+      key: "error.invalidPackageManager",
+      vars: { values: PACKAGE_MANAGERS.join(", ") },
+      code: "invalid_package_manager",
+    });
   }
   if (testRunner !== undefined && !TEST_RUNNERS.includes(testRunner as TestRunner)) {
-    throw new HttpError(400, `testRunner must be one of ${TEST_RUNNERS.join(", ")}`, "invalid_test_runner");
+    throw new HttpError(400, {
+      key: "error.invalidTestRunner",
+      vars: { values: TEST_RUNNERS.join(", ") },
+      code: "invalid_test_runner",
+    });
   }
   return {
     packageManager: packageManager as PackageManager | undefined,
@@ -189,7 +281,9 @@ async function readJsonBody(request: IncomingMessage): Promise<Record<string, un
   for await (const chunk of request) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.length;
-    if (size > MAX_BODY_BYTES) throw new HttpError(413, "Request body too large", "payload_too_large");
+    if (size > MAX_BODY_BYTES) {
+      throw new HttpError(413, { key: "error.payloadTooLarge", code: "payload_too_large" });
+    }
     chunks.push(buffer);
   }
   if (chunks.length === 0) return {};
@@ -198,7 +292,7 @@ async function readJsonBody(request: IncomingMessage): Promise<Record<string, un
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
-    throw new HttpError(400, "Invalid JSON body", "invalid_json");
+    throw new HttpError(400, { key: "error.invalidJson", code: "invalid_json" });
   }
 }
 
@@ -242,20 +336,36 @@ function enforceRateLimit(
   }
   bucket.count += 1;
   if (bucket.count > limit) {
-    throw new HttpError(429, "Too many requests. Try again shortly.", "rate_limited", {
-      "Retry-After": String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))),
+    throw new HttpError(429, {
+      key: "error.rateLimited",
+      code: "rate_limited",
+      headers: { "Retry-After": String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))) },
     });
   }
 }
 
+interface HttpErrorOptions {
+  key?: MessageKey;
+  vars?: Record<string, string | number>;
+  code?: string;
+  headers?: Record<string, string>;
+}
+
 class HttpError extends Error {
+  readonly key?: MessageKey;
+  readonly vars: Record<string, string | number>;
+  readonly code: string;
+  readonly headers: Record<string, string>;
+
   constructor(
     readonly status: number,
-    message: string,
-    readonly code = "error",
-    readonly headers: Record<string, string> = {},
+    options: HttpErrorOptions = {},
   ) {
-    super(message);
+    super(options.key ?? "HTTP error");
     this.name = "HttpError";
+    this.key = options.key;
+    this.vars = options.vars ?? {};
+    this.code = options.code ?? "error";
+    this.headers = options.headers ?? {};
   }
 }

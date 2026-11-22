@@ -174,3 +174,65 @@ describe("rate limiting", () => {
     }
   });
 });
+
+describe("i18n", () => {
+  it("serves the message catalog and locale list", async () => {
+    const response = await fetch(`${baseUrl}/api/i18n?locale=de`);
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as any;
+    expect(payload.locale).toBe("de");
+    expect(payload.locales).toHaveLength(8);
+    expect(payload.defaultLocale).toBe("en");
+    expect(payload.messages["ui.preview"]).toBe("Zuerst ansehen");
+  });
+
+  it("localizes errors from the Accept-Language header", async () => {
+    const response = await fetch(`${baseUrl}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept-Language": "de-DE,de;q=0.9" },
+      body: JSON.stringify({ idea: "", demo: true }),
+    });
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as any;
+    expect(payload.code).toBe("invalid_idea");
+    expect(payload.error).toContain("mindestens");
+  });
+
+  it("builds Japanese artifacts when the body selects a locale", async () => {
+    const response = await fetch(`${baseUrl}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea: "postgres orders api", demo: true, locale: "ja" }),
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-locale")).toBe("ja");
+    expect(response.headers.get("x-validation")).toBe("ok");
+    expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(1000);
+  });
+
+  it("returns Turkish documents and diagram data in previews", async () => {
+    const response = await fetch(`${baseUrl}/api/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea: "postgres orders api", demo: true, locale: "tr" }),
+    });
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as any;
+    expect(payload.locale).toBe("tr");
+    expect(payload.diagram).toContain("flowchart");
+    expect(payload.files["ARCHITECTURE.md"]).toContain("# Mimari");
+    expect(payload.files["TASKS.md"]).toContain("# GÖREVLER");
+    expect(payload.files["tasks/T-001.md"]).toContain("Kabul kriterleri");
+  });
+
+  it("serves the Studio assets", async () => {
+    const script = await fetch(`${baseUrl}/app.js`);
+    expect(script.status).toBe(200);
+    expect(script.headers.get("content-type")).toContain("javascript");
+    expect(await script.text()).toContain("renderPreview");
+
+    const styles = await fetch(`${baseUrl}/styles.css`);
+    expect(styles.status).toBe(200);
+    expect(styles.headers.get("content-type")).toContain("text/css");
+  });
+});

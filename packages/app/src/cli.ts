@@ -1,7 +1,9 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
+import { pipeline } from "node:stream/promises";
 import { parseState, type ArchState } from "../../core/src/state";
-import type { PackageManager, TestRunner } from "../../core/src/task-packet";
+import type { PackageManager, TaskBuildOptions, TestRunner } from "../../core/src/task-packet";
+import { isLocale, LOCALES, normalizeLocale } from "../../core/src/i18n";
 import type { PackageResult } from "../../packager/src";
 import { buildPackage } from "../../packager/src";
 import { runPipeline } from "./pipeline";
@@ -9,14 +11,18 @@ import { runPipeline } from "./pipeline";
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const out = args.out ?? "out/agent-package.zip";
-  const taskOptions = { packageManager: args.packageManager, testRunner: args.testRunner };
+  if (args.locale !== undefined && !isLocale(args.locale)) {
+    throw new Error(`Unsupported locale: ${args.locale}. Use one of ${LOCALES.join(", ")}.`);
+  }
+  const locale = args.locale ? normalizeLocale(args.locale) : undefined;
+  const taskOptions: TaskBuildOptions = { packageManager: args.packageManager, testRunner: args.testRunner, locale };
 
   let state: ArchState;
   let result: PackageResult;
 
   if (args.json) {
     state = parseState(JSON.parse(readFileSync(args.json, "utf8")));
-    result = await buildPackage(state, { taskOptions });
+    result = await buildPackage(state, { taskOptions, locale });
   } else {
     if (!args.idea) throw new Error("Provide --idea <text> or --json <path>");
     const pipelineResult = await runPipeline(args.idea, {
@@ -25,6 +31,7 @@ async function main(): Promise<void> {
       baseUrl: args.baseUrl,
       model: args.model,
       taskOptions,
+      locale,
     });
     state = pipelineResult.state;
     result = pipelineResult;
@@ -53,7 +60,7 @@ async function main(): Promise<void> {
 
   if (!args.preview || args.out !== undefined) {
     mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, result.zip);
+    await pipeline(result.zip.stream(), createWriteStream(out));
     console.log(`Package written to ${out}`);
   }
 
@@ -98,6 +105,7 @@ function parseArgs(argv: string[]) {
     model?: string;
     packageManager?: PackageManager;
     testRunner?: TestRunner;
+    locale?: string;
   } = { demo: false, preview: false };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -137,6 +145,9 @@ function parseArgs(argv: string[]) {
       case "--test-runner":
         result.testRunner = next() as TestRunner;
         break;
+      case "--locale":
+        result.locale = next();
+        break;
       case "--help":
       case "-h":
         printHelp();
@@ -168,6 +179,7 @@ Options:
   --model <name>             Model name
   --package-manager <name>   pnpm | npm | yarn | bun (default: pnpm)
   --test-runner <name>       vitest | jest | node (default: vitest)
+  --locale <code>            ${LOCALES.join(" | ")} (default: en)
 `);
 }
 

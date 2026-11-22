@@ -13,8 +13,10 @@
     "generate": "tsx packages/app/src/cli.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "gpt-tokenizer": "^4.1.2",
     "jszip": "^3.10.1",
+    "mermaid": "^12.3.0",
     "yaml": "^2.8.1",
     "zod": "^3.25.76"
   },

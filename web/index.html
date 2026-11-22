@@ -1,421 +1,219 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AI Principal Architect</title>
-    <style>
-      :root {
-        --bg: #0b1020;
-        --panel: #111a33;
-        --panel-2: #0e162b;
-        --text: #e8eefc;
-        --muted: #93a4c8;
-        --accent: #5eead4;
-        --accent-2: #fbbf24;
-        --border: #233154;
-        --danger: #fb7185;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-        background:
-          radial-gradient(900px 500px at 15% -10%, rgba(94, 234, 212, 0.18), transparent 60%),
-          radial-gradient(700px 400px at 95% 10%, rgba(251, 191, 36, 0.12), transparent 55%),
-          var(--bg);
-      }
-      main { max-width: 1040px; margin: 0 auto; padding: 56px 22px 72px; }
-      header { margin-bottom: 28px; }
-      .eyebrow {
-        display: inline-flex; gap: 8px; align-items: center;
-        color: var(--accent); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
-        border: 1px solid rgba(94,234,212,.3); background: rgba(94,234,212,.08);
-        padding: 6px 10px; border-radius: 999px;
-      }
-      h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.05; margin: 18px 0 12px; letter-spacing: -0.03em; }
-      h1 span { color: var(--accent); }
-      .lede { color: var(--muted); font-size: 17px; line-height: 1.6; max-width: 760px; margin: 0; }
-      .grid { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; margin-top: 30px; }
-      @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
-      .card {
-        background: linear-gradient(180deg, rgba(255,255,255,.03), transparent), var(--panel);
-        border: 1px solid var(--border); border-radius: 18px; padding: 22px;
-        box-shadow: 0 20px 60px rgba(0,0,0,.25);
-      }
-      label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
-      textarea, input, select {
-        width: 100%; border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
-        border-radius: 12px; padding: 13px 14px; font: inherit; outline: none;
-      }
-      textarea:focus, input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94,234,212,.12); }
-      textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
-      select { appearance: none; }
-      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
-      .field { margin-bottom: 14px; }
-      .check { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px dashed var(--border); border-radius: 12px; background: rgba(94,234,212,.04); }
-      .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--accent); }
-      .check strong { display: block; font-size: 14px; margin-bottom: 2px; }
-      .check span { color: var(--muted); font-size: 13px; line-height: 1.4; }
-      .actions { display: grid; gap: 10px; }
-      button {
-        width: 100%; border: 0; border-radius: 12px; padding: 15px 18px; font: inherit; font-weight: 700;
-        color: #06201c; background: linear-gradient(135deg, var(--accent), #a7f3d0); cursor: pointer;
-        transition: transform .12s ease, filter .12s ease;
-      }
-      button:hover { transform: translateY(-1px); filter: brightness(1.05); }
-      button:disabled { opacity: .6; cursor: wait; transform: none; }
-      button.secondary {
-        background: linear-gradient(135deg, #1b2a4a, #14203a); color: var(--text);
-        border: 1px solid var(--border);
-      }
-      button.secondary:hover { border-color: var(--accent); filter: none; }
-      .side h2 { font-size: 15px; margin: 0 0 14px; }
-      .step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(35,49,84,.7); }
-      .step:last-child { border-bottom: 0; }
-      .num { flex: 0 0 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: rgba(94,234,212,.12); color: var(--accent); font-size: 12px; font-weight: 700; }
-      .step p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-      .step b { color: var(--text); }
-      .status { margin-top: 14px; min-height: 22px; font-size: 14px; color: var(--muted); }
-      .status.error { color: var(--danger); }
-      .result { margin-top: 16px; padding: 14px; border-radius: 12px; border: 1px solid rgba(94,234,212,.35); background: rgba(94,234,212,.08); display: none; }
-      .result.show { display: block; }
-      .result a { color: var(--accent); font-weight: 700; }
-      .meta { color: var(--muted); font-size: 13px; margin-top: 8px; }
-      details { margin-top: 22px; color: var(--muted); font-size: 13px; }
-      details.import { margin: 0 0 14px; }
-      summary { cursor: pointer; color: var(--text); }
-      code { color: var(--accent-2); }
-      .hint { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 8px 0 0; }
-      .preview { display: none; margin-top: 22px; }
-      .preview.show { display: block; }
-      .preview h3 { font-size: 15px; margin: 0 0 12px; }
-      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-      .chip { border: 1px solid var(--border); background: rgba(94,234,212,.06); color: var(--muted); border-radius: 999px; padding: 5px 10px; font-size: 12px; }
-      .chip b { color: var(--text); }
-      .table-wrap { overflow-x: auto; margin-bottom: 18px; }
-      table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-      th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(35,49,84,.7); vertical-align: top; }
-      th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
-      td code { color: var(--accent-2); }
-      .ok { color: var(--accent); }
-      .fail { color: var(--danger); }
-      .issue { color: var(--danger); font-size: 13px; margin: 4px 0; }
-    </style>
+    <title>AI Principal Architect — Agent Package Studio</title>
+    <meta name="description" content="Turn an idea or an existing architecture into a verified agent package with self-contained task packets." />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main>
-      <header>
-        <div class="eyebrow">BYOK · açık kaynak · OpenCode ready</div>
-        <h1>Fikrini <span>ajan paketine</span> çevir.</h1>
-        <p class="lede">
-          Kafandaki sistemi yaz. AI Principal Architect mimariyi kurar, domain modellerini ve sözleşmeleri üretir,
-          deterministik olarak doğrular ve OpenCode subagent’larının düşük token ile inşa edebileceği
-          dilimlenmiş görev paketleriyle birlikte ZIP olarak indirir.
-        </p>
-      </header>
-
-      <div class="grid">
-        <section class="card">
-          <form id="generate-form">
-            <div class="field">
-              <label for="idea">Fikrin</label>
-              <textarea id="idea" name="idea" placeholder="Örn: Postgres kullanan bir sipariş API'si, Redis Streams ile domain event'leri ve React storefront. Ödeme için Stripe entegrasyonu olsun."></textarea>
-            </div>
-
-            <details class="import">
-              <summary>Mevcut ArchState JSON’unu kullan</summary>
-              <div class="field" style="margin-top:12px">
-                <label for="stateJson">ArchState JSON</label>
-                <textarea id="stateJson" spellcheck="false" placeholder='{ "version": 1, "nodes": [ ... ], "edges": [ ... ], "entities": [ ... ] }'></textarea>
-                <p class="hint">Doluysa fikir yerine bu state paketlenir. Şema hatası varsa sunucu 400 döner.</p>
-              </div>
-            </details>
-
-            <div class="row">
-              <div class="field">
-                <label for="packageManager">Paket yöneticisi</label>
-                <select id="packageManager">
-                  <option value="pnpm" selected>pnpm</option>
-                  <option value="npm">npm</option>
-                  <option value="yarn">yarn</option>
-                  <option value="bun">bun</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="testRunner">Test runner</label>
-                <select id="testRunner">
-                  <option value="vitest" selected>vitest</option>
-                  <option value="jest">jest</option>
-                  <option value="node">node --test</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="field check">
-              <input id="demo" name="demo" type="checkbox" checked />
-              <div>
-                <strong>Demo modu</strong>
-                <span>API anahtarı olmadan çalışır. Anahtar kelimelerden deterministik bir mimari üretir; paketin tamamını yine oluşturur.</span>
-              </div>
-            </div>
-
-            <div id="byok-fields">
-              <div class="field">
-                <label for="apiKey">API anahtarı (BYOK)</label>
-                <input id="apiKey" name="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
-              </div>
-              <div class="row">
-                <div class="field">
-                  <label for="model">Model</label>
-                  <input id="model" name="model" value="gpt-4o-mini" />
-                </div>
-                <div class="field">
-                  <label for="baseUrl">Base URL</label>
-                  <input id="baseUrl" name="baseUrl" value="https://api.openai.com/v1" />
-                </div>
-              </div>
-            </div>
-
-            <div class="actions">
-              <button id="submit" type="submit">Mimariyi üret ve paketi indir</button>
-              <button id="preview-btn" type="button" class="secondary">Önce önizle</button>
-            </div>
-            <div id="status" class="status" role="status"></div>
-            <div id="result" class="result">
-              <a id="download" href="#" download="agent-package.zip">agent-package.zip indir</a>
-              <div id="meta" class="meta"></div>
-            </div>
-          </form>
-
-          <div id="preview" class="preview" aria-live="polite"></div>
-        </section>
-
-        <aside class="card side">
-          <h2>Pakette ne var?</h2>
-          <div class="step"><div class="num">1</div><p><b>ARCHITECTURE.md + Whitepaper</b><br />Sistemin tam resmi, domain modeli ve karar gerekçeleri.</p></div>
-          <div class="step"><div class="num">2</div><p><b>TASKS.md + tasks/T-*.md</b><br />Her görev kendi kendine yeterli; ajan tüm repoyu okumaz.</p></div>
-          <div class="step"><div class="num">3</div><p><b>OpenAPI · Prisma · AsyncAPI · Mermaid</b><br />State’ten türetilen entity CRUD sözleşmeleri.</p></div>
-          <div class="step"><div class="num">4</div><p><b>.opencode/agents/*.md</b><br />Implementer, validator ve reviewer subagent tanımları.</p></div>
-          <div class="step"><div class="num">5</div><p><b>metrics.json</b><br />Gerçek tokenizer ile token bütçesi, kapsam ve doğrulama metrikleri.</p></div>
-
-          <details>
-            <summary>Nasıl çalışır?</summary>
-            <p>
-              Demo modunda anahtar gerekmez. BYOK modunda anahtar yalnızca istek süresince kullanılır;
-              diske yazılmaz, loglanmaz ve pakete konmaz. Üretilen her artifact deterministik doğrulayıcıdan geçer.
-            </p>
-          </details>
-        </aside>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">◈</span>
+        <div>
+          <strong>AI Principal Architect</strong>
+          <small data-i18n="ui.tagline">BYOK · open source · OpenCode ready</small>
+        </div>
       </div>
+      <label class="locale-picker">
+        <span data-i18n="ui.locale">Language</span>
+        <select id="locale" aria-label="Language"></select>
+      </label>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>
+          <span data-i18n="ui.heroTitleA">Turn your idea into an</span>
+          <span class="gradient" data-i18n="ui.heroTitleB">agent package</span>
+        </h1>
+        <p data-i18n="ui.heroLede">
+          Describe the system you have in mind. The AI Principal Architect builds the architecture, generates the
+          domain model and contracts, verifies them deterministically, and downloads a ZIP with task packets that are
+          small enough for OpenCode subagents.
+        </p>
+      </section>
+
+      <section class="panel">
+        <label class="field">
+          <span data-i18n="ui.ideaLabel">Your idea</span>
+          <textarea id="idea" rows="5" data-i18n-placeholder="ui.ideaPlaceholder" placeholder="For example: An orders API on Postgres, Redis Streams for domain events and a React storefront. Payments with Stripe."></textarea>
+        </label>
+
+        <div class="grid-2">
+          <label class="field">
+            <span data-i18n="ui.packageManager">Package manager</span>
+            <select id="packageManager">
+              <option value="pnpm">pnpm</option>
+              <option value="npm">npm</option>
+              <option value="yarn">yarn</option>
+              <option value="bun">bun</option>
+            </select>
+          </label>
+          <label class="field">
+            <span data-i18n="ui.testRunner">Test runner</span>
+            <select id="testRunner">
+              <option value="vitest">vitest</option>
+              <option value="jest">jest</option>
+              <option value="node">node --test</option>
+            </select>
+          </label>
+        </div>
+
+        <details class="advanced">
+          <summary data-i18n="ui.apiKey">API key (BYOK)</summary>
+          <div class="advanced-body">
+            <div class="switch-row">
+              <input type="checkbox" id="demo" checked />
+              <div class="copy">
+                <strong data-i18n="ui.demoTitle">Demo mode</strong>
+                <small data-i18n="ui.demoHint">No API key required. Produces a deterministic architecture from keywords and builds the full package.</small>
+              </div>
+            </div>
+            <div class="grid-2">
+              <label class="field">
+                <span data-i18n="ui.apiKey">API key (BYOK)</span>
+                <input id="apiKey" type="password" autocomplete="off" spellcheck="false" />
+              </label>
+              <label class="field">
+                <span data-i18n="ui.model">Model</span>
+                <input id="model" type="text" placeholder="gpt-4o-mini" autocomplete="off" />
+              </label>
+            </div>
+            <label class="field">
+              <span data-i18n="ui.baseUrl">Base URL</span>
+              <input id="baseUrl" type="url" placeholder="https://api.openai.com/v1" autocomplete="off" />
+            </label>
+          </div>
+        </details>
+
+        <div class="actions">
+          <button id="previewBtn" class="secondary" type="button" data-i18n="ui.preview">Preview first</button>
+          <button id="generateBtn" class="primary" type="button" data-i18n="ui.generate">Generate architecture and download ZIP</button>
+        </div>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <details class="state-import" id="stateSection">
+          <summary data-i18n="ui.importTitle">Use an existing ArchState JSON</summary>
+          <p class="hint" data-i18n="ui.stateHint"></p>
+          <textarea id="stateJson" class="mono" rows="7" spellcheck="false" data-i18n-placeholder="ui.statePlaceholder" placeholder='{ "version": 1, "nodes": [ ... ], "edges": [ ... ], "entities": [ ... ] }'></textarea>
+        </details>
+      </section>
+
+      <section id="preview" class="hidden">
+        <div class="preview-head">
+          <h2 data-i18n="ui.previewTitle">Preview</h2>
+          <div class="actions">
+            <button id="editStateBtn" class="ghost" type="button" data-i18n="ui.editState">Edit this state</button>
+            <button id="downloadBtn" class="primary" type="button" data-i18n="ui.download">Download ZIP</button>
+          </div>
+        </div>
+
+        <div class="chips" id="chips"></div>
+
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" id="tab-diagram" data-tab="diagram" aria-selected="true" data-i18n="ui.tabDiagram">Diagram</button>
+          <button class="tab" role="tab" id="tab-files" data-tab="files" aria-selected="false" data-i18n="ui.tabFiles">Files</button>
+          <button class="tab" role="tab" id="tab-tasks" data-tab="tasks" aria-selected="false" data-i18n="ui.tabTasks">Tasks</button>
+          <button class="tab" role="tab" id="tab-metrics" data-tab="metrics" aria-selected="false" data-i18n="ui.tabMetrics">Metrics</button>
+        </div>
+
+        <div class="tab-panel">
+          <div data-panel="diagram">
+            <div id="diagram"></div>
+            <p class="hint" data-i18n="ui.diagramHint">The diagram is rendered live from the generated Mermaid source.</p>
+          </div>
+
+          <div data-panel="files" class="hidden">
+            <div class="files-layout">
+              <aside class="tree" id="fileTree" aria-label="Files"></aside>
+              <div>
+                <div class="file-view-head">
+                  <span id="filePath"></span>
+                  <span id="fileSize"></span>
+                </div>
+                <p class="hint" id="selectFile" data-i18n="ui.selectFile">Select a file from the tree to view its content.</p>
+                <pre class="source hidden" id="fileView"></pre>
+              </div>
+            </div>
+          </div>
+
+          <div data-panel="tasks" class="hidden">
+            <div style="overflow: auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="common.id">ID</th>
+                    <th data-i18n="common.task">Task</th>
+                    <th data-i18n="common.wave">Wave</th>
+                    <th data-i18n="common.files">Files</th>
+                    <th data-i18n="common.tokens">Tokens</th>
+                    <th data-i18n="common.dependsOn">Depends on</th>
+                  </tr>
+                </thead>
+                <tbody id="taskRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div data-panel="metrics" class="hidden">
+            <div style="overflow: auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="common.name">Name</th>
+                    <th data-i18n="common.value">Value</th>
+                    <th data-i18n="common.target">Target</th>
+                    <th data-i18n="common.status">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="metricRows"></tbody>
+              </table>
+            </div>
+            <div id="validationList" class="issues hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-grid">
+        <article class="feature">
+          <h3 data-i18n="ui.inside1Title">ARCHITECTURE.md + whitepaper</h3>
+          <p data-i18n="ui.inside1Text">The full system picture, domain model and the reasoning behind decisions.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="ui.inside2Title">TASKS.md + tasks/T-*.md</h3>
+          <p data-i18n="ui.inside2Text">Every task is self-contained; an agent never reads the whole repository.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="ui.inside3Title">OpenAPI · Prisma · AsyncAPI · Mermaid</h3>
+          <p data-i18n="ui.inside3Text">Entity CRUD contracts derived from the state.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="ui.inside4Title">.opencode/agents/*.md</h3>
+          <p data-i18n="ui.inside4Text">Implementer, validator and reviewer subagent definitions.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="ui.inside5Title">metrics.json</h3>
+          <p data-i18n="ui.inside5Text">Token budgets, coverage and validation metrics with a real tokenizer.</p>
+        </article>
+      </section>
+
+      <section class="how">
+        <h2 data-i18n="ui.howItWorks">How does it work?</h2>
+        <p data-i18n="ui.howItWorksText">
+          Demo mode needs no keys. In BYOK mode the key is used only for that request; it is never written to disk,
+          logged or put into the package. Every generated artifact passes deterministic validation.
+        </p>
+      </section>
+
+      <footer>
+        <span>AI Principal Architect · Agent Package Studio</span>
+        <span>Mermaid · OpenAPI 3.1 · Prisma · AsyncAPI · OpenCode</span>
+      </footer>
     </main>
 
-    <script>
-      const form = document.getElementById("generate-form");
-      const demo = document.getElementById("demo");
-      const byok = document.getElementById("byok-fields");
-      const statusEl = document.getElementById("status");
-      const resultEl = document.getElementById("result");
-      const downloadEl = document.getElementById("download");
-      const metaEl = document.getElementById("meta");
-      const submitBtn = document.getElementById("submit");
-      const previewBtn = document.getElementById("preview-btn");
-      const previewEl = document.getElementById("preview");
-      const ideaEl = document.getElementById("idea");
-      const stateEl = document.getElementById("stateJson");
-
-      let objectUrl = null;
-
-      demo.addEventListener("change", () => {
-        byok.style.display = demo.checked ? "none" : "block";
-      });
-      byok.style.display = demo.checked ? "none" : "block";
-
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const payload = readPayload();
-        if (!payload) return;
-
-        setBusy(true, "Mimari üretiliyor, doğrulanıyor ve paketleniyor…");
-        resultEl.classList.remove("show");
-
-        try {
-          const response = await fetch("/api/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-
-          if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            throw new Error(error.error || "Üretim başarısız oldu.");
-          }
-
-          const blob = await response.blob();
-          if (objectUrl) URL.revokeObjectURL(objectUrl);
-          objectUrl = URL.createObjectURL(blob);
-          downloadEl.href = objectUrl;
-          metaEl.textContent =
-            `Metrikler: ${response.headers.get("X-Metrics-Passed") || "-"}` +
-            ` · Görev: ${response.headers.get("X-Task-Count") || "-"}` +
-            ` · Entity: ${response.headers.get("X-Entities") || "-"}` +
-            ` · Doğrulama: ${response.headers.get("X-Validation") || "-"}`;
-
-          const preview = await fetch("/api/preview", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }).then((res) => (res.ok ? res.json() : null));
-          if (preview) renderPreview(preview);
-
-          resultEl.classList.add("show");
-          statusEl.textContent = "Paket hazır. İndirebilirsin.";
-        } catch (error) {
-          showError(error instanceof Error ? error.message : "Beklenmeyen bir hata oluştu.");
-        } finally {
-          setBusy(false);
-        }
-      });
-
-      previewBtn.addEventListener("click", async () => {
-        const payload = readPayload();
-        if (!payload) return;
-
-        setBusy(true, "Mimari ve görev paketleri hazırlanıyor…");
-        try {
-          const response = await fetch("/api/preview", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const body = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(body.error || "Önizleme başarısız oldu.");
-          renderPreview(body);
-          statusEl.textContent = "Önizleme hazır. Beğenirsen paketi indirebilirsin.";
-        } catch (error) {
-          showError(error instanceof Error ? error.message : "Beklenmeyen bir hata oluştu.");
-        } finally {
-          setBusy(false);
-        }
-      });
-
-      function readPayload() {
-        let state;
-        const rawState = stateEl.value.trim();
-        if (rawState) {
-          try {
-            state = JSON.parse(rawState);
-          } catch {
-            showError("ArchState JSON geçerli değil.");
-            return null;
-          }
-        }
-
-        const idea = ideaEl.value.trim();
-        if (!state && idea.length < 3) {
-          showError("Fikrini biraz daha açık yaz ya da bir ArchState JSON’u yükle.");
-          return null;
-        }
-
-        return {
-          ...(state ? { state } : { idea }),
-          demo: demo.checked,
-          apiKey: document.getElementById("apiKey").value,
-          model: document.getElementById("model").value,
-          baseUrl: document.getElementById("baseUrl").value,
-          packageManager: document.getElementById("packageManager").value,
-          testRunner: document.getElementById("testRunner").value,
-        };
-      }
-
-      function setBusy(busy, message) {
-        submitBtn.disabled = busy;
-        previewBtn.disabled = busy;
-        if (message !== undefined) {
-          statusEl.className = "status";
-          statusEl.textContent = message;
-        }
-      }
-
-      function showError(message) {
-        statusEl.className = "status error";
-        statusEl.textContent = message;
-      }
-
-      function escapeHtml(value) {
-        return String(value).replace(/[&<>"']/g, (character) =>
-          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
-        );
-      }
-
-      function renderPreview(data) {
-        const summary = data.summary || {};
-        const validation = data.validation || {};
-        const entities = (data.state && data.state.entities) || [];
-        const nodes = (data.state && data.state.nodes) || [];
-
-        const chips = [
-          ["Bileşen", summary.nodes],
-          ["Bağlantı", summary.edges],
-          ["Entity", summary.entities],
-          ["Görev", summary.tasks],
-          ["Dalga", summary.waves],
-          ["Kontroller", validation.checksRun],
-        ]
-          .map(([label, value]) => `<span class="chip">${escapeHtml(label)}: <b>${escapeHtml(value ?? "-")}</b></span>`)
-          .join("");
-
-        const nodeRows = nodes
-          .map((node) => {
-            const props = Object.entries(node.props || {})
-              .map(([key, value]) => `${key}=${value}`)
-              .join(", ");
-            return `<tr><td><code>${escapeHtml(node.id)}</code></td><td>${escapeHtml(node.name)}</td><td>${escapeHtml(node.kind)}</td><td>${escapeHtml(props || "-")}</td></tr>`;
-          })
-          .join("");
-
-        const entityRows = entities
-          .map((entity) => {
-            const fields = (entity.fields || [])
-              .map((field) => `${field.name}:${field.type}${field.primary ? " (PK)" : ""}${field.unique ? " (unique)" : ""}`)
-              .join(", ");
-            return `<tr><td>${escapeHtml(entity.name)}</td><td>${escapeHtml(entity.serviceId || "-")}</td><td>${escapeHtml(entity.databaseId || "-")}</td><td>${escapeHtml(fields)}</td></tr>`;
-          })
-          .join("");
-
-        const taskRows = (data.tasks || [])
-          .map(
-            (task) =>
-              `<tr><td><code>${escapeHtml(task.id)}</code></td><td>${escapeHtml(task.title)}</td><td>${escapeHtml(task.dependsOn.join(", ") || "-")}</td><td>${escapeHtml(task.wave)}</td><td>${escapeHtml(task.tokens)}</td></tr>`,
-          )
-          .join("");
-
-        const metricRows = (data.metrics || [])
-          .map(
-            (metric) =>
-              `<tr><td><code>${escapeHtml(metric.name)}</code></td><td>${escapeHtml(metric.value)}</td><td>${escapeHtml(metric.target)}</td><td class="${metric.pass ? "ok" : "fail"}">${metric.pass ? "geçti" : "kaldı"}</td></tr>`,
-          )
-          .join("");
-
-        const issues = (validation.issues || [])
-          .map((issue) => `<p class="issue">${escapeHtml(issue.file)}: ${escapeHtml(issue.message)}</p>`)
-          .join("");
-
-        previewEl.innerHTML = `
-          <h3>Önizleme</h3>
-          <div class="chips">${chips}<span class="chip">Doğrulama: <b class="${validation.ok ? "ok" : "fail"}">${validation.ok ? "geçti" : "kaldı"}</b></span></div>
-          <div class="table-wrap"><table><thead><tr><th>ID</th><th>Bileşen</th><th>Tür</th><th>Props</th></tr></thead><tbody>${nodeRows || '<tr><td colspan="4">-</td></tr>'}</tbody></table></div>
-          <div class="table-wrap"><table><thead><tr><th>Entity</th><th>Servis</th><th>Depolama</th><th>Alanlar</th></tr></thead><tbody>${entityRows || '<tr><td colspan="4">Domain entity yok.</td></tr>'}</tbody></table></div>
-          <div class="table-wrap"><table><thead><tr><th>ID</th><th>Görev</th><th>Bağımlılık</th><th>Dalga</th><th>Token</th></tr></thead><tbody>${taskRows || '<tr><td colspan="5">-</td></tr>'}</tbody></table></div>
-          <div class="table-wrap"><table><thead><tr><th>Metrik</th><th>Değer</th><th>Hedef</th><th>Durum</th></tr></thead><tbody>${metricRows}</tbody></table></div>
-          ${issues || ""}
-        `;
-        previewEl.classList.add("show");
-        previewEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    </script>
+    <script src="/vendor/mermaid.min.js"></script>
+    <script src="/app.js"></script>
   </body>
 </html>
