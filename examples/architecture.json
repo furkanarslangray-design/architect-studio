@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "db-orders", "kind": "database", "name": "Orders DB", "props": { "engine": "postgres" } },
+    { "id": "db-users", "kind": "database", "name": "Users DB", "props": { "engine": "postgres" } },
+    { "id": "q-events", "kind": "queue", "name": "Domain Events", "props": { "engine": "redis" } },
+    { "id": "svc-orders", "kind": "service", "name": "Order API", "props": { "runtime": "node" } },
+    { "id": "svc-users", "kind": "service", "name": "User API", "props": { "runtime": "node" } },
+    { "id": "ui-storefront", "kind": "ui", "name": "Storefront", "props": { "framework": "react" } },
+    { "id": "ext-stripe", "kind": "external", "name": "Stripe", "props": { "provider": "stripe" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "svc-orders", "to": "db-orders", "protocol": "sql" },
+    { "id": "e2", "from": "svc-users", "to": "db-users", "protocol": "sql" },
+    { "id": "e3", "from": "svc-orders", "to": "q-events", "protocol": "event" },
+    { "id": "e4", "from": "svc-orders", "to": "ext-stripe", "protocol": "http" },
+    { "id": "e5", "from": "ui-storefront", "to": "svc-orders", "protocol": "http" },
+    { "id": "e6", "from": "ui-storefront", "to": "svc-users", "protocol": "http" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-1",
+      "title": "Use PostgreSQL",
+      "context": "Orders and users need ACID transactions.",
+      "decision": "Use PostgreSQL for transactional data.",
+      "alternatives": ["MongoDB", "DynamoDB"]
+    },
+    {
+      "id": "adr-2",
+      "title": "Use Redis Streams",
+      "context": "Services need asynchronous domain events without a broker cluster.",
+      "decision": "Use Redis Streams for event delivery.",
+      "alternatives": ["Kafka", "SQS"]
+    }
+  ],
+  "entities": [
+    {
+      "id": "ent-order",
+      "name": "Order",
+      "description": "A customer purchase.",
+      "serviceId": "svc-orders",
+      "databaseId": "db-orders",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "primary": true },
+        { "name": "total", "type": "decimal", "required": true },
+        { "name": "status", "type": "string", "required": true },
+        { "name": "createdAt", "type": "datetime", "required": true }
+      ],
+      "relations": [{ "target": "ent-user", "field": "userId" }]
+    },
+    {
+      "id": "ent-user",
+      "name": "User",
+      "description": "A buyer who signs in.",
+      "serviceId": "svc-users",
+      "databaseId": "db-users",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "primary": true },
+        { "name": "email", "type": "string", "required": true, "unique": true },
+        { "name": "name", "type": "string", "required": true },
+        { "name": "createdAt", "type": "datetime", "required": true }
+      ]
+    }
+  ]
+}

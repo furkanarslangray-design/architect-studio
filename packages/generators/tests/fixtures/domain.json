@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "db-1", "kind": "database", "name": "Orders DB", "props": { "engine": "postgres" } },
+    { "id": "q-1", "kind": "queue", "name": "Domain Events", "props": { "engine": "redis" } },
+    { "id": "svc-1", "kind": "service", "name": "Order API", "props": { "runtime": "node" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "svc-1", "to": "db-1", "protocol": "sql" },
+    { "id": "e2", "from": "svc-1", "to": "q-1", "protocol": "event" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-1",
+      "title": "Use PostgreSQL",
+      "context": "Orders need transactions",
+      "decision": "Use PostgreSQL for order data",
+      "alternatives": ["MongoDB"]
+    }
+  ],
+  "entities": [
+    {
+      "id": "ent-order",
+      "name": "Order",
+      "description": "A customer purchase",
+      "serviceId": "svc-1",
+      "databaseId": "db-1",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "primary": true },
+        { "name": "total", "type": "decimal", "required": true },
+        { "name": "status", "type": "string", "required": true },
+        { "name": "createdAt", "type": "datetime", "required": true }
+      ],
+      "relations": [{ "target": "ent-user", "field": "userId" }]
+    },
+    {
+      "id": "ent-user",
+      "name": "User",
+      "description": "A buyer",
+      "serviceId": "svc-1",
+      "databaseId": "db-1",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "primary": true },
+        { "name": "email", "type": "string", "required": true, "unique": true },
+        { "name": "createdAt", "type": "datetime", "required": true }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import type { ArchState } from "../../core/src/state";
-import { safeParseState } from "../../core/src/state";
+import { safeParseState, sanitizeState } from "../../core/src/state";
+import { validateState } from "../../core/src/diff";
 import { demoState } from "./demo";
 
 export interface LlmOptions {
@@ -11,8 +12,8 @@ export interface LlmOptions {
 }
 
 const SYSTEM_PROMPT = `You are an AI principal architect. Return ONLY a JSON object, no markdown, matching this shape:
-{"version":1,"nodes":[{"id":"string","kind":"service|database|queue|external|ui","name":"string","props":{}}],"edges":[{"id":"string","from":"string","to":"string","protocol":"http|grpc|event|sql"}],"decisions":[{"id":"string","title":"string","context":"string","decision":"string","alternatives":["string"]}]}
-Rules: at least 2 nodes; ids are unique; every edge points to existing node ids; no cycles; add one decision for each major technology choice.`;
+{"version":1,"nodes":[{"id":"string","kind":"service|database|queue|external|ui","name":"string","props":{}}],"edges":[{"id":"string","from":"string","to":"string","protocol":"http|grpc|event|sql"}],"decisions":[{"id":"string","title":"string","context":"string","decision":"string","alternatives":["string"]}],"entities":[{"id":"string","name":"string","description":"string","serviceId":"node id","databaseId":"node id","fields":[{"name":"string","type":"string|text|int|float|decimal|boolean|datetime|date|uuid|json","required":true,"unique":false,"primary":false}],"relations":[{"target":"entity id","field":"optional foreign key column"}]}]}
+Rules: at least 2 nodes; ids are unique; every edge points to existing node ids; no cycles; add one decision for each major technology choice. Model the real domain: 1-4 entities with the fields the implementation needs, attach each entity to its owning service and its database, mark exactly one primary field per entity, and declare relations instead of duplicating foreign keys.`;
 
 export async function ideaToState(idea: string, options: LlmOptions = {}): Promise<ArchState> {
   if (options.demo || !options.apiKey) return demoState(idea);
@@ -59,8 +60,15 @@ export async function ideaToState(idea: string, options: LlmOptions = {}): Promi
       };
       const content = payload.choices?.[0]?.message?.content ?? "";
       const parsed = safeParseState(extractJson(content));
-      if (parsed.success) return parsed.data;
-      lastError = "LLM returned an invalid architecture state";
+      if (!parsed.success) {
+        lastError = "LLM returned an invalid architecture state";
+        continue;
+      }
+
+      const sanitized = sanitizeState(parsed.data);
+      const stateErrors = validateState(sanitized.state);
+      if (stateErrors.length === 0) return sanitized.state;
+      lastError = `LLM returned an invalid architecture state: ${stateErrors[0]}`;
     } catch (error) {
       lastError =
         error instanceof Error && error.name === "AbortError"

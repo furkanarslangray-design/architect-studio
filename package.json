@@ -1,8 +1,8 @@
 {
   "name": "architect-studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "AI Principal Architect — idea to verified agent package",
+  "description": "AI Principal Architect — idea to a verified, entity-aware agent package",
   "scripts": {
     "dev": "tsx packages/app/src/server.ts",
     "start": "tsx packages/app/src/server.ts",
@@ -13,6 +13,7 @@
     "generate": "tsx packages/app/src/cli.ts"
   },
   "dependencies": {
+    "gpt-tokenizer": "^4.1.2",
     "jszip": "^3.10.1",
     "yaml": "^2.8.1",
     "zod": "^3.25.76"

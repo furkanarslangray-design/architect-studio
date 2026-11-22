@@ -11,11 +11,13 @@ export interface ArchDiff {
 export function validateState(state: ArchState): string[] {
   const errors: string[] = [];
   const nodeIds = new Set<string>();
+  const nodeKinds = new Map<string, string>();
 
   for (const node of state.nodes) {
     if (!node.id || !node.name) errors.push(`Node with empty id or name: ${JSON.stringify(node)}`);
     if (nodeIds.has(node.id)) errors.push(`Duplicate node id: ${node.id}`);
     nodeIds.add(node.id);
+    nodeKinds.set(node.id, node.kind);
   }
 
   const edgeIds = new Set<string>();
@@ -27,7 +29,57 @@ export function validateState(state: ArchState): string[] {
     if (edge.from === edge.to) errors.push(`Self-loop edge ${edge.id}: ${edge.from}`);
   }
 
+  errors.push(...validateEntities(state, nodeKinds));
+
   if (hasCycle(state)) errors.push("Architecture graph contains a cycle");
+  return errors;
+}
+
+function validateEntities(state: ArchState, nodeKinds: Map<string, string>): string[] {
+  const errors: string[] = [];
+  const entityIds = new Set<string>();
+
+  for (const entity of state.entities) {
+    if (!entity.id || !entity.name) errors.push(`Entity with empty id or name: ${JSON.stringify(entity)}`);
+    if (entityIds.has(entity.id)) errors.push(`Duplicate entity id: ${entity.id}`);
+    entityIds.add(entity.id);
+
+    if (entity.fields.length === 0) errors.push(`Entity ${entity.id} has no fields`);
+
+    const fieldNames = new Set<string>();
+    let primaryCount = 0;
+    for (const field of entity.fields) {
+      const name = field.name.toLowerCase();
+      if (fieldNames.has(name)) errors.push(`Entity ${entity.id} has duplicate field: ${field.name}`);
+      fieldNames.add(name);
+      if (field.primary) primaryCount += 1;
+    }
+    if (primaryCount > 1) errors.push(`Entity ${entity.id} declares more than one primary field`);
+
+    if (entity.serviceId) {
+      if (!nodeKinds.has(entity.serviceId)) {
+        errors.push(`Entity ${entity.id} references missing service ${entity.serviceId}`);
+      } else if (nodeKinds.get(entity.serviceId) !== "service") {
+        errors.push(`Entity ${entity.id} owner ${entity.serviceId} is not a service`);
+      }
+    }
+    if (entity.databaseId) {
+      if (!nodeKinds.has(entity.databaseId)) {
+        errors.push(`Entity ${entity.id} references missing database ${entity.databaseId}`);
+      } else if (nodeKinds.get(entity.databaseId) !== "database") {
+        errors.push(`Entity ${entity.id} storage ${entity.databaseId} is not a database`);
+      }
+    }
+  }
+
+  for (const entity of state.entities) {
+    for (const relation of entity.relations) {
+      if (!entityIds.has(relation.target)) {
+        errors.push(`Entity ${entity.id} relates to missing entity ${relation.target}`);
+      }
+    }
+  }
+
   return errors;
 }
 

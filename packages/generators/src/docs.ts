@@ -1,18 +1,22 @@
 import type { ArchState } from "../../core/src/state";
-import type { TaskPacket } from "../../core/src/task-packet";
+import type { TaskBuildOptions, TaskPacket } from "../../core/src/task-packet";
 import { renderTaskIndexMarkdown } from "../../core/src/task-packet";
 import { padNumber, slugify } from "../../core/src/ids";
 import { generateMermaid } from "./mermaid";
 import { nodeLabel } from "./util";
 
-export function generateDocs(state: ArchState, packets: TaskPacket[]): Record<string, string> {
+export function generateDocs(
+  state: ArchState,
+  packets: TaskPacket[],
+  options: TaskBuildOptions = {},
+): Record<string, string> {
   const mermaid = generateMermaid(state);
   const files: Record<string, string> = {
     "ARCHITECTURE.md": architectureMarkdown(state, mermaid),
     "WHITEPAPER.md": whitepaperMarkdown(state, packets, mermaid),
-    "TASKS.md": renderTaskIndexMarkdown(packets),
+    "TASKS.md": renderTaskIndexMarkdown(packets, options),
     ".cursorrules": cursorRules(),
-    "AGENTS.md": agentsMarkdown(packets),
+    "AGENTS.md": agentsMarkdown(packets, state),
   };
 
   state.decisions.forEach((decision, index) => {
@@ -25,10 +29,26 @@ export function generateDocs(state: ArchState, packets: TaskPacket[]): Record<st
 
 function architectureMarkdown(state: ArchState, mermaid: string): string {
   const nodeRows = state.nodes
-    .map((node) => `| ${node.id} | ${node.name} | ${node.kind} | ${Object.entries(node.props).map(([key, value]) => `${key}=${value}`).join(", ") || "-"} |`)
+    .map(
+      (node) =>
+        `| ${node.id} | ${node.name} | ${node.kind} | ${Object.entries(node.props).map(([key, value]) => `${key}=${value}`).join(", ") || "-"} |`,
+    )
     .join("\n");
   const edgeRows = state.edges
     .map((edge) => `| ${edge.id} | ${edge.from} | ${edge.to} | ${edge.protocol} | ${edge.contractRef ?? "-"} |`)
+    .join("\n");
+  const entityRows = state.entities
+    .map((entity) => {
+      const fields = entity.fields
+        .map((field) => {
+          const flags = [field.primary ? "PK" : "", field.required ? "required" : "optional", field.unique ? "unique" : ""]
+            .filter(Boolean)
+            .join(", ");
+          return `${field.name}:${field.type}${flags ? ` (${flags})` : ""}`;
+        })
+        .join("; ");
+      return `| ${entity.id} | ${entity.name} | ${entity.serviceId ?? "-"} | ${entity.databaseId ?? "-"} | ${fields} |`;
+    })
     .join("\n");
 
   return [
@@ -47,6 +67,16 @@ function architectureMarkdown(state: ArchState, mermaid: string): string {
     "| ID | Name | Kind | Props |",
     "|---|---|---|---|",
     nodeRows || "| - | - | - | - |",
+    "",
+    "## Domain model",
+    "",
+    state.entities.length > 0
+      ? [
+          "| ID | Entity | Service | Storage | Fields |",
+          "|---|---|---|---|---|",
+          entityRows,
+        ].join("\n")
+      : "No domain entities were declared. Contracts fall back to a generic resource per service.",
     "",
     "## Connections",
     "",
@@ -78,7 +108,7 @@ function whitepaperMarkdown(state: ArchState, packets: TaskPacket[], mermaid: st
     "## Executive summary",
     "",
     `This system contains ${state.nodes.length} components: ${services.length} services, ${databases.length} datastores, and ${queues.length} event channels.`,
-    "The architecture is delivered as a set of self-contained task packets so that coding agents can implement it with minimal context.",
+    `It models ${state.entities.length} domain entities and is delivered as a set of self-contained task packets so that coding agents can implement it with minimal context.`,
     "",
     "## System overview",
     "",
@@ -86,9 +116,30 @@ function whitepaperMarkdown(state: ArchState, packets: TaskPacket[], mermaid: st
     mermaid,
     "```",
     "",
+    "## Technology stack",
+    "",
+    "| Component | Kind | Key technology |",
+    "|---|---|---|",
+    ...state.nodes.map((node) => {
+      const tech = ["runtime", "engine", "framework", "provider"]
+        .map((key) => node.props[key])
+        .filter((value) => value !== undefined)
+        .join(", ");
+      return `| ${node.name} | ${node.kind} | ${tech || "-"} |`;
+    }),
+    "",
     "## Components",
     "",
     ...state.nodes.map((node) => `- **${nodeLabel(node)}** — props: ${JSON.stringify(node.props)}`),
+    "",
+    "## Domain model",
+    "",
+    ...(state.entities.length > 0
+      ? state.entities.map((entity) => {
+          const fields = entity.fields.map((field) => `${field.name}:${field.type}`).join(", ");
+          return `- **${entity.name}** — ${fields}`;
+        })
+      : ["- No explicit domain entities were declared."]),
     "",
     "## Data flows",
     "",
@@ -125,11 +176,12 @@ function cursorRules(): string {
     "5. Do not read the whole repository; the packet is the required context.",
     "6. Do not dispatch subagents unless the packet explicitly asks for it.",
     "7. If a task is wrong or incomplete, update the task packet before coding.",
+    "8. Keep generated contracts (`openapi.yaml`, `asyncapi.yaml`, `prisma/schema.prisma`) in sync with the code.",
     "",
   ].join("\n");
 }
 
-function agentsMarkdown(packets: TaskPacket[]): string {
+function agentsMarkdown(packets: TaskPacket[], state: ArchState): string {
   return [
     "# Agent guide",
     "",
@@ -137,7 +189,8 @@ function agentsMarkdown(packets: TaskPacket[]): string {
     "",
     "- Start at `TASKS.md`.",
     "- Each packet is self-contained: files, context, acceptance criteria, and a verify command.",
-    `- There are ${packets.length} packets. Do not load all of them at once.`,
+    `- There are ${packets.length} packets covering ${state.nodes.length} components and ${state.entities.length} domain entities.`,
+    "- Do not load all of them at once.",
     "- Prefer small, verifiable commits per packet.",
     "",
   ].join("\n");

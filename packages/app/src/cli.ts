@@ -1,27 +1,88 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { parseState } from "../../core/src/state";
+import { dirname, resolve, sep } from "node:path";
+import { parseState, type ArchState } from "../../core/src/state";
+import type { PackageManager, TestRunner } from "../../core/src/task-packet";
+import type { PackageResult } from "../../packager/src";
 import { buildPackage } from "../../packager/src";
 import { runPipeline } from "./pipeline";
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const out = args.out ?? "out/agent-package.zip";
+  const taskOptions = { packageManager: args.packageManager, testRunner: args.testRunner };
 
-  const result = args.json
-    ? await buildPackage(parseState(JSON.parse(readFileSync(args.json, "utf8"))))
-    : await runPipeline(args.idea ?? "", { demo: args.demo, apiKey: args.apiKey, baseUrl: args.baseUrl, model: args.model });
+  let state: ArchState;
+  let result: PackageResult;
 
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, result.zip);
+  if (args.json) {
+    state = parseState(JSON.parse(readFileSync(args.json, "utf8")));
+    result = await buildPackage(state, { taskOptions });
+  } else {
+    if (!args.idea) throw new Error("Provide --idea <text> or --json <path>");
+    const pipelineResult = await runPipeline(args.idea, {
+      demo: args.demo,
+      apiKey: args.apiKey,
+      baseUrl: args.baseUrl,
+      model: args.model,
+      taskOptions,
+    });
+    state = pipelineResult.state;
+    result = pipelineResult;
+  }
+
+  if (args.preview) {
+    console.log(
+      JSON.stringify(
+        {
+          state,
+          tasks: result.packets.map((packet) => ({
+            id: packet.id,
+            title: packet.title,
+            dependsOn: packet.dependsOn,
+            wave: packet.parallelGroup,
+            tokens: packet.tokenCount,
+          })),
+          metrics: result.metrics,
+          validation: result.validation,
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  if (!args.preview || args.out !== undefined) {
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, result.zip);
+    console.log(`Package written to ${out}`);
+  }
+
+  if (args.extract) {
+    const root = resolve(args.extract);
+    for (const [path, content] of Object.entries(result.files)) {
+      const target = resolve(root, path);
+      if (target !== root && !target.startsWith(root + sep)) {
+        throw new Error(`Refusing to write outside --extract directory: ${path}`);
+      }
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, content);
+    }
+    console.log(`Extracted ${Object.keys(result.files).length} files to ${root}`);
+  }
 
   const passed = result.metrics.filter((metric) => metric.pass).length;
-  console.log(`Package written to ${out}`);
+  console.log(`Components: ${state.nodes.length}, entities: ${state.entities.length}, tasks: ${result.packets.length}`);
   console.log(`Metrics: ${passed}/${result.metrics.length} passed`);
-  console.log(`Validation: ${result.validation.ok ? "ok" : "failed"}`);
+  console.log(
+    `Validation: ${result.validation.ok ? "ok" : "failed"} (${result.validation.checksRun} deterministic checks)`,
+  );
   for (const metric of result.metrics.filter((item) => !item.pass)) {
     console.log(`  FAIL ${metric.name}: ${metric.value} (target ${metric.target})`);
   }
+  for (const issue of result.validation.issues) {
+    console.log(`  ISSUE ${issue.file}: ${issue.message}`);
+  }
+  if (!result.validation.ok && args.json) process.exitCode = 2;
 }
 
 function parseArgs(argv: string[]) {
@@ -29,11 +90,15 @@ function parseArgs(argv: string[]) {
     idea?: string;
     json?: string;
     out?: string;
+    extract?: string;
     demo: boolean;
+    preview: boolean;
     apiKey?: string;
     baseUrl?: string;
     model?: string;
-  } = { demo: false };
+    packageManager?: PackageManager;
+    testRunner?: TestRunner;
+  } = { demo: false, preview: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -48,8 +113,14 @@ function parseArgs(argv: string[]) {
       case "--out":
         result.out = next();
         break;
+      case "--extract":
+        result.extract = next();
+        break;
       case "--demo":
         result.demo = true;
+        break;
+      case "--preview":
+        result.preview = true;
         break;
       case "--api-key":
         result.apiKey = next();
@@ -59,6 +130,12 @@ function parseArgs(argv: string[]) {
         break;
       case "--model":
         result.model = next();
+        break;
+      case "--package-manager":
+        result.packageManager = next() as PackageManager;
+        break;
+      case "--test-runner":
+        result.testRunner = next() as TestRunner;
         break;
       case "--help":
       case "-h":
@@ -80,13 +157,17 @@ Usage:
   pnpm generate -- --idea "..." --api-key sk-... --model gpt-4o-mini
 
 Options:
-  --idea <text>       Natural-language architecture idea
-  --json <path>       Import an existing ArchState JSON file
-  --out <path>        Output ZIP path (default: out/agent-package.zip)
-  --demo              Use the deterministic demo state producer
-  --api-key <key>     BYOK key (never written to disk)
-  --base-url <url>    OpenAI-compatible base URL
-  --model <name>      Model name
+  --idea <text>              Natural-language architecture idea
+  --json <path>              Import an existing ArchState JSON file
+  --out <path>               Output ZIP path (default: out/agent-package.zip)
+  --extract <dir>            Also write every package file into a directory
+  --preview                  Print the state, tasks, metrics and validation as JSON
+  --demo                     Use the deterministic demo state producer
+  --api-key <key>            BYOK key (never written to disk)
+  --base-url <url>           OpenAI-compatible base URL
+  --model <name>             Model name
+  --package-manager <name>   pnpm | npm | yarn | bun (default: pnpm)
+  --test-runner <name>       vitest | jest | node (default: vitest)
 `);
 }
 

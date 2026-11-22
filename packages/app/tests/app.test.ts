@@ -11,6 +11,7 @@ const validState = {
   ],
   edges: [{ id: "e1", from: "svc", to: "db", protocol: "sql" }],
   decisions: [],
+  entities: [],
 };
 
 function fakeResponse(content: string, status = 200): Response {
@@ -30,10 +31,27 @@ describe("demo state producer", () => {
     expect(kinds).toContain("queue");
     expect(kinds).toContain("ui");
     expect(state.decisions.length).toBeGreaterThanOrEqual(2);
+    expect(state.entities.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("always returns at least two nodes", () => {
-    expect(demoState("an app").nodes.length).toBeGreaterThanOrEqual(2);
+  it("derives domain entities from the idea", () => {
+    const state = demoState("online store with orders, users and products");
+    const names = state.entities.map((entity) => entity.name);
+    expect(names).toEqual(expect.arrayContaining(["Order", "User", "Product"]));
+
+    const order = state.entities.find((entity) => entity.name === "Order")!;
+    expect(order.serviceId).toBe("svc-core");
+    expect(order.databaseId).toBe("db-main");
+    expect(order.relations).toEqual([{ target: "ent-user", field: "userId" }]);
+    const user = state.entities.find((entity) => entity.name === "User")!;
+    expect(user.fields.find((field) => field.name === "email")!.unique).toBe(true);
+  });
+
+  it("always returns at least two nodes and one entity", () => {
+    const state = demoState("an app");
+    expect(state.nodes.length).toBeGreaterThanOrEqual(2);
+    expect(state.entities).toHaveLength(1);
+    expect(state.entities[0].name).toBe("Resource");
   });
 });
 
@@ -57,6 +75,23 @@ describe("BYOK state producer", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const init = fetchImpl.mock.calls[0][1] as RequestInit;
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer sk-test-key");
+    expect(String((init.body as string))).toContain("entities");
+  });
+
+  it("sanitizes dangling edges and duplicate ids returned by the model", async () => {
+    const dirty = {
+      ...validState,
+      nodes: [...validState.nodes, { id: "svc", kind: "service", name: "Duplicate", props: {} }],
+      edges: [
+        { id: "e1", from: "svc", to: "db", protocol: "sql" },
+        { id: "ghost", from: "svc", to: "missing", protocol: "http" },
+        { id: "loop", from: "db", to: "db", protocol: "sql" },
+      ],
+    };
+    const fetchImpl = vi.fn(async () => fakeResponse(JSON.stringify(dirty)));
+    const state = await ideaToState("build an api", { apiKey: "sk-test-key", fetchImpl });
+    expect(state.nodes).toHaveLength(2);
+    expect(state.edges.map((edge) => edge.id)).toEqual(["e1"]);
   });
 
   it("retries once when the first response is invalid", async () => {
@@ -98,5 +133,16 @@ describe("end-to-end pipeline", () => {
     expect(result.files["TASKS.md"]).toBeDefined();
     expect(result.metrics.every((metric) => metric.pass)).toBe(true);
     expect(result.validation.ok).toBe(true);
+    expect(result.packets).toHaveLength(4);
+    expect(result.state.entities).toHaveLength(1);
+  });
+
+  it("honours target runtime options", async () => {
+    const result = await runPipeline("postgres redis react api", {
+      demo: true,
+      taskOptions: { packageManager: "npm", testRunner: "jest" },
+    });
+    expect(result.files["tasks/T-001.md"]).toContain("npx jest");
+    expect(result.files["TASKS.md"]).toContain("npm install");
   });
 });

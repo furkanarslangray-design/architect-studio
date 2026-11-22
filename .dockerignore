@@ -1,0 +1,12 @@
+node_modules
+out
+coverage
+.git
+.github
+.superpowers
+.cloud-attachments
+*.zip
+*.log
+.env
+.env.*
+.DS_Store

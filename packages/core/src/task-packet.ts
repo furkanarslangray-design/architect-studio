@@ -1,7 +1,23 @@
-import type { ArchNode, ArchState } from "./state";
+import type { ArchNode, ArchState, Entity } from "./state";
 import { contractCoverage, dependencyDepth } from "./diff";
 import { slugify } from "./ids";
-import { estimateTokens } from "./metrics";
+import { estimateTokens, percentile } from "./metrics";
+
+export const PACKAGE_MANAGERS = ["pnpm", "npm", "yarn", "bun"] as const;
+export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
+
+export const TEST_RUNNERS = ["vitest", "jest", "node"] as const;
+export type TestRunner = (typeof TEST_RUNNERS)[number];
+
+export interface TaskBuildOptions {
+  packageManager?: PackageManager;
+  testRunner?: TestRunner;
+}
+
+export interface ResolvedTaskOptions {
+  packageManager: PackageManager;
+  testRunner: TestRunner;
+}
 
 export interface TaskPacket {
   id: string;
@@ -17,6 +33,7 @@ export interface TaskPacket {
     nodes: string[];
     edges: string[];
   };
+  entities: string[];
 }
 
 export interface TaskIndex {
@@ -43,7 +60,20 @@ const KIND_ORDER: Record<ArchNode["kind"], number> = {
   ui: 4,
 };
 
-export function buildTaskPackets(state: ArchState): TaskPacket[] {
+export function resolveTaskOptions(options: TaskBuildOptions = {}): ResolvedTaskOptions {
+  const packageManager = options.packageManager ?? "pnpm";
+  const testRunner = options.testRunner ?? "vitest";
+  if (!PACKAGE_MANAGERS.includes(packageManager)) {
+    throw new Error(`Unsupported package manager: ${packageManager}. Use one of ${PACKAGE_MANAGERS.join(", ")}.`);
+  }
+  if (!TEST_RUNNERS.includes(testRunner)) {
+    throw new Error(`Unsupported test runner: ${testRunner}. Use one of ${TEST_RUNNERS.join(", ")}.`);
+  }
+  return { packageManager, testRunner };
+}
+
+export function buildTaskPackets(state: ArchState, options: TaskBuildOptions = {}): TaskPacket[] {
+  const resolved = resolveTaskOptions(options);
   const nodes = [...state.nodes].sort((a, b) => {
     const depthDiff = nodeDepth(state, a.id) - nodeDepth(state, b.id);
     if (depthDiff !== 0) return depthDiff;
@@ -63,8 +93,13 @@ export function buildTaskPackets(state: ArchState): TaskPacket[] {
       .map((edge) => taskByNode.get(edge.to)?.id)
       .filter((id): id is string => Boolean(id));
 
+    const owned = state.entities.filter(
+      (entity) => entity.serviceId === node.id || (node.kind === "database" && entity.databaseId === node.id),
+    );
+
     const context = JSON.stringify({
       node,
+      ...(owned.length > 0 ? { entities: owned.map(entitySlice) } : {}),
       connections: connections.map((edge) => ({
         id: edge.id,
         from: edge.from,
@@ -84,13 +119,14 @@ export function buildTaskPackets(state: ArchState): TaskPacket[] {
       parallelGroup: `wave-${nodeDepth(state, node.id)}`,
       files,
       context,
-      acceptance: acceptanceFor(node),
-      verifyCommand: verifyFor(node, slug),
+      acceptance: acceptanceFor(node, owned, slug),
+      verifyCommand: verifyFor(node, slug, resolved),
       tokenCount: 0,
       covers: {
         nodes: [node.id],
         edges: connections.map((edge) => edge.id),
       },
+      entities: owned.map((entity) => entity.id),
     };
     packet.tokenCount = estimateTokens(renderTaskMarkdown(packet));
     taskByNode.set(node.id, packet);
@@ -98,6 +134,24 @@ export function buildTaskPackets(state: ArchState): TaskPacket[] {
   });
 
   return packets;
+}
+
+function entitySlice(entity: Entity) {
+  return {
+    id: entity.id,
+    name: entity.name,
+    ...(entity.description ? { description: entity.description } : {}),
+    fields: entity.fields.map((field) => ({
+      name: field.name,
+      type: field.type,
+      ...(field.required ? { required: true } : {}),
+      ...(field.unique ? { unique: true } : {}),
+      ...(field.primary ? { primary: true } : {}),
+    })),
+    ...(entity.relations.length > 0
+      ? { relations: entity.relations.map((relation) => ({ target: relation.target, field: relation.field })) }
+      : {}),
+  };
 }
 
 export function buildTaskIndex(packets: TaskPacket[]): TaskIndex {
@@ -145,11 +199,23 @@ export function renderTaskMarkdown(packet: TaskPacket): string {
   ].join("\n");
 }
 
-export function renderTaskIndexMarkdown(packets: TaskPacket[]): string {
+export function renderTaskIndexMarkdown(packets: TaskPacket[], options: TaskBuildOptions = {}): string {
+  const { packageManager } = resolveTaskOptions(options);
+  const installCommand =
+    packageManager === "npm"
+      ? "npm install"
+      : packageManager === "yarn"
+        ? "yarn install"
+        : packageManager === "bun"
+          ? "bun install"
+          : "pnpm install";
+
   const lines = [
     "# TASKS",
     "",
     "Execute one packet at a time. Each packet is self-contained and lists its own verification command.",
+    "",
+    `Environment: run \`${installCommand}\` once before the first packet.`,
     "",
     "| ID | Task | Depends on | Wave | Files | Tokens |",
     "|---|---|---|---|---|---|",
@@ -164,12 +230,21 @@ export function renderTaskIndexMarkdown(packets: TaskPacket[]): string {
   return lines.join("\n");
 }
 
-export function computeTaskMetrics(state: ArchState, packets: TaskPacket[]): TaskMetrics {
-  const packetTokens = packets.map((packet) => packet.tokenCount).sort((a, b) => a - b);
+export function computeTaskMetrics(
+  state: ArchState,
+  packets: TaskPacket[],
+  options: TaskBuildOptions = {},
+  artifactTokens = 0,
+): TaskMetrics {
+  const packetTokens = packets.map((packet) => packet.tokenCount);
   const stateTokens = Math.max(1, estimateTokens(JSON.stringify(state)));
-  const indexTokens = estimateTokens(renderTaskIndexMarkdown(packets));
-  const totalArtifactTokens = stateTokens + packets.reduce((sum, packet) => sum + packet.tokenCount, 0) + indexTokens;
-  const contextRatios = packets.map((packet) => estimateTokens(packet.context) / totalArtifactTokens);
+  const indexTokens = estimateTokens(renderTaskIndexMarkdown(packets, options));
+  // The denominator is the whole deliverable (state + packets + index + every
+  // generated artifact), so a packet's context slice is measured against what
+  // the implementation actually has to navigate.
+  const totalArtifactTokens =
+    stateTokens + packets.reduce((sum, packet) => sum + packet.tokenCount, 0) + indexTokens + artifactTokens;
+  const contextRatios = packets.map((packet) => estimateTokens(packet.context) / Math.max(1, totalArtifactTokens));
   const contexts = new Set<string>();
   let duplicateTokens = 0;
   let totalContextTokens = 0;
@@ -190,7 +265,8 @@ export function computeTaskMetrics(state: ArchState, packets: TaskPacket[]): Tas
   return {
     packetMaxTokens: Math.max(0, ...packetTokens),
     packetP95Tokens: percentile(packetTokens, 95),
-    contextSliceRatio: contextRatios.reduce((sum, value) => sum + value, 0) / Math.max(1, contextRatios.length),
+    contextSliceRatio:
+      contextRatios.reduce((sum, value) => sum + value, 0) / Math.max(1, contextRatios.length),
     duplicateContextRatio: totalContextTokens === 0 ? 0 : duplicateTokens / totalContextTokens,
     maxFilesPerTask: Math.max(0, ...packets.map((packet) => packet.files.length)),
     parallelGroups: groups.size,
@@ -248,20 +324,27 @@ function titleFor(node: ArchNode): string {
   }
 }
 
-function acceptanceFor(node: ArchNode): string[] {
+function acceptanceFor(node: ArchNode, entities: Entity[], slug: string): string[] {
+  const entityRoutes = entities.slice(0, 4).map(
+    (entity) => `GET /api/${slug}/${slugify(entity.name)} returns 200 and matches the ${entity.name} schema`,
+  );
+
   switch (node.kind) {
     case "service":
       return [
         `${node.name} exposes a health check that returns 200`,
+        ...entityRoutes,
         `Unit tests for ${node.name} pass`,
         `${node.name} only calls the connections listed in Context`,
       ];
-    case "database":
+    case "database": {
+      const models = entities.map((entity) => entity.name);
       return [
         `${node.name} schema applies cleanly to an empty database`,
-        `Migration for ${node.name} is repeatable`,
+        models.length > 0 ? `Prisma schema contains a model for ${models.join(", ")}` : `Migration for ${node.name} is repeatable`,
         `A round-trip read/write test passes`,
       ];
+    }
     case "queue":
       return [
         `${node.name} producer and consumer contract test passes`,
@@ -280,23 +363,28 @@ function acceptanceFor(node: ArchNode): string[] {
   }
 }
 
-function verifyFor(node: ArchNode, slug: string): string {
-  switch (node.kind) {
-    case "service":
-      return `pnpm vitest tests/services/${slug}.test.ts --run`;
-    case "database":
-      return `pnpm vitest tests/db/${slug}.test.ts --run`;
-    case "queue":
-      return `pnpm vitest tests/events/${slug}.test.ts --run`;
-    case "external":
-      return `pnpm vitest tests/integrations/${slug}.test.ts --run`;
-    case "ui":
-      return `pnpm vitest tests/ui/${slug}.test.tsx --run`;
+function verifyFor(node: ArchNode, slug: string, options: ResolvedTaskOptions): string {
+  const file = verifyFileFor(node, slug);
+  const { packageManager, testRunner } = options;
+
+  if (testRunner === "node") return `node --test ${file}`;
+  if (testRunner === "jest") {
+    return packageManager === "npm" ? `npx jest ${file}` : `${packageManager} jest ${file}`;
   }
+  return packageManager === "npm" ? `npx vitest ${file} --run` : `${packageManager} vitest ${file} --run`;
 }
 
-function percentile(sortedValues: number[], p: number): number {
-  if (sortedValues.length === 0) return 0;
-  const index = Math.min(sortedValues.length - 1, Math.ceil((p / 100) * sortedValues.length) - 1);
-  return sortedValues[index];
+function verifyFileFor(node: ArchNode, slug: string): string {
+  switch (node.kind) {
+    case "service":
+      return `tests/services/${slug}.test.ts`;
+    case "database":
+      return `tests/db/${slug}.test.ts`;
+    case "queue":
+      return `tests/events/${slug}.test.ts`;
+    case "external":
+      return `tests/integrations/${slug}.test.ts`;
+    case "ui":
+      return `tests/ui/${slug}.test.tsx`;
+  }
 }

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import YAML from "yaml";
 import { parseState } from "../../core/src/state";
 import { buildTaskPackets } from "../../core/src/task-packet";
 import {
@@ -35,6 +36,8 @@ describe("deterministic validation", () => {
     expect(report.passRate).toBe(1);
     expect(report.unresolvedRefs).toBe(0);
     expect(report.deterministicCoverage).toBe(1);
+    expect(report.checksRun).toBeGreaterThanOrEqual(10);
+    expect(report.artifactsValidated).toContain("openapi");
   });
 
   it("detects an unresolved schema reference", () => {
@@ -48,17 +51,51 @@ describe("deterministic validation", () => {
     expect(report.unresolvedRefs).toBe(1);
   });
 
+  it("detects duplicate operation ids", () => {
+    const files = validFiles();
+    const doc = YAML.parse(files["openapi.yaml"]) as any;
+    doc.paths["/user-api/health"].get.operationId = doc.paths["/order-api/health"].get.operationId;
+    files["openapi.yaml"] = YAML.stringify(doc);
+    const report = validateArtifacts(files);
+    expect(report.ok).toBe(false);
+    expect(report.issues.some((issue) => issue.message.includes("duplicate operationId"))).toBe(true);
+  });
+
   it("detects unbalanced Prisma braces", () => {
     const files = validFiles();
-    files["prisma/schema.prisma"] += "\nmodel Broken {";
+    files["prisma/schema.prisma"] += "\nmodel Broken {\n";
     const report = validateArtifacts(files);
     expect(report.ok).toBe(false);
     expect(report.issues.some((issue) => issue.file === "prisma/schema.prisma")).toBe(true);
   });
+
+  it("requires packet files when strict task validation is enabled", () => {
+    const report = validateArtifacts(validFiles(), { requireTaskFiles: true });
+    expect(report.ok).toBe(false);
+    expect(report.issues.some((issue) => issue.message.includes("missing packet file"))).toBe(true);
+  });
+
+  it("reports artifacts without a deterministic validator", () => {
+    const files = validFiles();
+    files["notes.txt"] = "free-form notes";
+    const report = validateArtifacts(files);
+    expect(report.deterministicCoverage).toBeLessThan(1);
+    expect(report.issues.some((issue) => issue.message.includes("No deterministic validator"))).toBe(true);
+  });
+
+  it("rejects schemas that require undeclared properties", () => {
+    const files = validFiles();
+    const doc = YAML.parse(files["openapi.yaml"]) as any;
+    doc.components.schemas.OrderAPIItem.required.push("missingField");
+    files["openapi.yaml"] = YAML.stringify(doc);
+    const report = validateArtifacts(files);
+    expect(report.ok).toBe(false);
+    expect(report.issues.some((issue) => issue.message.includes("undeclared property"))).toBe(true);
+  });
 });
 
 describe("deterministic self-heal", () => {
-  it("repairs a missing OpenAPI header and info block without an LLM", () => {
+  it("repairs a missing OpenAPI header, info block and empty paths without an LLM", () => {
     const files = validFiles();
     files["openapi.yaml"] = "paths: {}\n";
     expect(validateArtifacts(files).ok).toBe(false);
@@ -74,5 +111,14 @@ describe("deterministic self-heal", () => {
     files["diagram.mmd"] = "";
     const repaired = repairArtifacts(files);
     expect(validateArtifacts(repaired.files).ok).toBe(true);
+  });
+
+  it("repairs invalid metrics and a missing manifest", () => {
+    const files = validFiles();
+    files["metrics.json"] = "not json";
+    delete files["MANIFEST.md"];
+    const repaired = repairArtifacts(files);
+    expect(validateArtifacts(repaired.files).ok).toBe(true);
+    expect(JSON.parse(repaired.files["metrics.json"])[0].name).toBeDefined();
   });
 });

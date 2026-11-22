@@ -35,6 +35,20 @@ function fixture(): ArchState {
         alternatives: ["MongoDB"],
       },
     ],
+    entities: [
+      {
+        id: "ent-order",
+        name: "Order",
+        description: "A purchase",
+        serviceId: "svc-1",
+        databaseId: "db-1",
+        fields: [
+          { name: "id", type: "uuid", required: true, unique: false, primary: true },
+          { name: "total", type: "decimal", required: true, unique: false, primary: false },
+        ],
+        relations: [],
+      },
+    ],
   };
 }
 
@@ -56,6 +70,20 @@ describe("TaskPacketBuilder", () => {
     const service = byTitle.get("Implement Order API service")!;
     const db = byTitle.get("Create Orders DB schema")!;
     expect(service.dependsOn).toContain(db.id);
+  });
+
+  it("puts owned domain entities into the owning service packet only", () => {
+    const packets = buildTaskPackets(fixture());
+    const service = packets.find((packet) => packet.covers.nodes.includes("svc-1"))!;
+    const otherService = packets.find((packet) => packet.covers.nodes.includes("svc-2"))!;
+    const database = packets.find((packet) => packet.covers.nodes.includes("db-1"))!;
+
+    expect(service.entities).toEqual(["ent-order"]);
+    expect(service.context).toContain('"Order"');
+    expect(service.context).toContain('"total"');
+    expect(otherService.entities).toEqual([]);
+    expect(database.entities).toEqual(["ent-order"]);
+    expect(service.acceptance.join(" ")).toContain("/api/order-api/order");
   });
 
   it("keeps every packet within the token budget and covers every node and edge", () => {
@@ -82,7 +110,33 @@ describe("TaskPacketBuilder", () => {
 
     expect(index.tasks).toHaveLength(packets.length);
     expect(indexMarkdown).toContain("| ID | Task |");
+    expect(indexMarkdown).toContain("pnpm install");
     expect(taskMarkdown).toContain("## Acceptance criteria");
     expect(taskMarkdown).toContain("Do not read the whole repository");
+  });
+});
+
+describe("configurable verification commands", () => {
+  it("uses the target package manager and test runner", () => {
+    const npmJest = buildTaskPackets(fixture(), { packageManager: "npm", testRunner: "jest" });
+    expect(npmJest[0].verifyCommand).toContain("npx jest");
+
+    const bunNode = buildTaskPackets(fixture(), { packageManager: "bun", testRunner: "node" });
+    expect(bunNode[0].verifyCommand).toContain("node --test");
+
+    const yarnVitest = buildTaskPackets(fixture(), { packageManager: "yarn", testRunner: "vitest" });
+    expect(yarnVitest[0].verifyCommand).toContain("yarn vitest");
+
+    const indexMarkdown = renderTaskIndexMarkdown(yarnVitest, { packageManager: "yarn" });
+    expect(indexMarkdown).toContain("yarn install");
+  });
+
+  it("rejects unknown runtimes instead of emitting a broken command", () => {
+    expect(() => buildTaskPackets(fixture(), { packageManager: "maven" as never })).toThrow(
+      /Unsupported package manager/,
+    );
+    expect(() => buildTaskPackets(fixture(), { testRunner: "mocha" as never })).toThrow(
+      /Unsupported test runner/,
+    );
   });
 });

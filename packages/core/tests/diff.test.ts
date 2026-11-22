@@ -15,7 +15,37 @@ function baseState(): ArchState {
       { id: "e2", from: "ui", to: "svc", protocol: "http" },
     ],
     decisions: [],
+    entities: [],
   };
+}
+
+function stateWithEntity(): ArchState {
+  const state = baseState();
+  state.entities = [
+    {
+      id: "ent-order",
+      name: "Order",
+      description: "",
+      serviceId: "svc",
+      databaseId: "db",
+      fields: [
+        { name: "id", type: "uuid", required: true, unique: false, primary: true },
+        { name: "total", type: "decimal", required: true, unique: false, primary: false },
+        { name: "userId", type: "string", required: false, unique: false, primary: false },
+      ],
+      relations: [{ target: "ent-user", field: "userId" }],
+    },
+    {
+      id: "ent-user",
+      name: "User",
+      description: "",
+      serviceId: "svc",
+      databaseId: "db",
+      fields: [{ name: "id", type: "uuid", required: true, unique: false, primary: true }],
+      relations: [],
+    },
+  ];
+  return state;
 }
 
 describe("state validation", () => {
@@ -40,6 +70,42 @@ describe("state validation", () => {
     state.edges.push({ id: "e3", from: "db", to: "svc", protocol: "http" });
     expect(hasCycle(state)).toBe(true);
     expect(validateState(state).some((error) => error.includes("cycle"))).toBe(true);
+  });
+});
+
+describe("domain entity validation", () => {
+  it("accepts entities attached to a service and database", () => {
+    expect(validateState(stateWithEntity())).toEqual([]);
+  });
+
+  it("rejects an entity owned by a missing node", () => {
+    const state = stateWithEntity();
+    state.entities[0].serviceId = "ghost";
+    expect(validateState(state).some((error) => error.includes("missing service"))).toBe(true);
+  });
+
+  it("rejects an entity owned by a node of the wrong kind", () => {
+    const state = stateWithEntity();
+    state.entities[0].serviceId = "db";
+    expect(validateState(state).some((error) => error.includes("is not a service"))).toBe(true);
+  });
+
+  it("rejects duplicate field names and multiple primary fields", () => {
+    const state = stateWithEntity();
+    state.entities[1].fields.push(
+      { name: "id", type: "uuid", required: true, unique: false, primary: true },
+      { name: "Id", type: "uuid", required: true, unique: false, primary: false },
+      { name: "email", type: "string", required: true, unique: true, primary: true },
+    );
+    const errors = validateState(state);
+    expect(errors.some((error) => error.includes("duplicate field"))).toBe(true);
+    expect(errors.some((error) => error.includes("more than one primary"))).toBe(true);
+  });
+
+  it("rejects relations to missing entities", () => {
+    const state = stateWithEntity();
+    state.entities[0].relations.push({ target: "ent-missing" });
+    expect(validateState(state).some((error) => error.includes("relates to missing entity"))).toBe(true);
   });
 });
 

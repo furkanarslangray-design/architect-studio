@@ -1,12 +1,11 @@
+export { estimateTokens, describeTokens, TOKENIZER_ID } from "./tokenizer";
+export type { TokenBreakdown } from "./tokenizer";
+
 export interface MetricReport {
   name: string;
   value: number;
   target: string;
   pass: boolean;
-}
-
-export function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
 }
 
 export function lteMetric(name: string, value: number, target: number): MetricReport {
@@ -41,6 +40,11 @@ export function percentile(values: number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);
   const index = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
   return sorted[index];
+}
+
+export function average(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 function round(value: number): number {

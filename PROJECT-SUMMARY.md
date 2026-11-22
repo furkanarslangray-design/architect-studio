@@ -1,69 +1,110 @@
-# PROJECT-SUMMARY — AI Principal Architect (MVP)
+# PROJECT-SUMMARY — AI Principal Architect (v0.2)
 
 Yeni geliştirici devir teslim notu. Son güncelleme: 2026-11-22.
 
 ## 1. Proje nerede?
 
-**Klasör:** `/home/furkanarslangray/architect-studio`
-**Branch:** `mvp` (henüz remote'a push edilmedi)
-**Son commit:** `ea15371 fix: scale parallel_groups target to architecture size`
+**Klasör:** `/home/furkanarslangray/architect-studio` (bu çalışma kopyasında worktree)
+**Branch:** `mvp`
+**Durum:** v0.2 sertleştirme değişiklikleri çalışma ağacında (henüz commit edilmedi).
 
 Çalıştırmak için:
 
 ```bash
-cd /home/furkanarslangray/architect-studio
-pnpm install          # bağımlılıklar zaten kurulu
+pnpm install
 pnpm dev              # http://localhost:3000
 ```
 
-Gereksinim: Node >= 22, pnpm.
+Gereksinim: Node >= 22, pnpm. `gpt-tokenizer`, `jszip`, `yaml`, `zod` bağımlılıkları kuruludur.
 
 ## 2. Proje ne yapıyor?
 
-Doğal dildeki bir fikri alır; doğrulanmış bir **ajan paketi** (ZIP) üretir:
+Doğal dildeki bir fikri (veya içe aktarılan `ArchState` JSON'unu) alır; doğrulanmış bir
+**ajan paketi** (ZIP) üretir:
 
 1. Fikri `ArchState` modeline çevirir (demo modu deterministik, BYOK modu OpenAI-uyumlu LLM).
-2. OpenAPI 3.1, Prisma, AsyncAPI, Mermaid, `ARCHITECTURE.md`, `WHITEPAPER.md`, ADR'ler üretir.
-3. Artifact'ları deterministik olarak doğrular; gerekirse 2 tura kadar self-heal yapar.
-4. `TASKS.md` + `tasks/T-*.md` dilimlenmiş görev paketleri üretir (token bütçeli, bağımlılıklı).
-5. `.opencode/agents/{implementer,validator,reviewer}.md` subagent tanımlarını ekler.
-6. `metrics.json` + `MANIFEST.md` ile birlikte ZIP olarak paketler.
-
-Temel akış:
+2. Bileşenler, bağlantılar, kararlar ve **domain entity'leri** (alanlar + ilişkiler) üretir.
+3. OpenAPI 3.1 entity CRUD, Prisma (engine'e göre provider), AsyncAPI, Mermaid,
+   `ARCHITECTURE.md`, `WHITEPAPER.md`, ADR'ler üretir.
+4. Artifact'ları deterministik olarak doğrular; onarılabilir hataları 2 tura kadar self-heal eder.
+5. `TASKS.md` + `tasks/T-*.md` dilimlenmiş görev paketleri üretir (token bütçeli, bağımlılıklı).
+6. `.opencode/agents/{implementer,validator,reviewer}.md` ekler.
+7. `metrics.json` + `MANIFEST.md` ile birlikte ZIP olarak paketler.
 
 ```
-idea ──> ideaToState() ──> ArchState ──> buildPackage()
-                                          ├─ generators (OpenAPI/Prisma/AsyncAPI/Mermaid/docs)
-                                          ├─ task packets (TASKS.md + tasks/T-*.md)
-                                          ├─ OpenCode agents
-                                          ├─ validators (+ self-heal)
-                                          └─ metrics + MANIFEST + ZIP
+idea / ArchState JSON ──> ideaToState() / parseState()
+  ──> sanitizeState() (LLM çıktısı için deterministik temizlik)
+  ──> ArchState { nodes, edges, decisions, entities }
+  ──> buildPackage()
+        ├─ generators (OpenAPI/Prisma/AsyncAPI/Mermaid/docs)
+        ├─ task packets (TASKS.md + tasks/T-*.md)
+        ├─ OpenCode agents
+        ├─ validators (+ self-heal)
+        └─ metrics + MANIFEST + ZIP
 ```
 
-## 3. Dosya yapısı
+## 3. v0.2'de tamamlananlar
+
+- **Domain entity modeli:** `ArchState.entities` (alan tipleri, `primary`/`required`/`unique`,
+  servis/database sahipliği, entity ilişkileri). Doğrulama: eksik/yanlış türde referans,
+  çift alan adı, çoklu primary, eksik ilişki hedefi.
+- **Entity-driven sözleşmeler:** OpenAPI'de `/api/<service>/<entity>` list/create ve
+  `/{id}` get/patch/delete; entity şemaları gerçek alanlardan türetilir. Entity yoksa
+  servis başına generic `Item` fallback'i korunur.
+- **Prisma:** `props.engine` → provider eşlemesi (postgres/mysql/sqlite/sqlserver/mongodb/
+  cockroachdb), entity modelleri tipli kolonlar, `createdAt`/`updatedAt` davranışı,
+  ilişki scalar kolonları ve `@@index`.
+- **Gerçek tokenizer:** `packages/core/src/tokenizer.ts` → `gpt-tokenizer` (cl100k_base).
+  `estimateTokens` artık BPE sayımı yapıyor.
+- **Dürüst metrikler:** `context_slice_ratio` tüm paket (state + görevler + index + üretilen
+  artifact'lar) üzerinden ölçülüyor; `parallel_groups` hedefi `min(3, node−1)`;
+  `deterministic_coverage` paketteki artifact türlerinin doğrulanma oranı;
+  yeni `deterministic_checks` metriği gerçek kontrol sayısını raporluyor.
+- **Güçlü doğrulama:** benzersiz `operationId`, cevaplar, `$ref` çözümü, JSON Schema
+  yapısal kontrolü (`required` ↔ `properties`, `items`, tipler), görev dosyası bütünlüğü
+  (paketleme sırasında), OpenCode ajan frontmatter/steps, ADR ve manifest kontrolleri.
+- **Yapılandırılabilir verify:** `packageManager` (pnpm/npm/yarn/bun) × `testRunner`
+  (vitest/jest/node). CLI, HTTP API ve web UI'dan seçilebilir; bilinmeyen değer 400.
+- **LLM sağlamlaştırması:** prompt domain entity şemasını içeriyor; dönen state
+  `sanitizeState` ile duplicate/dangling/self-loop temizliğinden geçiyor; şema veya
+  döngü hatasında bir kez daha deneniyor.
+- **HTTP API:** `POST /api/preview` (ZIP yok), `POST /api/generate`, `state` import,
+  `GET /api/version`, IP başına rate limit (429 + `Retry-After`), 256 KB gövde limiti,
+  güvenlik header'ları, anlamlı hata kodları.
+- **Web UI:** önizleme tabloları (bileşen/entity/görev/metrik/doğrulama), ArchState JSON
+  importu, hedef runtime seçimleri, indirme özeti.
+- **CLI:** `--preview`, `--extract`, `--package-manager`, `--test-runner`, path traversal
+  korumalı çıkarma.
+- **Altyapı:** `Dockerfile` + healthcheck, `.dockerignore`, `.env.example`, MIT `LICENSE`,
+  GitHub Actions CI (typecheck + test + docker build), `examples/architecture.json`.
+
+## 4. Dosya yapısı
 
 ```
 architect-studio/
-├─ package.json                 # script'ler ve kök bağımlılıklar
+├─ package.json                 # script'ler ve kök bağımlılıklar (v0.2.0)
 ├─ pnpm-workspace.yaml
 ├─ tsconfig.json                # CommonJS, ES2022, strict, noEmit
-├─ vitest.config.ts             # packages/**/tests/**/*.test.ts
-├─ README.md                    # kısa kullanım
-├─ PROJECT-SUMMARY.md           # bu dosya
-├─ web/
-│  └─ index.html                # tek sayfalık web UI (statik HTML + fetch)
+├─ vitest.config.ts
+├─ Dockerfile / .dockerignore
+├─ .env.example / LICENSE
+├─ .github/workflows/ci.yml
+├─ examples/architecture.json
+├─ README.md
+├─ PROJECT-SUMMARY.md
+├─ web/index.html               # form + önizleme + JSON import
 ├─ .opencode/agents/            # bu repo için implementer/validator/reviewer
 ├─ docs/superpowers/
 │  ├─ specs/2026-11-22-agent-package-design.md
 │  └─ plans/2026-11-22-usable-mvp.md
 ├─ .superpowers/sdd/progress.md # görev/commit ledger'ı
 └─ packages/
-   ├─ core/                     # state, diff, ids, metrics, task-packet
-   │  ├─ src/{state,diff,ids,metrics,task-packet}.ts
+   ├─ core/                     # state, diff, ids, metrics, tokenizer, task-packet
+   │  ├─ src/{state,diff,ids,metrics,tokenizer,task-packet}.ts
    │  └─ tests/{state,diff,task-packet}.test.ts
    ├─ generators/               # openapi, prisma, asyncapi, mermaid, docs/ADR
    │  ├─ src/{openapi,prisma,asyncapi,mermaid,docs,util,index}.ts
-   │  └─ tests/ + tests/fixtures/{minimal,ecommerce}.json
+   │  └─ tests/ + tests/fixtures/{minimal,ecommerce,domain}.json
    ├─ validators/               # deterministik doğrulama + self-heal
    │  └─ src/{index,self-heal}.ts + tests/
    ├─ packager/                 # ZIP, metrics, MANIFEST, OpenCode agents, redaction
@@ -74,82 +115,56 @@ architect-studio/
 
 `out/` ve `*.zip` git'e girmez; üretilen paketler geçicidir.
 
-## 4. Çalışan özellikler (doğrulandı)
-
-- **Demo modu:** API anahtarı olmadan çalışır. Anahtar kelimelerden (postgres/db, redis/queue, react/web/ui ve bazı Türkçe karşılıklar) deterministik mimari üretir.
-- **BYOK modu:** OpenAI-uyumlu `/v1/chat/completions`; `apiKey`, `baseUrl`, `model`. 1 kez retry, 60 sn timeout, Zod ile state doğrulama.
-- **Gizli anahtar güvenliği:** Anahtar diske/loga yazılmaz; üretilen tüm dosyalardan string ve `sk-...` deseni redakte edilir.
-- **State doğrulama:** Benzersiz node/edge id, dangling edge, self-loop ve cycle kontrolü.
-- **Görev paketleri:** Her node için bağımsız paket; bağımlılıklar edge yönünden, dalga (wave) ve token tahminiyle.
-- **Artifact üretimi:** OpenAPI 3.1, Prisma schema, AsyncAPI 2.6, Mermaid flowchart, ARCHITECTURE/WHITEPAPER/AGENTS/.cursorrules, ADR'ler.
-- **Deterministik doğrulama:** YAML parse, `$ref` çözümü, Prisma brace dengesi, Mermaid başlığı, TASKS tablosu, metrics varlığı.
-- **Self-heal:** Eksik OpenAPI/AsyncAPI başlığı, boş Mermaid, TASKS tablosu gibi durumları LLM'siz onarır (en fazla 2 tur).
-- **Web UI:** Fikir formu, demo/BYOK alanları, ZIP indirme, `X-Metrics-Passed`, `X-Task-Count`, `X-Validation` başlıklarıyla özet.
-- **CLI:** `--idea`, `--json`, `--out`, `--demo`, `--api-key`, `--base-url`, `--model`.
-- **Çıktı metrikleri:** Paket boyutu, token p95/max, context oranı, duplicate context, dosya/görev, bağımlılık derinliği, kapsam, validator pass, self-heal, unresolved ref, süre.
-
-Doğrulanmış sonuçlar:
+## 5. Doğrulanmış sonuçlar
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 42/42 test geçti |
+| `pnpm test` | 74/74 test geçti |
 | `pnpm typecheck` | temiz |
-| `pnpm build` | temiz (typecheck + test) |
-| Referans mimari (`postgres redis react api`) | 17/17 metrik, doğrulama ok |
-| Minimal mimari (`an app`) | 17/17 metrik, doğrulama ok |
-| Tarayıcı smoke testi | Form → ZIP indirme çalıştı |
+| Referans mimari (`postgres redis react api`) | 18/18 metrik, doğrulama ok, 4 görev |
+| Domain mimarisi (`domain.json`, 3 node / 2 entity) | 18/18 metrik, doğrulama ok |
+| Minimal mimari (2 node) | 18/18 metrik |
+| İçe aktarılan state (`examples/architecture.json`) | paket + önizleme çalışıyor |
+| Eşzamanlı 3 önizleme isteği | state sızıntısı yok, hepsi 200 |
+| Rate limit | 2. istekte 429 + `Retry-After` |
+| Docker image build | CI'da doğrulanır (yerelde Docker varsa `docker build -t architect-studio .`) |
 
-## 5. Test haritası
+Test dağılımı: core 26, generators 10, validators 10, packager 8, app 10, server 10.
 
-| Paket | Test sayısı | Kapsam |
-|---|---|---|
-| `core` | 15 | state parse, diff/cycle, task packet + metrikler |
-| `generators` | 6 | OpenAPI/Prisma/AsyncAPI/Mermaid/docs, isim çakışması |
-| `validators` | 5 | geçerli set, bozuk `$ref`, Prisma brace, self-heal |
-| `packager` | 5 | ZIP içeriği, metrikler, minimal mimari, redaction, geçersiz state |
-| `app` | 11 | demo, BYOK retry/timeout/redaction, pipeline, HTTP server |
-
-## 6. Eksikler / bilinen sınırlar
+## 6. Kalan sınırlar (bilinçli)
 
 ### Üretim kalitesi
-- **Görev metinleri şablon:** LLM yalnızca mimari state'i üretir; `tasks/T-*.md` içerikleri node türüne göre şablonlanır.
-- **OpenAPI yüzeysel:** Servis başına `/health` ve `/api/<slug>`; şemalar generic `Item`. Gerçek domain modelleri yok.
-- **Prisma tek tip:** Her zaman `provider = "postgresql"`; `props.engine` dikkate alınmıyor.
-- **Verify komutları hedef repoyu varsayar:** `pnpm vitest ...` üretilir; hedef projede pnpm/vitest yoksa komut çalışmaz.
-- **Kabul kriterleri çalıştırılmaz:** Üretilir ama gerçek bir hedef kod tabanında doğrulanmaz.
+- Görev metinleri node türüne göre şablonlanır; LLM yalnızca mimari state'i üretir.
+- OpenAPI entity CRUD'u üretir ama gerçek iş kurallarını/validasyonlarını modellemez.
+- Kabul kriterleri üretilir, hedef kod tabanında çalıştırılmaz.
+- `verifyCommand` hedef projede ilgili runner'ın kurulu olmasını varsayar.
 
 ### Doğrulama / metrikler
-- `deterministicCoverage` şu an sabit `1`; yalnızca 7 kontrolü kapsar ve gerçek kapsamı ölçmez.
-- OpenAPI/AsyncAPI için tam JSON Schema validasyonu yok; parse + basit `$ref` kontrolü var.
-- Token tahmini `karakter / 4`; gerçek tokenizer değil.
-- `duplicateContextRatio` yalnızca birebir aynı context'i yakalar.
-- `parallel_groups` hedefi `min(3, node sayısı)`; küçük mimarilerde esnek.
+- JSON Schema kontrolü yapısaldır; tam OpenAPI/AsyncAPI 3.1 meta-şema doğrulaması değildir.
+- `duplicate_context_ratio` yalnızca birebir aynı context'i yakalar (normalize edilmiş
+  kısmi örtüşmeyi ölçmez).
+- `state_to_package_ms` tek istek süresidir; p95 için yük testi yoktur (eşzamanlılık testi var).
 
-### Test boşlukları
-- Gerçek bir OpenAI-uyumlu sağlayıcıya karşı canlı BYOK testi yok; testler mock'lu.
-- Tarayıcı testi manuel yapıldı; otomatik E2E (Playwright) yok.
-- ZIP'in gerçekten indirildiği değil, UI'da "Paket hazır" durumuna gelindiği doğrulandı.
-- Yük testi, eşzamanlı istek ve büyük state performansı test edilmedi.
-
-### Altyapı / ürün
-- Kimlik doğrulama, kullanıcı/oturum, kalıcılık, rate limit yok; sunucu tek süreç ve in-memory.
-- Docker, CI, LICENSE, `.env.example` yok.
-- Web UI statik; üretilen mimariyi önizleme/düzenleme ekranı yok.
+### Ürün / altyapı
+- Kimlik doğrulama, kullanıcı/oturum, kalıcılık yok; sunucu tek süreç ve in-memory
+  (spesifikasyonda bilinçli non-goal).
+- Rate limit in-memory ve süreç başına; çok örnekli dağıtımda paylaşılmaz.
+- Tarayıcı E2E (Playwright) yok; indirme akışı HTTP seviyesinde test edilir.
 - Arayüz metinleri Türkçe, backend hata mesajları İngilizce.
 - `web/index.html` `process.cwd()` üzerinden okunur; sunucu repo kökünden çalıştırılmalı.
-- Kapsam dışı (bilinçli): AST/tersine mühendislik, FinOps, STRIDE/compliance, masaüstü, MCP, Mock & Trace.
 
-## 7. Yeni geliştirici için önerilen ilk adımlar
+## 7. Yeni geliştirici için ilk adımlar
 
 1. `pnpm test && pnpm typecheck` ile başla.
-2. `pnpm dev` + tarayıcıda demo moduyla bir paket üret, ZIP'i incele.
-3. Gerçek bir OpenAI-uyumlu endpoint ile BYOK akışını manuel dene (anahtarı commit etme).
-4. İlk iyileştirme adayları:
-   - Domain bazlı OpenAPI/Prisma üretimini state'ten türet.
-   - `verifyCommand`'ı hedef projenin paket yöneticisine göre yapılandırılabilir yap.
-   - Gerçek tokenizer ve daha güçlü kapsam metriği ekle.
-   - Playwright ile indirme E2E testi ekle.
-   - CI + Docker + LICENSE ekle.
+2. `pnpm dev` + tarayıcıda demo moduyla hem önizle hem ZIP indir.
+3. `pnpm generate -- --json examples/architecture.json --extract out/package` ile çıktıyı incele.
+4. Gerçek bir OpenAI-uyumlu endpoint ile BYOK akışını manuel dene (anahtarı commit etme).
+5. Sonraki iyileştirme adayları:
+   - Playwright ile gerçek indirme E2E testi.
+   - Tam OpenAPI/AsyncAPI meta-şema doğrulaması (ajv + spec şemaları).
+   - Kabul kriterlerini hedef repoda çalıştıran doğrulama ajanı.
+   - Kalıcılık/çok kullanıcılı oturumlar (bilinçli olarak kapsam dışıydı).
+   - Normalize edilmiş kısmi context tekrarı ölçümü.
 
 ## 8. Faydalı komutlar
 
@@ -163,9 +178,17 @@ pnpm build
 # Demo paket
 pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
 
-# Mevcut state'ten paket
-pnpm generate -- --json architecture.json --out out/package.zip
+# Mevcut state'ten paket + dizine açma
+pnpm generate -- --json examples/architecture.json --out out/package.zip --extract out/package
 
-# BYOK
-pnpm generate -- --idea "..." --api-key sk-... --model gpt-4o-mini
+# Sadece önizleme
+pnpm generate -- --json examples/architecture.json --preview
+
+# BYOK + hedef runtime
+pnpm generate -- --idea "..." --api-key sk-... --model gpt-4o-mini \
+  --package-manager npm --test-runner jest
+
+# Docker
+docker build -t architect-studio .
+docker run --rm -p 3000:3000 --env-file .env.example architect-studio
 ```

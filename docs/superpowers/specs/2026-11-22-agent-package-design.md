@@ -99,3 +99,38 @@ MVP'de giriş doğal dil ve JSON importtur.
 - LLM'in geçerli JSON üretmemesi → Zod doğrulama + tek yeniden deneme + demo fallback.
 - Görev paketlerinin çok büyümesi → token bütçesi testi ve otomatik dilimleme.
 - Yanlış pozitif doğrulama → golden fixture testleri ve yapısal kontroller.
+
+## v0.2 Uygulama Notları (2026-11-22)
+
+### ArchState genişlemesi
+
+`ArchState.entities` eklendi. Her entity `fields` (tip, `required`, `unique`, `primary`),
+`serviceId`, `databaseId` ve `relations` taşır. Tek kaynak kuralı korunur: OpenAPI, Prisma,
+dokümanlar ve görev paketleri bu tek state'ten türetilir. Entity tanımlanmazsa servis başına
+generic `Item` fallback'i kullanılır. LLM çıktısı `sanitizeState` ile deterministik olarak
+temizlenir (duplicate/dangling/self-loop/missing referans).
+
+### Metrik revizyonu
+
+- Token sayımı `gpt-tokenizer` (cl100k_base) ile gerçek BPE sayımıdır.
+- `context_slice_ratio` paydası tüm pakettir (state + görev paketleri + index + üretilen
+  artifact'lar); bir paketin bağlam dilimi gerçekten gezilecek malzemeye göre ölçülür.
+- `parallel_groups` hedefi `min(3, node sayısı − 1)`; küçük DAG'lerde ulaşılamaz hedef üretmez.
+- `deterministic_checks` (≥ 10) gerçek kontrol sayısını raporlar.
+- `deterministic_coverage`, paketteki artifact türlerinden deterministik doğrulayıcısı
+  olanların oranıdır; doğrulanamayan dosya eklendiğinde düşer ve issue üretir.
+
+### Doğrulama ve API
+
+- OpenAPI/AsyncAPI için benzersiz `operationId`, cevap nesneleri, tam `$ref` çözümü ve
+  yapısal JSON Schema kontrolü (`required` ↔ `properties`, `items`, tip/format/enum).
+- Paketleme sırasında `tasks/<ID>.md` dosyalarının varlığı ve içeriği doğrulanır.
+- `POST /api/preview` ZIP üretmeden state/görev/metrik/doğrulama döner; `POST /api/generate`
+  `idea` veya `state` kabul eder. Runtime seçimleri (`packageManager`, `testRunner`) API,
+  CLI ve web UI'dan geçirilir. IP başına dakikalık rate limit ve 256 KB gövde limiti vardır.
+
+### Altyapı
+
+Dockerfile + healthcheck, `.env.example`, MIT lisansı ve GitHub Actions CI eklendi.
+Tarayıcı E2E ve tam OpenAPI meta-şema doğrulaması hâlâ kapsam dışıdır; bunlar sıradaki
+iyileştirme adaylarıdır.
