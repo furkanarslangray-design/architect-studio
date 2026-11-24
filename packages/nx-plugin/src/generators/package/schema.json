@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "architect-studio-package",
+  "title": "Architect Studio workspace package",
+  "description": "Scaffold a new library under packages/ with project.json, tsconfig.json, a typed module and a Vitest suite wired into the Nx graph.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Package name in kebab-case; becomes packages/<name> and the Nx project name.",
+      "$default": { "$source": "argv", "index": 0 }
+    },
+    "description": {
+      "type": "string",
+      "description": "One-line purpose used in the generated module JSDoc and package summary."
+    }
+  },
+  "required": ["name"]
+}

@@ -4,12 +4,13 @@
   "private": true,
   "description": "AI Principal Architect — idea to a verified, entity-aware agent package",
   "scripts": {
-    "dev": "tsx packages/app/src/server.ts",
-    "start": "tsx packages/app/src/server.ts",
-    "test": "vitest run",
+    "dev": "nx run app:dev",
+    "start": "nx run app:start",
+    "test": "nx run-many -t test",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && vitest run",
+    "typecheck": "nx run-many -t typecheck",
+    "build": "nx run-many -t typecheck test",
+    "affected": "nx affected -t typecheck test",
     "generate": "tsx packages/app/src/cli.ts",
     "mcp": "tsx packages/mcp/src/index.ts"
   },
@@ -23,6 +24,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "nx": "^24.0.6",
+    "rea-agents": "6.10.1",
     "tsx": "^4.20.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

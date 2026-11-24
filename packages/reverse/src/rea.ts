@@ -624,6 +624,12 @@ function deriveEvidenceFindings(payload: unknown): ReaFinding[] {
       ? (record.evidence as Record<string, unknown>)
       : record;
   const derived: ReaFinding[] = [];
+  // `analyze-javascript-application` returns an Evidence envelope whose
+  // `normalized_result` holds the JavaScript application graph.
+  const application = record.normalized_result;
+  if (application && typeof application === "object") {
+    derived.push(...deriveApplicationFindings(application as Record<string, unknown>));
+  }
   const pathOf = (item: unknown): ReaEvidence | undefined => {
     if (typeof item === "string") return { source: "rea", path: item };
     if (item && typeof item === "object") {
@@ -718,7 +724,28 @@ export function normalizeReaOutput(payload: unknown): ReaFinding[] {
  * application workflow is the one that understands Electron app directories and
  * `.asar` archives; `analyze` is the generic entry point from the REA docs.
  */
+// A complete REA Evidence record can be tens of megabytes because the semantic
+// graph dominates it. The bridge only consumes the inventory, statistics,
+// summary and graph, so it asks REA to filter the envelope down (≈50 KiB) and
+// stays inside the CLI output budget.
+const REA_OUTPUT_FILTER = [
+  "evidence_id",
+  "subject",
+  "operation",
+  "confidence",
+  "limitations",
+  "normalized_result.input_path",
+  "normalized_result.format",
+  "normalized_result.statistics",
+  "normalized_result.summary",
+  "normalized_result.graph",
+].join(",");
+
 const REA_COMMAND_VARIANTS: Array<{ command: string; args: (root: string) => string[] }> = [
+  {
+    command: "analyze-javascript-application",
+    args: (root) => [root, "--json", "--filter-output", REA_OUTPUT_FILTER],
+  },
   { command: "analyze-javascript-application", args: (root) => [root, "--json"] },
   { command: "analyze", args: (root) => [root, "--json"] },
   { command: "analyze", args: (root) => ["--json", root] },
@@ -742,10 +769,163 @@ async function runReaCli(root: string, detection: ReaDetection, timeoutMs: numbe
       continue;
     }
     const parsed = parseJsonPayload(result.stdout);
+    warnings.push(...extractReaLimitations(parsed));
     const findings = parsed === undefined ? [] : normalizeReaOutput(parsed);
     if (findings.length > 0) return { findings, warnings };
   }
   return { findings: [], warnings };
+}
+
+interface GraphNodeLike {
+  kind?: unknown;
+  identity?: { key?: unknown };
+  observations?: Array<{ label?: unknown; properties?: Record<string, unknown> }>;
+}
+
+function graphNodeLabel(node: GraphNodeLike): string | undefined {
+  const observations = Array.isArray(node.observations) ? node.observations : [];
+  for (const observation of observations) {
+    if (typeof observation?.label === "string" && observation.label.trim()) return observation.label.trim();
+    const properties = observation?.properties;
+    if (properties && typeof properties === "object") {
+      for (const field of ["value", "url", "name", "path"]) {
+        const candidate = properties[field];
+        if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+      }
+    }
+  }
+  return typeof node.identity?.key === "string" ? node.identity.key : undefined;
+}
+
+const ENDPOINT_PATTERN = /^(?:https?|wss?):\/\/|^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::\d+)?(?:[/?#]|$)/i;
+
+/**
+ * Projects REA's JavaScript application graph (`normalized_result`) into
+ * findings: reconstructed modules, inventoried assets, recovered packages,
+ * real external endpoints and Electron process boundaries.
+ */
+function deriveApplicationFindings(application: Record<string, unknown>): ReaFinding[] {
+  const graph =
+    application.graph && typeof application.graph === "object"
+      ? (application.graph as Record<string, unknown>)
+      : undefined;
+  const nodes = Array.isArray(graph?.nodes) ? (graph!.nodes as GraphNodeLike[]) : [];
+  if (nodes.length === 0) return [];
+
+  const buckets = new Map<string, GraphNodeLike[]>();
+  for (const node of nodes) {
+    if (!node || typeof node !== "object") continue;
+    const kind = typeof node.kind === "string" ? node.kind : "unknown";
+    const list = buckets.get(kind);
+    if (list) list.push(node);
+    else buckets.set(kind, [node]);
+  }
+
+  const statistics =
+    application.statistics && typeof application.statistics === "object"
+      ? (application.statistics as Record<string, unknown>)
+      : {};
+  const summary =
+    application.summary && typeof application.summary === "object"
+      ? (application.summary as Record<string, unknown>)
+      : {};
+  const findings: ReaFinding[] = [];
+  const labels = (list: GraphNodeLike[], limit = 8): string[] =>
+    list
+      .map((node) => graphNodeLabel(node))
+      .filter((label): label is string => typeof label === "string" && label.length > 0)
+      .slice(0, limit);
+  const evidence = (list: GraphNodeLike[], limit = 8): ReaEvidence[] =>
+    labels(list, limit).map((label) => ({ source: "rea", snippet: label }));
+
+  const modules = buckets.get("javascript-module") ?? [];
+  const parsedFiles = typeof statistics.parsed_javascript_files === "number" ? statistics.parsed_javascript_files : undefined;
+  const astNodes = typeof statistics.visited_ast_nodes === "number" ? statistics.visited_ast_nodes : undefined;
+  if (modules.length > 0 || (parsedFiles ?? 0) > 0) {
+    const details = [
+      modules.length > 0 ? `${modules.length} module reference(s)` : undefined,
+      parsedFiles !== undefined ? `${parsedFiles} parsed file(s)` : undefined,
+      astNodes !== undefined ? `${astNodes} AST node(s)` : undefined,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    findings.push(
+      finding(
+        "architecture",
+        "Reconstructed JavaScript modules",
+        `REA reconstructed ${details} from the application.`,
+        0.8,
+        evidence(modules),
+      ),
+    );
+  }
+
+  const assets = buckets.get("javascript-asset") ?? [];
+  if (assets.length > 0) {
+    findings.push(
+      finding(
+        "artifact",
+        "JavaScript application assets",
+        `REA inventoried ${assets.length} JavaScript asset(s).`,
+        0.7,
+        evidence(assets),
+      ),
+    );
+  }
+
+  const packages = buckets.get("package") ?? [];
+  const packageNames = [...new Set(labels(packages, 12))];
+  if (packageNames.length > 0) {
+    findings.push(
+      finding(
+        "package",
+        "Recovered dependencies",
+        `REA recovered ${packages.length} package reference(s): ${packageNames.slice(0, 6).join(", ")}.`,
+        0.7,
+        packageNames.map((name) => ({ source: "rea", snippet: name })),
+      ),
+    );
+  }
+
+  const endpoints = [...new Set(labels(buckets.get("endpoint") ?? [], 500).filter((label) => ENDPOINT_PATTERN.test(label)))].slice(0, 8);
+  for (const endpoint of endpoints) {
+    findings.push(
+      finding("integration", `External endpoint ${endpoint}`, "Referenced from the analyzed client bundle.", 0.6, [
+        { source: "rea", snippet: endpoint },
+      ]),
+    );
+  }
+
+  const electronNodes = [...(buckets.get("electron-renderer") ?? []), ...(buckets.get("electron-main") ?? [])];
+  const ipc = summary.ipc && typeof summary.ipc === "object" ? (summary.ipc as Record<string, unknown>) : {};
+  const ipcOperations = typeof ipc.operations === "number" ? ipc.operations : 0;
+  if (electronNodes.length > 0 || ipcOperations > 0) {
+    findings.push(
+      finding(
+        "runtime",
+        "Electron process boundaries",
+        `REA mapped ${electronNodes.length} Electron role node(s) and ${ipcOperations} IPC operation(s).`,
+        0.75,
+        evidence(electronNodes),
+      ),
+    );
+  }
+
+  return findings;
+}
+
+/** Turns REA's declared analysis limitations into bridge warnings. */
+function extractReaLimitations(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object") return [];
+  const record = payload as Record<string, unknown>;
+  const normalized =
+    record.normalized_result && typeof record.normalized_result === "object"
+      ? (record.normalized_result as Record<string, unknown>)
+      : undefined;
+  const lists = [record.limitations, normalized?.limitations].filter((item): item is unknown[] => Array.isArray(item));
+  return [...new Set(lists.flat().filter((item): item is string => typeof item === "string" && item.trim().length > 0))]
+    .slice(0, 4)
+    .map((item) => `REA limitation: ${item}`);
 }
 
 function parseJsonPayload(stdout: string): unknown {

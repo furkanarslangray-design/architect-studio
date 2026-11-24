@@ -2,3 +2,7 @@ packages:
   - "packages/*"
 allowBuilds:
   esbuild: true
+  nx: true
+  # rea-agents' mobile dynamic-analysis addon; the static REA workflows used
+  # here do not need its native build, so it is intentionally skipped.
+  frida: false

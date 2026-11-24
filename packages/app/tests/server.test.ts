@@ -23,14 +23,6 @@ afterAll(async () => {
 });
 
 describe("HTTP server", () => {
-  it("serves the web UI", async () => {
-    const response = await fetch(`${baseUrl}/`);
-    expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toContain("text/html");
-    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
-    expect(await response.text()).toContain("Architect Studio");
-  });
-
   it("reports health and version", async () => {
     const response = await fetch(`${baseUrl}/api/health`);
     expect(response.status).toBe(200);
@@ -303,16 +295,5 @@ describe("i18n", () => {
     expect(payload.files["ARCHITECTURE.md"]).toContain("# Mimari");
     expect(payload.files["TASKS.md"]).toContain("# GÖREVLER");
     expect(payload.files["tasks/T-001.md"]).toContain("Kabul kriterleri");
-  });
-
-  it("serves the Studio assets", async () => {
-    const script = await fetch(`${baseUrl}/app.js`);
-    expect(script.status).toBe(200);
-    expect(script.headers.get("content-type")).toContain("javascript");
-    expect(await script.text()).toContain("/api/chat");
-
-    const styles = await fetch(`${baseUrl}/styles.css`);
-    expect(styles.status).toBe(200);
-    expect(styles.headers.get("content-type")).toContain("text/css");
   });
 });

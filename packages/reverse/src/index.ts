@@ -574,7 +574,14 @@ function reaNodeKind(item: ReaFinding): NodeKind | undefined {
 }
 
 function reaNodeName(item: ReaFinding): string {
-  return item.title.match(/^External endpoint (.+)$/i)?.[1] ?? item.title;
+  const endpoint = item.title.match(/^External endpoint (.+)$/i)?.[1];
+  if (!endpoint) return item.title;
+  // Endpoint findings become external nodes; the host reads better than a URL.
+  try {
+    return new URL(/^[a-z]+:\/\//i.test(endpoint) ? endpoint : `https://${endpoint}`).hostname;
+  } catch {
+    return endpoint;
+  }
 }
 
 /**
