@@ -152,6 +152,10 @@ idea / ArchState / repository
   (`default`/`production`/`sharedGlobals`) ve `test`/`typecheck` için `cache: true`.
 - `tsconfig.base.json` ortak derleyici ayarları + `@architect-studio/workspace-plugin`
   path eşlemesi; kök `tsconfig.json` yalnızca `packages/**` ve `vitest.config.ts` içerir.
+- Paketler arası import'lar göreli (`../../core/src/state`) olduğu için kenarlar her
+  `project.json` içindeki `implicitDependencies` ile bildirilir: app → core, generators,
+  packager, reverse, sandbox, validators; packager → core, generators, validators;
+  mcp → app, core, generators, packager, reverse, validators; generators/reverse → core.
 - 9 proje: `core`, `generators`, `validators`, `packager`, `app`, `reverse`, `sandbox`,
   `mcp`, `nx-plugin`. Her biri kendi `project.json` (`typecheck`, çoğunda `test`) ve
   `tsconfig.json` dosyasına sahip; hedefler `nx:run-commands` ile `tsc`/`vitest` çağırır.

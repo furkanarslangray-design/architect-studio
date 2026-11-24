@@ -4,6 +4,14 @@
   "sourceRoot": "packages/mcp/src",
   "projectType": "application",
   "tags": ["type:app"],
+  "implicitDependencies": [
+    "app",
+    "core",
+    "generators",
+    "packager",
+    "reverse",
+    "validators"
+  ],
   "targets": {
     "start": {
       "executor": "nx:run-commands",

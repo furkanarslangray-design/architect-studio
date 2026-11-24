@@ -105,9 +105,13 @@ pnpm nx show projects          # proje listesi
 pnpm nx run app:dev            # tek proje hedefi
 ```
 
-`nx.json` içinde `useDaemonProcess: false` (CI/konteyner dostu) ve `test`/`typecheck`
-hedefleri için `cache: true` ayarlıdır. Görev çıktıları `.nx/` altında tutulur ve bu
-dizin git'e girmez.
+`nx.json` içinde `useDaemonProcess: false` (CI/konteyner dostu), `analytics: false` ve
+`test`/`typecheck` hedefleri için `cache: true` ayarlıdır. Görev çıktıları `.nx/` altında
+tutulur ve bu dizin git'e girmez.
+
+Paketler birbirini göreli yolla (`../../core/src/state`) import ettiği için Nx bağımlılık
+kenarlarını kendiliğinden çıkarmaz; gerçek bağımlılıklar her `project.json` içindeki
+`implicitDependencies` alanında bildirilir ve `nx graph` haritası bu kenarları gösterir.
 
 ### Yerel Nx generator'ı
 
