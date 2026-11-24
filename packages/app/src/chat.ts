@@ -216,14 +216,32 @@ const TECH_CATALOG: Array<{ match: RegExp; spec: TechSpec; intent: ChatIntent }>
   },
 ];
 
+function looksLikeFieldAddition(message: string, entity: Entity): boolean {
+  if (!ADD_WORDS.test(message) && !/(ekleyelim|koyal[ıi]m)/i.test(message)) return false;
+  // An explicit field word ("alan", "field", "column" …) always reads as a field.
+  if (FIELD_WORDS.test(message)) return true;
+  // A concrete identifier plus an explicit type also reads as a field even
+  // without the word "alan": "Order'a priorityCount int ekle".
+  if (/([A-Za-z_][A-Za-z0-9_]*)\s+(?:int|integer|string|text|decimal|float|boolean|bool|datetime|date|uuid|json|number)\b/i.test(message)) {
+    return true;
+  }
+  const candidate = extractFieldName(message, entity);
+  if (!candidate) return false;
+  // Technology requests ("Order için Redis cache ekle") must stay technology
+  // requests; they are only fields when the sentence names a field explicitly.
+  if (TECH_CATALOG.some((entry) => entry.match.test(candidate))) return false;
+  // camelCase / snake_case identifiers are unambiguous field names.
+  return /^[a-z]+(?:[A-Z][A-Za-z0-9]*)+$/.test(candidate) || candidate.includes("_");
+}
+
 function detectIntent(message: string, state: ArchState): ChatIntent {
   const entity = findEntity(message, state);
   if (entity && REMOVE_WORDS.test(message) && FIELD_WORDS.test(message)) return "remove-field";
-  if (entity && ADD_WORDS.test(message) && (FIELD_WORDS.test(message) || ADD_WORDS.test(message))) {
-    if (FIELD_WORDS.test(message) || entity.fields.length > 0) return "add-field";
-  }
+  if (entity && looksLikeFieldAddition(message, entity)) return "add-field";
+  // Splitting requires an explicit service/microservice context; a bare
+  // "böl" (divide) must not reshape the architecture.
   if (SPLIT_WORDS.test(message) && SERVICE_WORDS.test(message)) return "split-services";
-  if (SPLIT_WORDS.test(message) && !/cache|redis/i.test(message)) return "split-services";
+  if (/mikroservis|microservices?/i.test(message)) return "split-services";
   if (/(kald[ıi]r|sil|remove|delete|drop)/i.test(message)) {
     const node = findNode(message, state);
     if (node) return "remove-component";

@@ -1,0 +1,25 @@
+{
+  "name": "app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/app/src",
+  "projectType": "application",
+  "tags": ["type:app"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": { "command": "tsx packages/app/src/server.ts" }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": { "command": "tsx packages/app/src/server.ts" }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": { "command": "tsc --noEmit -p packages/app/tsconfig.json" }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "command": "vitest run packages/app" }
+    }
+  }
+}

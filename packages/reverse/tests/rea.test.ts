@@ -103,6 +103,42 @@ describe("REA bridge", () => {
     expect(findings.every((item) => item.evidence.length >= 0)).toBe(true);
   });
 
+  it("projects a REA JavaScript application Evidence envelope", () => {
+    const findings = normalizeReaOutput({
+      evidence_id: "ev_test",
+      subject: { name: "katex", local_path: "/tmp/app" },
+      limitations: ["Graph coverage is incomplete."],
+      normalized_result: {
+        input_path: "/tmp/app",
+        format: "directory",
+        statistics: { parsed_javascript_files: 1, visited_ast_nodes: 120 },
+        summary: { ipc: { operations: 2 } },
+        graph: {
+          nodes: [
+            { kind: "javascript-module", identity: { key: "require:a" }, observations: [] },
+            { kind: "javascript-module", identity: { key: "require:b" }, observations: [] },
+            { kind: "endpoint", observations: [{ label: "https://api.example.test/v1/orders" }] },
+            { kind: "endpoint", observations: [{ label: "\\\\@eqnsw" }] },
+            { kind: "package", observations: [{ label: "mermaid" }] },
+            { kind: "javascript-asset", observations: [{ label: "app.min.js" }] },
+            { kind: "electron-renderer", observations: [{ label: "./dist/index.mjs" }] },
+          ],
+        },
+      },
+    });
+
+    const titles = findings.map((finding) => finding.title);
+    expect(titles).toContain("Reconstructed JavaScript modules");
+    expect(findings.find((finding) => finding.title === "Reconstructed JavaScript modules")?.detail).toContain(
+      "2 module reference(s)",
+    );
+    expect(titles).toContain("External endpoint https://api.example.test/v1/orders");
+    expect(titles.some((title) => title.includes("eqnsw"))).toBe(false);
+    expect(findings.some((finding) => finding.category === "package")).toBe(true);
+    expect(findings.some((finding) => finding.category === "artifact")).toBe(true);
+    expect(titles).toContain("Electron process boundaries");
+  });
+
   it("falls back to the built-in analyzer when no CLI is installed", async () => {
     process.env.PATH = join(scratch, "empty-path");
     mkdirSync(join(scratch, "empty-path"), { recursive: true });

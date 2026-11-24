@@ -1,15 +1,4 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "noEmit": true,
-    "types": ["node"]
-  },
+  "extends": "./tsconfig.base.json",
   "include": ["packages/**/*.ts", "vitest.config.ts"]
 }

@@ -44,6 +44,36 @@ describe("architectChat (deterministic)", () => {
     expect(validateState(result.state)).toEqual([]);
   });
 
+  it("keeps an entity mention plus ekle a technology request, not a field", async () => {
+    const state = baseState();
+    const order = entity(state, "Order");
+    const result = await architectChat(state, "Order için Redis cache ekle", { locale: "tr" });
+
+    expect(result.intent).toBe("add-cache");
+    expect(result.changes.some((change) => change.type === "field")).toBe(false);
+    expect(entity(result.state, "Order")?.fields).toEqual(order?.fields);
+    expect(result.state.nodes.some((node) => /redis cache/i.test(node.name))).toBe(true);
+  });
+
+  it("adds a typed identifier even when the word alan is omitted", async () => {
+    const state = baseState();
+    const result = await architectChat(state, "Order'a priorityCount int ekle", { locale: "tr" });
+
+    expect(result.intent).toBe("add-field");
+    expect(entity(result.state, "Order")?.fields.some((field) => field.name === "priorityCount" && field.type === "int")).toBe(
+      true,
+    );
+  });
+
+  it("does not split the architecture for a bare böl", async () => {
+    const state = baseState();
+    const result = await architectChat(state, "böl", { locale: "tr" });
+
+    expect(result.intent).not.toBe("split-services");
+    expect(result.changes).toEqual([]);
+    expect(result.state).toEqual(state);
+  });
+
   it("infers a decimal type for money-ish fields and marks uniqueness", async () => {
     const state = baseState();
     const result = await architectChat(state, "Add a unique price field to Product", { locale: "en" });
