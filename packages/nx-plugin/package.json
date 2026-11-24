@@ -1,0 +1,8 @@
+{
+  "name": "@architect-studio/workspace-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local Nx plugin: generators that keep Architect Studio packages consistent.",
+  "generators": "./generators.json",
+  "main": "./src/index.ts"
+}

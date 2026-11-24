@@ -23,46 +23,110 @@ tabanlı araç.
 | Yetenek | Özet |
 |---|---|
 | **Stream ZIP** | Node `Readable` + backpressure; arşiv tek buffer'a alınmaz. 24 MB'lık paket profili testte doğrulanır. |
-| **8 dil** | `tr`, `en`, `de`, `es`, `fr`, `pt`, `ja`, `zh`; Web UI, API hataları ve üretilen dokümanlar seçilen dilde. |
-| **Frontend Studio** | Dil seçici, canlı Mermaid, dosya ağacı + içerik, görev/metrik/doğrulama sekmeleri, state düzenleme, indirme. |
+| **8 dil** | `tr`, `en`, `de`, `es`, `fr`, `pt`, `ja`, `zh`; API hataları ve üretilen dokümanlar seçilen dilde. |
+| **Studio sözleşmesi** | Arayüz kodu depoda tutulmaz; 11 ekran, bileşen/etkileşim listesi, tasarım token'ları ve tam API sözleşmesi [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md) içindedir. |
 | **REA** | `repoToState`: `package.json`, workspace'ler, Prisma, `docker-compose`, ADR'ler ve bileşen dosyalarından `ArchState`. |
 | **Multi-Sandbox** | `temp-dir`, `bwrap`, `podman`, `docker`, `firejail`, `systemd-run`; otomatik algılama ve güvenli fallback. |
 | **MCP** | `architect_generate`, `architect_preview`, `architect_validate`, `architect_reverse_engineer`. |
 | **Web arama** | Tavily/Brave anahtarıyla veya anahtarsız DuckDuckGo fallback'iyle güncel referanslar. |
+| **Nx monorepo** | 9 proje, `nx run-many` ile önbellekli `test`/`typecheck`, `nx graph` mimari haritası ve yerel `package` generator'ı. |
 
 ## Hızlı başlangıç
 
 ```bash
 pnpm install
-pnpm dev
-# http://localhost:3000
+pnpm dev          # nx run app:dev → http://localhost:3000
+pnpm test         # nx run-many -t test
+pnpm typecheck    # nx run-many -t typecheck
+pnpm nx graph     # mimari harita (proje grafiği), http://127.0.0.1:4211
 ```
 
 Demo modu varsayılan olarak açıktır; API anahtarı gerektirmez. Node >= 22 ve pnpm gerekir.
 
+Sunucu **yalnızca HTTP API** sunar. Studio arayüzünün kaynak dosyaları (`web/*`) depoda
+yoktur; arayüz `FRONTEND_SPEC.md` sözleşmesine göre ayrıca yazılır, o yüzden `GET /` bu
+depoda `500` döner. `GET /api/*` uçlarının tamamı çalışır.
+
 ### BYOK
 
-Arayüzde demo modunu kapat; API anahtarı, model ve OpenAI-uyumlu base URL gir. Anahtar
-yalnızca istek süresince kullanılır; diske yazılmaz, loglanmaz ve pakete konmaz.
+İstemci demo modunu kapatır; API anahtarı, model ve OpenAI-uyumlu base URL istek gövdesinde
+(`apiKey`, `model`, `baseUrl`) gönderilir. Anahtar yalnızca istek süresince kullanılır;
+diske yazılmaz, loglanmaz ve pakete konmaz.
 
-## Web Studio
+## Arayüz sözleşmesi (`FRONTEND_SPEC.md`)
 
-- **Mimar sohbeti:** doğal dil komutları (`Redis cache ekle`, `Order entity'sine status alanı koy`,
-  `Mikroservislere böl`) `ArchState`'i canlı günceller; diyagram, entity kartları, görevler ve
-  ZIP aynı anda yenilenir. Demo modunda deterministik ayrıştırıcı, BYOK modunda LLM çalışır;
-  LLM hata verirse deterministik motora düşer.
-- Sol/sağ bölünmüş çalışma alanı, karanlık/aydınlık tema, canlı Mermaid render, tıklanabilir
-  bileşen ve entity kartları, sözdizimi vurgulu çoklu dosya önizleyici, canlı sandbox ve REA
-  durum rozetleri.
-- Fikir formu, demo/BYOK alanları, hedef **paket yöneticisi** ve **test runner**.
-- Üst menüde **8 dilli seçici**; seçim API isteklerine ve üretilen dokümanlara yansır.
-- **Proje analizi (tersine mühendislik):** yerel bir dizin yolu gir, `ArchState` otomatik
-  çıkarılsın, state düzenleyiciye yüklensin ve önizlensin.
-- **Önce önizle:** canlı Mermaid diyagramı, dosya ağacı + dosya içeriği, görev tablosu,
-  metrikler ve doğrulama sorunları; ZIP indirmeden.
-- **Sandbox doğrulaması:** seçilen sürücüde paket materyalize edilip kontrol edilir.
-- **Canlı web araması:** mimari tasarlanmadan önce güncel API/kütüphane referansları eklenir.
-- **ArchState JSON** yapıştırarak veya düzenleyerek mevcut mimariyi paketleyebilirsin.
+Studio arayüzü bu depoda kod olarak bulunmaz; sözleşmesi kök dizindeki
+[`FRONTEND_SPEC.md`](FRONTEND_SPEC.md) dosyasındadır ve backend ona göre sabitlenmiştir:
+
+- **5 bölüm:** ürün özeti/akışlar, ekran + bileşen/etkileşim listesi, tasarım sistemi
+  (HEX palet, tipografi, dark/light, layout, responsive), tam API sözleşmesi, hata ve
+  yüklenme durumları.
+- **11 ekran/bileşen:** `IdeaComposer`, `ArchitectureCanvas` (Mermaid), `EntityTable`,
+  `ChatPanel`, `TaskBoard`, `MetricsGrid`, `ValidationPanel`, `ArtifactExplorer`,
+  `ReverseForm`, `SandboxPanel`, `SettingsDrawer`.
+- **Bağlandığı uçlar:** `GET /api/health|version|i18n|sandboxes|rea`,
+  `POST /api/preview|chat|generate|reverse|sandbox`.
+- Arayüz yeni bir uç nokta gerektirmez; sözleşme mevcut backend ile birebir eşleşir.
+
+Mimari sohbeti (`POST /api/chat`) doğal dil komutlarını (`Redis cache ekle`,
+`Order entity'sine status alanı koy`, `Mikroservislere böl`) deterministik olarak
+`ArchState`'e uygular; BYOK modunda LLM devreye girer, hata verirse deterministik motora
+düşer. Alan ekleme yalnızca açık alan ifadesi, tip belirten identifier veya
+camelCase/snake_case identifier ile tetiklenir; "ekle" geçen her cümle alan sayılmaz.
+Mikroservis bölme yalnızca `mikroservis`/`microservices` ya da servis kelimesi +
+`böl|split|ayır` ile çalışır.
+
+## Nx çalışma alanı
+
+Depo, Nx 24 üzerinde pnpm workspace olarak yapılandırılmıştır. Her paket kendi
+`project.json` (`typecheck`, varsa `test` hedefleri) ve `tsconfig.json` dosyasına sahiptir;
+ortak derleyici ayarları `tsconfig.base.json` içindedir.
+
+| Proje | Rol |
+|---|---|
+| `core` | state, diff, i18n, tokenizer, metrikler, task packet |
+| `generators` | OpenAPI / Prisma / AsyncAPI / Mermaid / doküman üreticileri |
+| `validators` | deterministik doğrulama + self-heal |
+| `packager` | stream ZIP, metrikler, manifest, OpenCode ajanları |
+| `app` | pipeline, sohbet, web arama, HTTP sunucusu, CLI |
+| `reverse` | `repoToState` + morluto/rea köprüsü |
+| `sandbox` | çoklu sandbox sürücüleri |
+| `mcp` | MCP araçları + stdio sunucusu |
+| `nx-plugin` | yerel Nx generator'ları (bkz. aşağıdaki bölüm) |
+
+```bash
+pnpm test                      # nx run-many -t test (önbellekli)
+pnpm typecheck                 # nx run-many -t typecheck
+pnpm build                     # typecheck + test
+pnpm affected                  # nx affected -t typecheck test (defaultBase: main)
+pnpm nx graph --host 127.0.0.1 --port 4211   # canlı proje grafiği
+pnpm nx graph --file=graph.html              # statik grafik çıktısı
+pnpm nx show projects          # proje listesi
+pnpm nx run app:dev            # tek proje hedefi
+```
+
+`nx.json` içinde `useDaemonProcess: false` (CI/konteyner dostu) ve `test`/`typecheck`
+hedefleri için `cache: true` ayarlıdır. Görev çıktıları `.nx/` altında tutulur ve bu
+dizin git'e girmez.
+
+### Yerel Nx generator'ı
+
+`packages/nx-plugin`, `@architect-studio/workspace-plugin` adıyla bir Nx plugin'idir
+(`generators.json` + `tsconfig.base.json` içindeki path eşlemesi). Yeni bir kütüphane
+paketini depo kurallarıyla (project.json hedefleri, tsconfig, kaynak, Vitest paketi)
+üretir:
+
+```bash
+pnpm nx g @architect-studio/workspace-plugin:package order-flow \
+  --description="Order flow orchestration"
+
+# Önizleme: hiçbir dosya yazılmaz
+pnpm nx g @architect-studio/workspace-plugin:package order-flow --dry-run
+```
+
+Üretilen dosyalar: `packages/<ad>/project.json`, `packages/<ad>/tsconfig.json`,
+`packages/<ad>/src/index.ts`, `packages/<ad>/tests/<ad>.test.ts`. Geçersiz ad (kebab-case
+değil) ve var olan paket adı reddedilir.
 
 ## Dil desteği (i18n)
 
@@ -82,23 +146,29 @@ kataloğu kullanır. Eksik çeviri İngilizceye düşer, placeholder'lar korunur
 
 `node_modules`, `.git`, `dist`, `build`, `out`, `coverage`, `vendor`, `target` gibi dizinler
 ve 512 KB üstü dosyalar atlanır. Sonuç `validateState` ile doğrulanır ve doğrudan
-paketlenebilir. CLI: `--reverse <dir>`, API: `POST /api/reverse`, Studio: proje analizi paneli.
+paketlenebilir. CLI: `--reverse <dir>`, API: `POST /api/reverse`, arayüz: `ReverseForm`
+(`FRONTEND_SPEC.md` §2.2).
 
 ### morluto/rea köprüsü
 
-`--use-rea` (API'de `useRea: true`, MCP'de `useRea`, Studio'da analiz panelindeki anahtar)
-[`morluto/rea`](https://github.com/morluto/rea) ile köprü kurar:
+`--use-rea` (API'de `useRea: true`, MCP'de `useRea`) [`morluto/rea`](https://github.com/morluto/rea)
+ile köprü kurar:
 
 - `rea` veya `rea-agents` PATH'te varsa `rea analyze-javascript-application <path> --json`
-  (gerekirse `rea analyze` / `rea inspect`) çalıştırılır ve çıktı `findings` listesine,
-  REA'nın Evidence dokümanı ise modül/Electron sınırı/paket bulgularına projekte edilir.
+  (gerekirse `rea analyze` / `rea inspect`) çalıştırılır; stdout 54 KB'lık bir
+  `--filter-output` projeksiyonundan geçirilir (tam zarf ~34 MB), REA'nın
+  `normalized_result` dokümanı modül/asset/paket/endpoint/Electron bulgularına çevrilir.
 - Kurulu değilse yerleşik analizör devreye girer: dosya imzaları (ELF/PE/Mach-O/WASM/SQLite),
   Electron `.asar` başlığı, minified bundle imzaları, `.env.example` anahtar adları (değerler
   okunmaz), Dockerfile taban tabanı ve dış endpoint'ler. Bulgular aynı `evidence` şemasındadır,
   böylece alt katman hangi motorun çalıştığını bilmek zorunda kalmaz.
 - Belirli bir kurulumu işaret etmek için `ARCHITECT_REA_BIN=/path/to/rea` kullan.
+  `rea-agents` launcher'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister.
 - REA bulguları `mergeReaFindings` ile `ArchState`'e katılır: veritabanı, kuyruk ve dış servis
   düğümleri kanıt yollarıyla (`props.evidence`) eklenir; mevcut adlar tekrar eklenmez.
+- Yanıtta motor `rea.engine` (`rea` | `rea-agents` | `static`), `rea.findings`,
+  `rea.scannedArtifacts` ve `rea.warnings` (REA sınırlamaları) döner. `GET /api/rea`
+  yalnızca algılama sonucunu verir.
 
 ## Sandbox sürücüleri
 
@@ -117,8 +187,8 @@ geçici çalışma dizininde, yalnızca güvenli ortam değişkenleriyle (`PATH`
 
 `auto` sırası: `bwrap → podman → docker → firejail → systemd-run → temp-dir`. Kurulu
 olmayan bir sürücü açıkça seçilirse net hata döner; `fallback` etkinse `temp-dir`'e düşer.
-CLI `--sandbox <tür>` / `--sandbox-command <cmd>`, API `POST /api/sandbox`, Studio'daki
-sandbox seçici aynı sürücüleri kullanır. `GET /api/sandboxes` kurulu motorları ve
+CLI `--sandbox <tür>` / `--sandbox-command <cmd>`, API `POST /api/sandbox` ve arayüzdeki
+`SandboxPanel` aynı sürücüleri kullanır. `GET /api/sandboxes` kurulu motorları ve
 sürümlerini listeler.
 
 ## MCP sunucusu
@@ -128,8 +198,8 @@ pnpm mcp
 ```
 
 Dört araç stdio üzerinden sunulur: `architect_generate`, `architect_preview`,
-`architect_validate`, `architect_reverse_engineer` (`useRea: true` ile morluto/rea köprüsü). Claude Code, Cursor, OpenCode ve
-Freebuff yapılandırma örnekleri: [`docs/mcp.md`](docs/mcp.md).
+`architect_validate`, `architect_reverse_engineer` (`useRea: true` ile morluto/rea köprüsü).
+Claude Code, Cursor, OpenCode ve Freebuff yapılandırma örnekleri: [`docs/mcp.md`](docs/mcp.md).
 
 ## Web araması
 
@@ -137,7 +207,8 @@ Freebuff yapılandırma örnekleri: [`docs/mcp.md`](docs/mcp.md).
 `TAVILY_API_KEY` veya `BRAVE_API_KEY` varsa o servis, yoksa anahtarsız DuckDuckGo
 instant-answer API'si kullanılır. Sonuçlar 4.000 karakterle sınırlı bir bağlam bloğu
 olarak prompt'a eklenir. CLI `--web-search --search-provider <auto|tavily|brave|duckduckgo>`,
-API gövdesinde `webSearch: true`, Studio'da "Canlı web araması" anahtarı.
+API gövdesinde `webSearch: true`, arayüzde `SettingsDrawer`/`IdeaComposer` anahtarı
+(`FRONTEND_SPEC.md` §2.2).
 
 ## HTTP API
 
@@ -232,14 +303,16 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # 128 test, 15 dosya
-pnpm typecheck
+pnpm test        # nx run-many -t test — 151 test, 17 dosya, 8 paket
+pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```
 
 Kapsam: core/state/diff/task-packet, 8 dilli i18n, generator'lar, doğrulayıcılar, packager,
 stream ZIP bellek profili, 54 düğümlü stres + fuzz + eşzamanlı indirme, HTTP API, tersine
-mühendislik, sandbox sürücüleri, web arama ve MCP araçları.
+mühendislik (REA zarfı + sahte CLI), sohbet niyetleri, sandbox sürücüleri, web arama ve MCP
+araçları. `nx-plugin` generator'ı `nx g ... --dry-run` ve gerçek üretim + `tsc`/Vitest ile
+elle doğrulanır.
 
 ## Docker
 
@@ -258,15 +331,20 @@ soketinin konteynere verilmesi gerekir; `temp-dir` ve `bwrap` bu gereksinimi duy
 ## Bilinçli sınırlar
 
 - Kimlik doğrulama, kullanıcı/oturum ve kalıcılık yoktur; sunucu tek süreç ve in-memory'dir.
+- **Arayüz kodü yoktur:** `web/*` silindi, yerine `FRONTEND_SPEC.md` sözleşmesi geçti;
+  `GET /` bu depoda `500` döner, tüm `/api/*` uçları çalışır.
 - Görev metinleri node türüne göre şablonlanır; LLM yalnızca state üretir.
 - Kabul kriterleri üretilir, hedef kod tabanında çalıştırılmaz.
 - Sandbox, komut çalıştırma izolasyonu sağlar; `podman`/`docker` imajının önceden
   çekilmiş olması gerekir.
 - Tarayıcı E2E (Playwright) yoktur; indirme akışı HTTP seviyesinde test edilir.
 - Web araması `auto` modunda anahtarsız DuckDuckGo'ya düşer; sonuç kalitesi sağlayıcıya bağlıdır.
+- `rea` CLI'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; daha eski Node'da köprü
+  yerleşik analizöre düşer (`rea.engine: "static"`).
 
 ## Tasarım ve plan
 
+- `FRONTEND_SPEC.md` — Studio arayüzü sözleşmesi (ekranlar, tasarım sistemi, API, hata durumları)
 - `docs/superpowers/specs/2026-11-22-agent-package-design.md`
 - `docs/superpowers/plans/2026-11-22-usable-mvp.md`
 - `docs/mcp.md` — MCP araçları ve istemci yapılandırmaları
