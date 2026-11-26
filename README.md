@@ -258,8 +258,28 @@ API gövdesinde `webSearch: true`, arayüzde `SettingsDrawer`/`IdeaComposer` ana
 Ortak gövde alanları: `idea` **veya** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
 `packageManager`, `testRunner`, `locale`, `sandbox`, `webSearch`. İstek gövdesi 256 KB ile
 sınırlıdır; yazma uçları IP başına dakikalık bütçeyle korunur (`RATE_LIMIT_PER_MIN`,
-varsayılan 120). Hata kodları: `400` geçersiz girdi/state/path/sandbox, `413` gövde çok
-büyük, `429` rate limit, `502` LLM sağlayıcı hatası.
+varsayılan 120). Hata kodları: `400` geçersiz girdi/state/path/sandbox (ve `path_not_allowed`),
+`413` gövde çok büyük, `429` rate limit (ve `reverse_busy`), `502` LLM sağlayıcı hatası,
+`504` `reverse_timeout`.
+
+### `/api/reverse` güvenlik sınırları
+
+Uç nokta istemcinin adını verdiği dizini okur ve kimlik doğrulaması yoktur; bu yüzden üç
+sınır birlikte uygulanır:
+
+| Sınır | Değişken | Varsayılan | Davranış |
+|---|---|---|---|
+| Bağlanma adresi | `HOST` | `127.0.0.1` | Yalnızca yerel makine; ağa açıkken ve `REVERSE_ROOTS` boşken açılışta uyarı yazılır |
+| Okunabilir kökler | `REVERSE_ROOTS` | *(boş)* | İki nokta ile ayrılmış dizin listesi; dışındaki yollar `400 path_not_allowed` |
+| Eşzamanlılık | `REVERSE_CONCURRENCY` | `2` | Fazla istekler FIFO kuyruğa girer |
+| Kuyruk bütçesi | `REVERSE_QUEUE_TIMEOUT_MS` | `30000` | Sırada bekleyen istek `429 reverse_busy` alır |
+| İş bütçesi | `REVERSE_TIMEOUT_MS` | `120000` | Aşımda `504 reverse_timeout`; `rea` alt sürecine de aynı bütçe geçer |
+
+Yol çözümlemesi `path.resolve` + `fs.realpath` ile yapılır: `..` segmentleri normalize edilir
+ve sembolik bağlantılar çözüldükten sonra karşılaştırılır, yani izinli kök içindeki bir
+symlink dışarıyı gösteriyorsa reddedilir. Reddedilen yollarda çözümlenmiş yol istemciye
+döndürülmez. `REVERSE_ROOTS` boş bırakılırsa davranış geriye uyumlu kalır (her okunabilir
+yol), ancak `HOST` loopback dışına alındığında bu kombinasyon uyarı üretir.
 
 ## CLI
 

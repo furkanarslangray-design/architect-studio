@@ -538,6 +538,9 @@ Tüm hatalar aynı zarfta döner:
 | 400 | `empty_message` | Boş sohbet mesajı | Girdi kenarı kırmızı, toast yok |
 | 400 | `invalid_json` | Gövde JSON değil | Toast: "İstek biçimi hatalı" |
 | 400 | `invalid_path` | Reverse yolu yok/dizin değil | Yol alanı altında hata; son örnek yollar önerilir |
+| 400 | `path_not_allowed` | Yol `REVERSE_ROOTS` dışında (symlink/`..` dahil) | Yol alanında hata + "sunucuda izinli kökler" ipucu; çözümlenmiş yol gösterilmez |
+| 429 | `reverse_busy` | Eşzamanlı reverse kotası dolu | Toast + `Retry-After` sonrası "tekrar dene" önerisi; form girdisi korunur |
+| 504 | `reverse_timeout` | Reverse işi süre bütçesini aştı | Kalıcı alert: `maxDepth`/`maxFiles` küçültme önerisi |
 | 400 | `invalid_sandbox` | Desteklenmeyen kum havuzu | Seçici varsayılana döner + toast |
 | 400 | `sandbox_failed` | Doğrulama süreci başarısız | Kum havuzu konsolunda stderr; toast `error` |
 | 400 | `sandbox_unavailable` | Hiçbir sürücü çalışmadı | Modal: sürücü listesi + `details`; "temp-dir ile dene" |

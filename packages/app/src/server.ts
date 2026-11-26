@@ -33,6 +33,9 @@ import {
 import { architectChat } from "./chat";
 import { runPipeline, type PipelineOptions, type PipelineResult } from "./pipeline";
 import { isSearchProvider, type WebSearchResult } from "./web-search";
+import { isLoopbackHost, resolveListenHost } from "./listen-host";
+import { parseReverseRoots, resolveReversePath, ReversePathError } from "./reverse-guard";
+import { createReverseQueue, ReverseQueueError } from "./reverse-queue";
 
 const MAX_BODY_BYTES = 256 * 1024;
 export const APP_VERSION = "2.1.0";
@@ -58,9 +61,29 @@ function researchOf(result: BuiltPackage | PipelineResult) {
   };
 }
 
-export function createServer(options: { rateLimitPerMinute?: number } = {}) {
+export interface ServerOptions {
+  rateLimitPerMinute?: number;
+  /** Absolute directories `/api/reverse` may read. Empty keeps the legacy permissive mode. */
+  reverseRoots?: string[];
+  reverseConcurrency?: number;
+  reverseQueueTimeoutMs?: number;
+  reverseTimeoutMs?: number;
+}
+
+function numberFromEnv(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+export function createServer(options: ServerOptions = {}) {
   const rateLimit = options.rateLimitPerMinute ?? Number(process.env.RATE_LIMIT_PER_MIN ?? 120);
   const buckets = new Map<string, { count: number; resetAt: number }>();
+  const reverseRoots = options.reverseRoots ?? parseReverseRoots(process.env.REVERSE_ROOTS);
+  const reverseQueue = createReverseQueue({
+    concurrency: options.reverseConcurrency ?? numberFromEnv(process.env.REVERSE_CONCURRENCY, 2),
+    queueTimeoutMs: options.reverseQueueTimeoutMs ?? numberFromEnv(process.env.REVERSE_QUEUE_TIMEOUT_MS, 30_000),
+    timeoutMs: options.reverseTimeoutMs ?? numberFromEnv(process.env.REVERSE_TIMEOUT_MS, 120_000),
+  });
 
   return createHttpServer(async (request, response) => {
     let locale = normalizeLocale(request.headers["accept-language"]);
@@ -148,15 +171,36 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
         if (!pathValue) {
           throw new HttpError(400, { key: "error.invalidPath", vars: { path: "" }, code: "invalid_path" });
         }
+
+        let target: string;
+        try {
+          target = resolveReversePath(pathValue, reverseRoots);
+        } catch (error) {
+          if (error instanceof ReversePathError && error.code === "path_not_allowed") {
+            throw new HttpError(400, {
+              key: "error.reverseFailed",
+              vars: { detail: `${error.message} (see REVERSE_ROOTS)` },
+              code: "path_not_allowed",
+            });
+          }
+          throw new HttpError(400, {
+            key: "error.invalidPath",
+            vars: { path: pathValue },
+            code: "invalid_path",
+          });
+        }
+
         try {
           const reverseOptions = {
             maxFiles: typeof body.maxFiles === "number" ? body.maxFiles : undefined,
             maxDepth: typeof body.maxDepth === "number" ? body.maxDepth : undefined,
+            ...(reverseQueue.timeoutMs > 0 ? { rea: { timeoutMs: reverseQueue.timeoutMs } } : {}),
           };
-          const result =
+          const result = await reverseQueue.run(async () =>
             body.useRea === true
-              ? await repoToStateWithRea(pathValue, reverseOptions)
-              : repoToState(pathValue, reverseOptions);
+              ? await repoToStateWithRea(target, reverseOptions)
+              : repoToState(target, reverseOptions),
+          );
           sendJson(response, 200, {
             summary: summarizeReverse(result),
             root: result.root,
@@ -177,6 +221,20 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
               : {}),
           });
         } catch (error) {
+          if (error instanceof ReverseQueueError) {
+            if (error.code === "reverse_busy") {
+              throw new HttpError(429, {
+                key: "error.rateLimited",
+                code: "reverse_busy",
+                headers: { "Retry-After": "1" },
+              });
+            }
+            throw new HttpError(504, {
+              key: "error.reverseFailed",
+              vars: { detail: error.message },
+              code: "reverse_timeout",
+            });
+          }
           const detail = error instanceof Error ? error.message : "unknown error";
           const key = /does not exist or is not a directory/i.test(detail) ? "error.invalidPath" : "error.reverseFailed";
           throw new HttpError(400, {
@@ -345,10 +403,20 @@ export function createServer(options: { rateLimitPerMinute?: number } = {}) {
   });
 }
 
-export function startServer(port = Number(process.env.PORT ?? 3000)): void {
+export function startServer(
+  port = Number(process.env.PORT ?? 3000),
+  host = resolveListenHost(process.env),
+): void {
   const server = createServer();
-  server.listen(port, () => {
-    console.log(`AI Principal Architect running at http://localhost:${port}`);
+  const roots = parseReverseRoots(process.env.REVERSE_ROOTS);
+  server.listen(port, host, () => {
+    console.log(`AI Principal Architect running at http://${host}:${port}`);
+    if (!isLoopbackHost(host) && roots.length === 0) {
+      console.warn(
+        `[architect] HOST=${host} is reachable from the network but REVERSE_ROOTS is unset: ` +
+          "/api/reverse can read any path this process can reach. Set REVERSE_ROOTS to restrict it.",
+      );
+    }
   });
 }
 

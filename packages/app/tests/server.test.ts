@@ -1,6 +1,6 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -295,5 +295,85 @@ describe("i18n", () => {
     expect(payload.files["ARCHITECTURE.md"]).toContain("# Mimari");
     expect(payload.files["TASKS.md"]).toContain("# GÖREVLER");
     expect(payload.files["tasks/T-001.md"]).toContain("Kabul kriterleri");
+  });
+});
+
+describe("reverse path allowlist", () => {
+  let guarded: Server;
+  let guardedUrl: string;
+  const allowRoot = join(fixtures, "guard-allowed");
+  const outsideRoot = join(fixtures, "guard-outside");
+
+  beforeAll(async () => {
+    mkdirSync(join(allowRoot, "app"), { recursive: true });
+    mkdirSync(outsideRoot, { recursive: true });
+    writeFileSync(
+      join(allowRoot, "app", "package.json"),
+      JSON.stringify({ name: "guard-app", dependencies: { express: "^4.0.0" } }),
+    );
+    writeFileSync(
+      join(outsideRoot, "package.json"),
+      JSON.stringify({ name: "outside", dependencies: { express: "^4.0.0" } }),
+    );
+    symlinkSync(outsideRoot, join(allowRoot, "escape"));
+
+    guarded = createServer({ reverseRoots: [allowRoot] });
+    await new Promise<void>((resolve) => guarded.listen(0, "127.0.0.1", () => resolve()));
+    const address = guarded.address() as AddressInfo;
+    guardedUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => guarded.close((error) => (error ? reject(error) : resolve())));
+  });
+
+  const reverse = (path: string) =>
+    fetch(`${guardedUrl}/api/reverse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+
+  it("accepts a directory inside REVERSE_ROOTS", async () => {
+    const response = await reverse(join(allowRoot, "app"));
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as any;
+    expect(payload.root).toBe(join(allowRoot, "app"));
+  });
+
+  it("rejects a directory outside REVERSE_ROOTS", async () => {
+    const response = await reverse(outsideRoot);
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as any;
+    expect(payload.code).toBe("path_not_allowed");
+    // The message must not disclose the resolved path.
+    expect(payload.error).not.toContain(outsideRoot);
+  });
+
+  it("rejects a symlink that escapes REVERSE_ROOTS", async () => {
+    const response = await reverse(join(allowRoot, "escape"));
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as any).code).toBe("path_not_allowed");
+  });
+
+  it("rejects .. traversal out of REVERSE_ROOTS", async () => {
+    const response = await reverse(join(allowRoot, "app", "..", "..", "guard-outside"));
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as any).code).toBe("path_not_allowed");
+  });
+});
+
+describe("listen host policy", () => {
+  it("defaults to loopback and accepts an explicit host", async () => {
+    const { isLoopbackHost, resolveListenHost } = await import("../src/listen-host");
+    expect(resolveListenHost({})).toBe("127.0.0.1");
+    expect(resolveListenHost({ HOST: " " })).toBe("127.0.0.1");
+    expect(resolveListenHost({ HOST: "0.0.0.0" })).toBe("0.0.0.0");
+    expect(isLoopbackHost("127.0.0.1")).toBe(true);
+    expect(isLoopbackHost("127.4.5.6")).toBe(true);
+    expect(isLoopbackHost("::1")).toBe(true);
+    expect(isLoopbackHost("localhost")).toBe(true);
+    expect(isLoopbackHost("0.0.0.0")).toBe(false);
+    expect(isLoopbackHost("10.0.0.7")).toBe(false);
   });
 });

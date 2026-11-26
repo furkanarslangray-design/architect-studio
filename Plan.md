@@ -1,6 +1,7 @@
 # Plan — sonraki adımlar (implementasyon planı)
 
-**Durum:** hiçbir madde başlatılmadı. Bu dosya yalnızca plan ve uygulama notlarıdır.
+**Durum:** §2 (reverse güvenlik sınırı) **uygulandı**. Kalan maddeler başlatılmadı; bu dosya
+plan ve uygulama notlarıdır.
 **Tarih:** 2026-11-24 · **Sürüm:** v2.1.0 üzerine
 **Kapsam:** 12 madde, değere göre sıralı; her maddede amaç, tasarım, dokunulacak dosyalar,
 adımlar, testler, kabul kriteri, risk ve efor var.
@@ -29,7 +30,7 @@ yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
 
 | Adım | Madde | Ön koşul | Neden burada |
 |---|---|---|---|
-| 1 | §2 `/api/reverse` güvenlik + kuyruk | — | Kimliksiz keyfî dosya okuması; ağa açılmadan önce kapanmalı, sonraki her uç aynı kuyruğu kullanacak |
+| 1 | §2 `/api/reverse` güvenlik + kuyruk ✅ | — | Kimliksiz keyfî dosya okuması; ağa açılmadan önce kapanmalı, sonraki her uç aynı kuyruğu kullanacak |
 | 2 | §1 Spec uyum (contract) testleri | — | Arayüz ve tüm yeni alanlar bu şemaya göre yazılacak; en erken dondurulmalı |
 | 3 | §8 `ArchState` şema sürümleme | §1 (şema altyapısı) | Kalıcılık ve doctor bunun üstüne kurulur; veri yazılmadan önce sürüm kavramı olmalı |
 | 4 | §10 `@architect-studio/*` alias + sınır kuralları | §1 | Import'lara **bir kez** dokunmak için: 4, 5, 9, 11 zaten bu dosyaları değiştirecek |
@@ -117,7 +118,17 @@ yalnızca belgelenen alanları zorunlu tut.
 
 ---
 
-## 2. `/api/reverse` güvenlik ve eşzamanlılık sınırı — S
+## 2. `/api/reverse` güvenlik ve eşzamanlılık sınırı — S · **UYGULANDI**
+
+**Teslim (2026-11-24):** `packages/app/src/reverse-guard.ts` (`resolveReversePath`,
+`parseReverseRoots`, `isInsideRoots`), `packages/app/src/reverse-queue.ts` (FIFO,
+`concurrency`/`queueTimeoutMs`/`timeoutMs`), `packages/app/src/listen-host.ts` (`HOST`
+varsayılanı `127.0.0.1`), `server.ts` entegrasyonu, `Dockerfile` → `node:24-alpine` +
+`HOST=0.0.0.0`, `.env.example`, README, `FRONTEND_SPEC.md` §5 hata kodları.
+Hata kodları: `400 path_not_allowed`, `429 reverse_busy`, `504 reverse_timeout`.
+Testler: `reverse-guard.test.ts` (13), `reverse-queue.test.ts` (4), `server.test.ts`
+allowlist + listen host blokları; `app` paketi 80 test yeşil, typecheck temiz. Yeni paket
+yok (0 MB indirme).
 
 **Amaç:** Kimlik doğrulaması olmayan bir ucun keyfî yerel dizin okumasını ve `rea` alt
 süreç çoğalmasını engellemek.
