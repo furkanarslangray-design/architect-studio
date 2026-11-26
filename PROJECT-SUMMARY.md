@@ -340,7 +340,7 @@ architect-studio/
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
 Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 16 (3 dosya),
-app 129 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
+app 134 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
 reverse-queue, reverse-jobs, init, doctor), reverse 24 (3 dosya: index, rea, cache), sandbox
 11, mcp 6.
 

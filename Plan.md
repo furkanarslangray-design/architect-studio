@@ -1,8 +1,9 @@
 # Plan — sonraki adımlar (implementasyon planı)
 
 **Durum:** §1 (spec sözleşme testleri), §2 (reverse güvenlik sınırı), §3 (`architect init`),
-§4 (artımlı reverse + SSE) ve §5 (`architect doctor`) **uygulandı**; ayrıca CPU/RAM
-optimizasyonu yapıldı. Kalan maddeler başlatılmadı; bu dosya plan ve uygulama notlarıdır.
+§4 (artımlı reverse + SSE), §5 (`architect doctor`) ve §6 (deterministik ZIP) **uygulandı**;
+ayrıca CPU/RAM optimizasyonu yapıldı ve CI (verify + docker) yeşile alındı. Kalan maddeler
+(§7, §9, §11, §12) başlatılmadı; bu dosya plan ve uygulama notlarıdır.
 **Tarih:** 2026-11-24 · **Sürüm:** v2.1.0 üzerine
 **Kapsam:** 12 madde, değere göre sıralı; her maddede amaç, tasarım, dokunulacak dosyalar,
 adımlar, testler, kabul kriteri, risk ve efor var.
