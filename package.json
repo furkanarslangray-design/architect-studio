@@ -11,6 +11,7 @@
     "typecheck": "nx run-many -t typecheck",
     "build": "nx run-many -t typecheck test",
     "affected": "nx affected -t typecheck test",
+    "architect": "tsx packages/app/src/cli.ts",
     "generate": "tsx packages/app/src/cli.ts",
     "mcp": "tsx packages/mcp/src/index.ts"
   },

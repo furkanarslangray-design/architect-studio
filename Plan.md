@@ -1,7 +1,7 @@
 # Plan — sonraki adımlar (implementasyon planı)
 
-**Durum:** §1 (spec sözleşme testleri) ve §2 (reverse güvenlik sınırı) **uygulandı**.
-Kalan maddeler başlatılmadı; bu dosya plan ve uygulama notlarıdır.
+**Durum:** §1 (spec sözleşme testleri), §2 (reverse güvenlik sınırı) ve §3 (`architect init`)
+**uygulandı**. Kalan maddeler başlatılmadı; bu dosya plan ve uygulama notlarıdır.
 **Tarih:** 2026-11-24 · **Sürüm:** v2.1.0 üzerine
 **Kapsam:** 12 madde, değere göre sıralı; her maddede amaç, tasarım, dokunulacak dosyalar,
 adımlar, testler, kabul kriteri, risk ve efor var.
@@ -34,7 +34,7 @@ yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
 | 2 | §1 Spec uyum (contract) testleri ✅ | — | Arayüz ve tüm yeni alanlar bu şemaya göre yazılacak; en erken dondurulmalı |
 | 3 | §8 `ArchState` şema sürümleme | §1 (şema altyapısı) | Kalıcılık ve doctor bunun üstüne kurulur; veri yazılmadan önce sürüm kavramı olmalı |
 | 4 | §10 `@architect-studio/*` alias + sınır kuralları | §1 | Import'lara **bir kez** dokunmak için: 4, 5, 9, 11 zaten bu dosyaları değiştirecek |
-| 5 | §3 `architect init` | §2 (config alanları) | İlk kullanım deneyimi; §9'un `config.json`'ına dayanak |
+| 5 | §3 `architect init` ✅ | §2 (config alanları) | İlk kullanım deneyimi; §9'un `config.json`'ına dayanak |
 | 6 | §6 Deterministik ZIP | — | Ucuz ve §7'nin ön koşulu; paket hash'i erken sabitlenir |
 | 7 | §7 Altın korpus | §6 | Snapshot'lar ancak ZIP bayt-bayt sabitken anlamlı |
 | 8 | §4 Artımlı reverse + SSE | §2 (kuyruk) | Önbellek anahtarı §2'nin yol çözümlemesini kullanır; geliştirme döngüsünü kısaltır |
@@ -193,7 +193,18 @@ hata mesajında çözümlenmiş yolu gösterme.
 
 ---
 
-## 3. `architect init` — hedef repoya tek komutla kurulum — S/M
+## 3. `architect init` — hedef repoya tek komutla kurulum — S/M · **UYGULANDI**
+
+**Teslim (2026-11-24):** `packages/app/src/init.ts` — `initProject`, `parseInitArgs`,
+`formatInitResult`, `runInitCommand`; `cli.ts` içinde `init` alt komutu; kök script
+`pnpm architect init`. Yazılanlar: `.architect/config.json` (client, MCP komutu,
+`reverseRoots` = hedef dizin, `packageManager`, `testRunner`), `.cursor/mcp.json`,
+`.mcp.json`, `opencode.json`, `AGENTS.md` işaretli bloğu. İdempotent (ikinci koşu 0 yazma),
+`--force` olmadan sahibi olmadığı dosyalara dokunmaz, `AGENTS.md`'de yalnızca işaretli
+bloğu günceller, Freebuff için not düşer. Testler: `init.test.ts` 13 test (dosya içerikleri,
+istemci şekilleri, idempotency, kullanıcı dosyasını koruma, marker bloğu güncelleme/ekleme,
+geçersiz istemci/hedef). Yeni paket yok (0 MB). `--scan` (state dosyası üretimi) ve
+`--client freebuff` dosya çıktısı bilinçli olarak kapsam dışı.
 
 **Amaç:** Paketin ilk kullanım anını 5 dakikadan 10 saniyeye indirmek.
 

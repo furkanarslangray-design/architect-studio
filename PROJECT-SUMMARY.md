@@ -7,17 +7,20 @@ Yeni geliştirici devir teslim notu. Son güncelleme: 2026-11-24.
 **Klasör:** `/home/furkanarslangray/architect-studio` (bu çalışma kopyasında worktree)
 **Branch:** `mvp` / `main` (çalışma dalı `freebuff/frontend-temizleme-ve-frontend-spec-olu-turma`)
 **Durum:** v2.1.0 — Nx monorepo, sohbet motoru, morluto/rea köprüsü ve arayüz sözleşmesi
-tamamlandı; test/typecheck yeşil. Studio arayüzü kod olarak depoda yok, sözleşmesi
+tamamlandı; `architect init`, `/api/reverse` güvenlik sınırları ve sözleşme testleri
+eklendi; test/typecheck yeşil. Studio arayüzü kod olarak depoda yok, sözleşmesi
 `FRONTEND_SPEC.md`.
 
 ```bash
 pnpm install
+pnpm architect init . # .architect/config.json + istemci MCP dosyaları + AGENTS.md bloğu
 pnpm dev              # nx run app:dev → http://localhost:3000 (yalnızca API)
 pnpm mcp              # stdio MCP sunucusu
 pnpm nx graph         # mimari harita, http://127.0.0.1:4211
 ```
 
-Gereksinim: Node >= 22, pnpm. Bağımlılıklar: `gpt-tokenizer`, `jszip`, `yaml`, `zod`,
+Gereksinim: Node 24.22.1 (`.nvmrc`; `engines.node` = `^22.23.4 || ^24.22.1 || >=26.12.1`),
+pnpm 10. Bağımlılıklar: `gpt-tokenizer`, `jszip`, `yaml`, `zod`,
 `@modelcontextprotocol/sdk`, `mermaid`; geliştirme için `nx`, `tsx`, `typescript`,
 `vitest`, `rea-agents`.
 
@@ -146,6 +149,52 @@ idea / ArchState / repository
 - `rea-agents` launcher'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; eski Node'da
   köprü sessizce değil, `rea.engine: "static"` + uyarı ile yerleşik analizöre düşer.
 
+### Güvenlik, sözleşme ve kurulum sertleştirmesi (2026-11-24)
+
+#### `/api/reverse` sınırları (`reverse-guard.ts`, `reverse-queue.ts`, `listen-host.ts`)
+
+- `resolveReversePath`: `path.resolve` + `fs.realpath` ile `..` normalize edilir ve symlink
+  çözülür; aday `REVERSE_ROOTS` köklerinden birinin altında değilse `ReversePathError`.
+- Kök listesi boşsa eski davranış korunur, **ama** `HOST` loopback dışındaysa istek artık
+  `403 reverse_disabled` ile reddedilir (yalnızca uyarı değil).
+- `createReverseQueue`: FIFO, varsayılan `REVERSE_CONCURRENCY=2`; `REVERSE_QUEUE_TIMEOUT_MS`
+  (30 sn) aşan bekleyen istek `429 reverse_busy`, `REVERSE_TIMEOUT_MS` (120 sn) aşan iş
+  `504 reverse_timeout`; `rea` alt sürecine de aynı bütçe geçer.
+- `HOST` varsayılanı `127.0.0.1`; Docker imajı `HOST=0.0.0.0` + `REVERSE_ROOTS=/workspace`
+  ile gelir, yani konteyner ağdan erişilebilir ama yalnızca bağlanan çalışma alanını okur.
+- Reddedilen yollarda çözümlenmiş yol istemciye döndürülmez.
+
+#### HTTP sözleşmesi (`packages/app/src/contract.ts`)
+
+- Uç başına zod şeması, ortak hata zarfı (`error`/`code`/`details`), `ENDPOINTS` ve
+  `ERROR_CODES` listeleri; `/api/generate` için yanıt başlıkları (`x-validation`,
+  `x-task-count`, `x-entities`, `x-tokenizer`, `x-locale`) da şemalı.
+- `packages/app/tests/contract.test.ts`: her uç pozitif senaryoyla, 8 hata senaryosu `code`
+  ile doğrulanır; state hem sözleşme şemasından hem `core.safeParseState`'ten geçer;
+  `FRONTEND_SPEC.md` §4'teki uç listesi `ENDPOINTS` ile **iki yönlü** karşılaştırılır.
+- Testler iki gerçek uyuşmazlık yakaladı ve spec düzeltildi: `locales` düz string değil
+  `[{ id, label }]` nesneleridir; paket `wave` alanı sayı değil string grup kimliğidir
+  (`"wave-0"`). Ayrıca `temp-dir` sürücüsünde `workspace` boş dönebilir.
+- Yeni hata kodları: `path_not_allowed` (400), `reverse_busy` (429), `reverse_timeout`
+  (504), `reverse_disabled` (403) — hepsi `FRONTEND_SPEC.md` §5 tablosunda.
+
+#### `architect init` (`packages/app/src/init.ts`)
+
+- `pnpm architect init [dir] [--client cursor|claude|opencode|freebuff|all] [--force]`.
+- Yazar: `.architect/config.json` (client, MCP komutu, `reverseRoots` = hedef dizin,
+  paket/test çalıştırıcı), `.cursor/mcp.json`, `.mcp.json`, `opencode.json` ve `AGENTS.md`
+  içindeki `<!-- architect:start --> … <!-- architect:end -->` bloğu.
+- İdempotent: ikinci koşu hiçbir dosyayı yazmaz; `AGENTS.md`'de yalnızca kendi bloğunu
+  günceller, sahibi olmadığı dosyalara `--force` olmadan dokunmaz. Freebuff için dosya
+  yazmaz, MCP ekranından ekleme notu düşer.
+
+#### Araç zinciri hizalaması
+
+- `.nvmrc` = `24.22.1`, `engines.node` = `^22.23.4 || ^24.22.1 || >=26.12.1`, CI
+  `node-version-file: .nvmrc`, Docker `node:24-alpine`, `@types/node` `^24` (lockfile
+  `24.19.4`). `rea` launcher'ı bu aralığın dışında sessizce `static` motora düşer.
+- `.env.example` içinde `HOST` yorumda tutulur (Docker `--env-file` loopback'e bağlamasın).
+
 ## 5. Nx monorepo
 
 - `nx.json`: `defaultBase: main`, `useDaemonProcess: false`, `namedInputs`
@@ -193,7 +242,7 @@ architect-studio/
    ├─ generators/  # openapi, prisma, asyncapi, mermaid, docs
    ├─ validators/  # deterministik doğrulama + self-heal
    ├─ packager/    # stream ZIP, metrics, manifest, OpenCode agents
-   ├─ app/         # demo/LLM, chat, web-search, pipeline, server, CLI
+   ├─ app/         # demo/LLM, chat, web-search, pipeline, server, CLI, init, contract
    ├─ reverse/     # repoToState + rea.ts (morluto/rea köprüsü)
    ├─ sandbox/     # çoklu sandbox sürücüleri
    ├─ mcp/         # MCP araçları + stdio sunucusu
@@ -204,7 +253,11 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 17 dosya, 151/151 test geçti |
+| `pnpm test` | 8 proje, 20 dosya, 205/205 test geçti |
+| Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
+| Sözleşme testleri | 17 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
+| `architect init` | 13 test: config + 3 istemci dosyası + AGENTS.md bloğu; ikinci koşu hiçbir şey yazmıyor |
+| Docker imajı | `node:24-alpine`, `HOST=0.0.0.0`, `REVERSE_ROOTS=/workspace` — imaj build edilmedi, yalnızca dosya düzeyinde değişti |
 | `pnpm typecheck` | 9 proje temiz |
 | `pnpm install` | temiz (allowBuilds ile ignored-build uyarısı yok) |
 | Stream ZIP bellek profili | 24 MB paket, canlı heap < yükün ½'si, chunk < 4 MB |
@@ -220,8 +273,8 @@ architect-studio/
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
 Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 11 (2 dosya),
-app 58 (5 dosya: app, server, chat, web-search, stress), reverse 13 (2 dosya), sandbox 11,
-mcp 6.
+app 112 (9 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
+reverse-queue, init), reverse 13 (2 dosya), sandbox 11, mcp 6.
 
 ## 8. Kalan sınırlar (bilinçli)
 
@@ -238,6 +291,12 @@ mcp 6.
 - Tam OpenAPI/AsyncAPI meta-şema doğrulaması yerine yapısal kontroller kullanılır.
 - `rea` köprüsü Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; aksi halde yerleşik
   analizör kullanılır.
+- `/api/reverse` kimlik doğrulaması istemez: loopback dışına açıldığında `REVERSE_ROOTS`
+  zorunludur, yoksa uç `403 reverse_disabled` döner. Kuyruk ve süre bütçeleri süreç içidir,
+  çok örnekli dağıtımda paylaşılmaz.
+- Sözleşmenin kaynağı `packages/app/src/contract.ts` şemalarıdır; uç listesi testle
+  `FRONTEND_SPEC.md` §4 ile karşılaştırılır. Spec'i güncellemeden uç eklemek/kaldırmak
+  `pnpm test`'i kırar.
 
 ## 9. Yeni geliştirici için ilk adımlar
 
@@ -267,6 +326,7 @@ pnpm nx show projects
 pnpm nx run app:dev
 pnpm nx g @architect-studio/workspace-plugin:package <ad> --dry-run
 pnpm mcp
+pnpm architect init . --client all         # yapılandırma + MCP dosyaları + AGENTS.md bloğu
 
 # Demo paket
 pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
@@ -282,5 +342,5 @@ pnpm generate -- --json examples/architecture.json --out out/package.zip --extra
 
 # Docker
 docker build -t architect-studio .
-docker run --rm -p 3000:3000 --env-file .env.example architect-studio
+docker run --rm -p 3000:3000 -v "$PWD:/workspace" architect-studio
 ```

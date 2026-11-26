@@ -16,9 +16,16 @@ import {
 } from "../../sandbox/src";
 import { isSearchProvider, WEB_SEARCH_PROVIDERS, type SearchProvider } from "./web-search";
 import { runPipeline } from "./pipeline";
+import { runInitCommand } from "./init";
 
 async function main(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  // `architect init` is a subcommand; everything else keeps the historical flags.
+  if (argv[0] === "init") {
+    process.exitCode = runInitCommand(argv.slice(1));
+    return;
+  }
+  const args = parseArgs(argv);
   const out = args.out ?? "out/agent-package.zip";
   if (args.locale !== undefined && !isLocale(args.locale)) {
     throw new Error(`Unsupported locale: ${args.locale}. Use one of ${LOCALES.join(", ")}.`);
@@ -251,6 +258,7 @@ function printHelp(): void {
   console.log(`AI Principal Architect
 
 Usage:
+  pnpm architect init [dir] [--client cursor|claude|opencode|freebuff|all] [--force]
   pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
   pnpm generate -- --json architecture.json --out out/package.zip
   pnpm generate -- --reverse ../my-project --use-rea --sandbox auto

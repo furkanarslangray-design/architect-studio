@@ -35,6 +35,7 @@ tabanlı araç.
 
 ```bash
 pnpm install
+pnpm architect init .   # .architect/config.json + istemci MCP dosyaları + AGENTS.md bloğu
 pnpm dev          # nx run app:dev → http://localhost:3000
 pnpm test         # nx run-many -t test
 pnpm typecheck    # nx run-many -t typecheck
@@ -155,6 +156,23 @@ pnpm nx g @architect-studio/workspace-plugin:package order-flow --dry-run
 Üretilen dosyalar: `packages/<ad>/project.json`, `packages/<ad>/tsconfig.json`,
 `packages/<ad>/src/index.ts`, `packages/<ad>/tests/<ad>.test.ts`. Geçersiz ad (kebab-case
 değil) ve var olan paket adı reddedilir.
+
+### `architect init`
+
+Hedef repoyu tek komutla MCP sunucusuna bağlar:
+
+```bash
+pnpm architect init .                     # tüm istemciler
+pnpm architect init . --client opencode   # tek istemci
+pnpm architect init . --force             # mevcut dosyaların üzerine yaz
+```
+
+Yazdıkları: `.architect/config.json` (istemci, MCP komutu, `reverseRoots`, paket/test
+çalıştırıcı), `.cursor/mcp.json`, `.mcp.json`, `opencode.json` ve `AGENTS.md` içindeki
+`<!-- architect:start --> … <!-- architect:end -->` bloğu. Komut **idempotenttir**: ikinci
+koşu hiçbir dosyayı değiştirmez (hepsi `unchanged` raporlanır), `AGENTS.md`'de yalnızca
+kendi bloğunu günceller ve sahibi olmadığı dosyalara `--force` verilmeden dokunmaz.
+Freebuff için dosya yazmaz, MCP ekranından ekleme notu düşer.
 
 ## Dil desteği (i18n)
 
@@ -355,7 +373,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 192 test, 19 dosya, 8 paket
+pnpm test        # nx run-many -t test — 205 test, 20 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```
