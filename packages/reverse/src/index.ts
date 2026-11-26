@@ -26,6 +26,8 @@ export interface ReverseOptions {
   onPhase?: (phase: ReversePhase) => void;
   /** Content-hash cache configuration. */
   cache?: ReverseCacheOptions;
+  /** @internal Inventory already produced by `scan`; avoids a second directory walk. */
+  inventory?: { files: ReverseFile[]; skipped: string[] };
   /** Extra directories (for example monorepo packages) to treat as project roots. */
   roots?: string[];
   /** Merge REA (Reverse Engineer Anything) findings into the derived state. */
@@ -75,11 +77,17 @@ const IGNORED_DIRECTORIES = new Set([
 
 const MAX_FILE_BYTES = 512 * 1024;
 
-interface ScannedFile {
+export interface ReverseFile {
   path: string;
   relativePath: string;
   size: number;
+  mtimeMs: number;
 }
+
+type ScannedFile = ReverseFile;
+
+/** Bounds the report on huge trees; the tail is summarised instead of listed. */
+const MAX_SKIPPED_ENTRIES = 200;
 
 function scan(root: string, options: ReverseOptions): { files: ScannedFile[]; skipped: string[] } {
   const files: ScannedFile[] = [];
@@ -87,6 +95,10 @@ function scan(root: string, options: ReverseOptions): { files: ScannedFile[]; sk
   const maxFiles = options.maxFiles ?? 2500;
   const maxDepth = options.maxDepth ?? 8;
   const ignored = new Set([...IGNORED_DIRECTORIES, ...(options.ignore ?? [])]);
+  const noteSkip = (value: string) => {
+    if (skipped.length < MAX_SKIPPED_ENTRIES) skipped.push(value);
+    else if (skipped.length === MAX_SKIPPED_ENTRIES) skipped.push("…more entries omitted");
+  };
 
   const walk = (directory: string, depth: number) => {
     if (files.length >= maxFiles || depth > maxDepth) return;
@@ -94,7 +106,7 @@ function scan(root: string, options: ReverseOptions): { files: ScannedFile[]; sk
     try {
       entries = readdirSync(directory, { withFileTypes: true });
     } catch {
-      skipped.push(relative(root, directory) || ".");
+      noteSkip(relative(root, directory) || ".");
       return;
     }
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
@@ -104,12 +116,12 @@ function scan(root: string, options: ReverseOptions): { files: ScannedFile[]; sk
       }
       const fullPath = join(directory, entry.name);
       if (entry.isSymbolicLink()) {
-        skipped.push(relative(root, fullPath));
+        noteSkip(relative(root, fullPath));
         continue;
       }
       if (entry.isDirectory()) {
         if (ignored.has(entry.name)) {
-          skipped.push(relative(root, fullPath));
+          noteSkip(relative(root, fullPath));
           continue;
         }
         walk(fullPath, depth + 1);
@@ -117,17 +129,22 @@ function scan(root: string, options: ReverseOptions): { files: ScannedFile[]; sk
       }
       if (!entry.isFile()) continue;
       let size = 0;
+      let mtimeMs = 0;
       try {
-        size = statSync(fullPath).size;
+        // One stat per file: size is capped here and mtime feeds the cache key,
+        // so a warm run does not repeat the syscall.
+        const stats = statSync(fullPath);
+        size = stats.size;
+        mtimeMs = stats.mtimeMs;
       } catch {
-        skipped.push(relative(root, fullPath));
+        noteSkip(relative(root, fullPath));
         continue;
       }
       if (size > MAX_FILE_BYTES) {
-        skipped.push(relative(root, fullPath));
+        noteSkip(relative(root, fullPath));
         continue;
       }
-      files.push({ path: fullPath, relativePath: relative(root, fullPath).split(sep).join("/"), size });
+      files.push({ path: fullPath, relativePath: relative(root, fullPath).split(sep).join("/"), size, mtimeMs });
     }
   };
 
@@ -319,7 +336,7 @@ export function repoToState(root: string, options: ReverseOptions = {}): Reverse
     throw new Error(`Project path does not exist or is not a directory: ${root}`);
   }
 
-  const { files, skipped } = scan(resolvedRoot, options);
+  const { files, skipped } = options.inventory ?? scan(resolvedRoot, options);
   const findings: ReverseFinding[] = [];
   const warnings: string[] = [];
   const nodes: ArchNode[] = [];
@@ -715,6 +732,18 @@ export async function repoToStateWithRea(root: string, options: ReverseOptions =
   };
 }
 
+/**
+ * A few most recent results per process. Warm runs then skip the JSON parse of a
+ * potentially large cached entry; the map is bounded so memory stays flat.
+ */
+const RESULT_MEMO_LIMIT = 4;
+const RESULT_MEMO = new Map<string, ReverseResult>();
+
+function rememberResult(key: string, result: ReverseResult): void {
+  if (RESULT_MEMO.size >= RESULT_MEMO_LIMIT) RESULT_MEMO.clear();
+  RESULT_MEMO.set(key, result);
+}
+
 export interface CachedReverseResult extends ReverseResult {
   /** True when the result came from the content-hash cache. */
   cacheHit: boolean;
@@ -738,27 +767,36 @@ export async function repoToStateCached(
 
   onPhase("scan");
   let key: string | undefined;
+  let scanned: { files: ReverseFile[]; skipped: string[] } | undefined;
   if (enabled) {
     try {
-      const scanned = scan(resolvedRoot, options).files;
-      key = fingerprintKey(digestContents(resolvedRoot, scanned), {
+      scanned = scan(resolvedRoot, options);
+      key = fingerprintKey(digestContents(resolvedRoot, scanned.files), {
+        root: resolvedRoot,
         useRea: options.useRea === true,
         maxFiles: options.maxFiles,
         maxDepth: options.maxDepth,
         ignore: options.ignore,
       });
+      const memo = RESULT_MEMO.get(key);
+      if (memo) return { ...memo, cacheHit: true };
       const hit = readCache<ReverseResult>(dir, key, { ttlMs: options.cache?.ttlMs });
-      if (hit) return { ...hit, cacheHit: true };
+      if (hit) {
+        rememberResult(key, hit);
+        return { ...hit, cacheHit: true };
+      }
     } catch {
       key = undefined;
     }
   }
 
+  const runOptions = scanned ? { ...options, inventory: scanned } : options;
   const result = options.useRea === true
-    ? await repoToStateWithRea(resolvedRoot, options)
-    : repoToState(resolvedRoot, options);
+    ? await repoToStateWithRea(resolvedRoot, runOptions)
+    : repoToState(resolvedRoot, runOptions);
 
   if (enabled && key) {
+    rememberResult(key, result);
     try {
       writeCache(dir, key, result);
     } catch {

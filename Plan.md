@@ -1,8 +1,8 @@
 # Plan — sonraki adımlar (implementasyon planı)
 
-**Durum:** §1 (spec sözleşme testleri), §2 (reverse güvenlik sınırı), §3 (`architect init`)
-ve §4 (artımlı reverse + SSE) **uygulandı**. Kalan maddeler başlatılmadı; bu dosya plan ve
-uygulama notlarıdır.
+**Durum:** §1 (spec sözleşme testleri), §2 (reverse güvenlik sınırı), §3 (`architect init`),
+§4 (artımlı reverse + SSE) ve §5 (`architect doctor`) **uygulandı**; ayrıca CPU/RAM
+optimizasyonu yapıldı. Kalan maddeler başlatılmadı; bu dosya plan ve uygulama notlarıdır.
 **Tarih:** 2026-11-24 · **Sürüm:** v2.1.0 üzerine
 **Kapsam:** 12 madde, değere göre sıralı; her maddede amaç, tasarım, dokunulacak dosyalar,
 adımlar, testler, kabul kriteri, risk ve efor var.
@@ -40,7 +40,7 @@ yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
 | 7 | §7 Altın korpus | §6 | Snapshot'lar ancak ZIP bayt-bayt sabitken anlamlı |
 | 8 | §4 Artımlı reverse + SSE ✅ | §2 (kuyruk) | Önbellek anahtarı §2'nin yol çözümlemesini kullanır; geliştirme döngüsünü kısaltır |
 | 9 | §9 SQLite kalıcılık + revizyonlar | §3, §8 | En pahalı indirme (11 MB); state sürümü ve config oturmuş olmalı |
-| 10 | §5 `architect doctor` | §3, §8 | Saklanan state dosyası ve sürümü olmadan denetlenecek şey yok |
+| 10 | §5 `architect doctor` ✅ | §3, §8 | Saklanan state dosyası ve sürümü olmadan denetlenecek şey yok |
 | 11 | §11 Prompt-injection sınırı | §1 | Web araması arayüzde açılmadan önce; küçük ve bağımsız |
 | 12 | §12 LLM eval harness | §1, §4 | Uçlar ve hata kodları sabitken kayıt/oynatma anlamlı |
 | 13 | Arayüz (`FRONTEND_SPEC.md`) | §1, §2, §3, §11 | Sözleşme testleri + güvenlik + init bitmeden başlanmaz |
@@ -298,7 +298,20 @@ sürümü (`package.json` version) dahil edilir.
 
 ---
 
-## 5. `architect doctor` — repo kayması denetimi — M
+## 5. `architect doctor` — repo kayması denetimi — M · **UYGULANDI**
+
+**Teslim (2026-11-24):** `packages/app/src/doctor.ts` — `doctorProject`, `compareStates`,
+`parseDoctorArgs`, `formatDoctorReport`, `runDoctorCommand`; `cli.ts` içinde `doctor` alt
+komutu. Kaydedilmiş `.architect/state.json` (veya `--state <path>`) ile `repoToState(root)`
+karşılaştırılır; drift `node|edge|entity|field|decision` × `added|removed|updated` olarak
+raporlanır, `validateState` hataları da listeye girer. Çıkış kodları: **0** temiz, **1**
+`--fail-on-drift` ile kayma, **2** state yok/bozuk. `--json` makine okunur rapor verir.
+
+Önbellek anahtarına **çözümlenmiş kök dizin** eklendi (`CacheKeyOptions.root`), böylece
+birebir aynı içerikli iki fixture ayrı girdi üretir (birim + HTTP testi).
+
+**Kapsam sınırı:** üretilmiş `openapi.yaml`/`ARCHITECTURE.md` geri ayrıştırılmaz; rapor bunu
+not olarak yazar. Testler: `doctor.test.ts` 10, `cache.test.ts` +2.
 
 **Amaç:** Üretilen mimari paketinin zamanla bayatlamasını ölçülebilir hale getirmek.
 

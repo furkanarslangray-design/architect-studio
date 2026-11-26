@@ -31,6 +31,8 @@ export interface FingerprintEntry {
 }
 
 export interface CacheKeyOptions {
+  /** Resolved repository root: two checkouts with identical content must not share an entry. */
+  root?: string;
   useRea?: boolean;
   maxFiles?: number;
   maxDepth?: number;
@@ -62,6 +64,7 @@ export function isReverseCacheEnabled(env: NodeJS.ProcessEnv = process.env): boo
 export function fingerprintKey(entries: FingerprintEntry[], options: CacheKeyOptions = {}): string {
   const hash = createHash("sha256");
   hash.update(`v${options.version ?? REVERSE_CACHE_VERSION}\n`);
+  hash.update(`root=${resolve(options.root ?? ".")}\n`);
   hash.update(
     `useRea=${options.useRea === true};maxFiles=${options.maxFiles ?? ""};maxDepth=${
       options.maxDepth ?? ""
@@ -91,25 +94,47 @@ export function isContentRelevant(relativePath: string): boolean {
 }
 
 /** Reads and hashes up to `CACHE_CONTENT_BUDGET_BYTES` of relevant file content. */
+/**
+ * Remembers content digests by (path, size, mtime) so repeated runs in the same
+ * process do not re-read unchanged files. Bounded to keep memory flat.
+ */
+const DIGEST_MEMO_LIMIT = 4096;
+const digestMemo = new Map<string, string>();
+
+function memoizedDigest(path: string, size: number, mtimeMs: number): string | undefined {
+  return digestMemo.get(`${path}\u0000${size}\u0000${mtimeMs}`);
+}
+
+function rememberDigest(path: string, size: number, mtimeMs: number, digest: string): void {
+  if (digestMemo.size >= DIGEST_MEMO_LIMIT) digestMemo.clear();
+  digestMemo.set(`${path}\u0000${size}\u0000${mtimeMs}`, digest);
+}
+
 export function digestContents(
   root: string,
-  files: Array<{ relativePath: string; path: string; size: number }>,
+  files: Array<{ relativePath: string; path: string; size: number; mtimeMs?: number }>,
 ): FingerprintEntry[] {
   let budget = CACHE_CONTENT_BUDGET_BYTES;
   return files.map((file) => {
-    let mtimeMs = 0;
-    try {
-      mtimeMs = statSync(file.path).mtimeMs;
-    } catch {
-      mtimeMs = 0;
+    let mtimeMs = file.mtimeMs ?? 0;
+    if (file.mtimeMs === undefined) {
+      try {
+        mtimeMs = statSync(file.path).mtimeMs;
+      } catch {
+        mtimeMs = 0;
+      }
     }
     const base: FingerprintEntry = { relativePath: file.relativePath, size: file.size, mtimeMs };
     if (!isContentRelevant(file.relativePath)) return base;
+    const cached = memoizedDigest(file.path, file.size, mtimeMs);
+    if (cached) return { ...base, digest: cached };
     if (file.size > CACHE_CONTENT_FILE_LIMIT || file.size > budget) return base;
     try {
       const content = readFileSync(file.path);
       budget -= content.length;
-      return { ...base, digest: createHash("sha256").update(content).digest("hex") };
+      const digest = createHash("sha256").update(content).digest("hex");
+      rememberDigest(file.path, file.size, mtimeMs, digest);
+      return { ...base, digest };
     } catch {
       return base;
     }

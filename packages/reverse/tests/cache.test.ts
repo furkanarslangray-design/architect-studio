@@ -53,6 +53,26 @@ describe("fingerprintKey", () => {
     expect(fingerprintKey(touched)).not.toBe(fingerprintKey(before));
   });
 
+  it("keys on the resolved root so identical trees in different checkouts differ", () => {
+    const twin = mkdtempSync(join(tmpdir(), "reverse-cache-twin-"));
+    mkdirSync(join(twin, "app"), { recursive: true });
+    writeFileSync(join(twin, "app", "package.json"), readFileSync(join(root, "app", "package.json")));
+    writeFileSync(join(twin, "app", "index.ts"), readFileSync(join(root, "app", "index.ts")));
+
+    const twinFiles = [
+      { relativePath: "app/package.json", path: join(twin, "app", "package.json"), size: 55 },
+      { relativePath: "app/index.ts", path: join(twin, "app", "index.ts"), size: 20 },
+    ];
+
+    const here = fingerprintKey(digestContents(root, files()), { root });
+    const there = fingerprintKey(digestContents(twin, twinFiles), { root: twin });
+    expect(there).not.toBe(here);
+    // Same root, same inputs → same key.
+    expect(fingerprintKey(digestContents(root, files()), { root })).toBe(here);
+
+    rmSync(twin, { recursive: true, force: true });
+  });
+
   it("changes with the options that shape the result", () => {
     const entries = digestContents(root, files());
     const base = fingerprintKey(entries, { useRea: false, maxFiles: 2500 });
@@ -77,6 +97,14 @@ describe("fingerprintKey", () => {
 });
 
 describe("cache entries", () => {
+  it("ignores an entry written for a different root", () => {
+    const entries = digestContents(root, files());
+    const here = fingerprintKey(entries, { root });
+    writeCache(cacheDir, here, { summary: "ok" });
+    expect(readCache(cacheDir, fingerprintKey(entries, { root: join(root, "elsewhere") }))).toBeUndefined();
+    expect(readCache(cacheDir, here)).toEqual({ summary: "ok" });
+  });
+
   it("round-trips a result", () => {
     const key = fingerprintKey(digestContents(root, files()));
     writeCache(cacheDir, key, { summary: "ok" }, 1_700_000_000_000);

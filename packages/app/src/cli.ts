@@ -17,12 +17,17 @@ import {
 import { isSearchProvider, WEB_SEARCH_PROVIDERS, type SearchProvider } from "./web-search";
 import { runPipeline } from "./pipeline";
 import { runInitCommand } from "./init";
+import { runDoctorCommand } from "./doctor";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   // `architect init` is a subcommand; everything else keeps the historical flags.
   if (argv[0] === "init") {
     process.exitCode = runInitCommand(argv.slice(1));
+    return;
+  }
+  if (argv[0] === "doctor") {
+    process.exitCode = runDoctorCommand(argv.slice(1));
     return;
   }
   const args = parseArgs(argv);
@@ -259,6 +264,7 @@ function printHelp(): void {
 
 Usage:
   pnpm architect init [dir] [--client cursor|claude|opencode|freebuff|all] [--force]
+  pnpm architect doctor [dir] [--state <path>] [--json] [--fail-on-drift]
   pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
   pnpm generate -- --json architecture.json --out out/package.zip
   pnpm generate -- --reverse ../my-project --use-rea --sandbox auto

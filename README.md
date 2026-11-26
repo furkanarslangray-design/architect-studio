@@ -174,6 +174,22 @@ koşu hiçbir dosyayı değiştirmez (hepsi `unchanged` raporlanır), `AGENTS.md
 kendi bloğunu günceller ve sahibi olmadığı dosyalara `--force` verilmeden dokunmaz.
 Freebuff için dosya yazmaz, MCP ekranından ekleme notu düşer.
 
+### `architect doctor`
+
+Kaydedilmiş mimari (`.architect/state.json`) ile deponun bugünkü halini karşılaştırır:
+
+```bash
+pnpm architect doctor .                  # insan okunur rapor
+pnpm architect doctor . --json           # makine okunur rapor
+pnpm architect doctor . --fail-on-drift  # kayma varsa çıkış 1 (CI için)
+pnpm architect doctor . --state out/state.json
+```
+
+Drift türleri: `node`, `edge`, `entity`, `field`, `decision` × `added|removed|updated`. State
+dosyası yoksa veya bozuksa çıkış **2**, temizse **0**, `--fail-on-drift` ile kayma varsa **1**.
+`validateState` hataları da rapora düşer. Sınır: üretilmiş `openapi.yaml`/`ARCHITECTURE.md`
+geri ayrıştırılmaz; karşılaştırma yapısaldır ve rapor bunu not olarak yazar.
+
 ## Dil desteği (i18n)
 
 Tek kaynak `packages/core/src/i18n/locales/en.ts`; diğer diller `MessageKey` parity'siyle
@@ -235,6 +251,11 @@ Dockerfile; ≤64 KB) + sonucu etkileyen seçeneklerin (yol tabanı, `useRea`, `
 - **Ölçüm** (bu makine, `tsx`): 391 dosyalık fixture (8 Prisma modeli, Compose, 5 ADR, 380
   component) cold **104,9 ms** → warm medyan **16,3 ms** = **6,4x**; bu depo (125 dosya)
   60,3 ms → 9,5 ms = 6,3x; manifest düzenlenince `cacheHit: false` ile yeniden hesaplanır.
+- **CPU/RAM optimizasyonu** (aynı fixture): tek dizin yürüyüşü (`inventory` ile ön tarama
+  yeniden kullanılır), `stat` sonucundan `mtimeMs` (ikinci syscall yok), içerik özeti memo'su
+  (4096 giriş), süreç içi sonuç memo'su (4 giriş) ve `skipped` listesi 200 girdiyle sınırlı.
+  Sonuç: soğuk **110,5 → 52,9 ms**, sıcak **18,7 → 5,8 ms**, sıcak yolda dosya okuması
+  **12 → 0**, heap **10–14 MB → 11–13 MB** (düz).
 
 ### İlerleme akışı (SSE)
 
@@ -399,7 +420,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 221 test, 23 dosya, 8 paket
+pnpm test        # nx run-many -t test — 233 test, 24 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```

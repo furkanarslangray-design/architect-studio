@@ -209,7 +209,29 @@ idea / ArchState / repository
   `scan → rea → merge → validate → done|error` akıtır. `seq` artımlıdır; biten işe sonradan
   bağlanan istemci tüm geçmişi alır ve akış kapanır. Aynı yol allowlist'i ve kuyruk geçerli.
 - Ölçüm (bu makine): 391 dosyalık fixture **104,9 ms → 16,3 ms (6,4x)**; depo 60,3 → 9,5 ms
-  (6,3x); manifest düzenlenince `cacheHit: false`.
+  (6,3x); manifest düzenlenince `cacheHit: false`. Anahtar artık çözümlenmiş kök dizini de
+  içerir: aynı içerikli iki ayrı checkout ayrı girdi üretir (testle doğrulandı).
+
+#### `architect doctor`
+
+- `packages/app/src/doctor.ts`: `doctorProject` kaydedilmiş state ile `repoToState(root)`
+  sonucunu karşılaştırır; `compareStates` node/edge/entity/field/decision bazında
+  `added|removed|updated` üretir. `validateState` hataları da rapora girer.
+- CLI: `pnpm architect doctor [dir] [--state <path>] [--json] [--fail-on-drift]`;
+  çıkış **0** temiz, **1** `--fail-on-drift` + kayma, **2** state yok/bozuk.
+- Sınır: üretilmiş `openapi.yaml`/`ARCHITECTURE.md` geri ayrıştırılmaz, kayma yapısaldır.
+
+#### Kalite kapısı ve CPU/RAM optimizasyonu (2026-11-24)
+
+- Optimizasyon öncesi kapı (hepsi geçti): tam test paketi, `typecheck` (9 proje), JSON
+  yapılandırmaların ayrıştırılması, sır taraması (izlenen dosyalar), `only/skip` kalıntısı
+  yokluğu, Nx proje sayısı (9), README/PROJECT-SUMMARY test sayıları.
+- Optimizasyonlar: `repoToStateCached` artık dizini **bir kez** yürür (`inventory` seçeneği
+  ile sonuç `repoToState`'e geçer), `scan` tek `statSync` çağrısından `size` + `mtimeMs`
+  üretir, içerik özetleri (path,size,mtime) ile 4096 girişlik memo'da tutulur, son 4 sonuç
+  süreç içi memo'da saklanır (JSON parse atlanır) ve `skipped` listesi 200 girdiyle sınırlıdır.
+- Sonuç (391 dosyalık fixture): soğuk **110,5 → 52,9 ms**, sıcak **18,7 → 5,8 ms**, sıcak
+  yolda dosya okuması **12 → 0**, heap **10–14 MB → 11–13 MB**.
 
 ## 5. Nx monorepo
 
@@ -269,7 +291,9 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 23 dosya, 221/221 test geçti |
+| `pnpm test` | 8 proje, 24 dosya, 233/233 test geçti |
+| `architect doctor` | 10 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
+| CPU/RAM optimizasyonu | cold 110,5 → 52,9 ms, warm 18,7 → 5,8 ms, sıcak yolda okuma 12 → 0, heap düz |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
 | Sözleşme testleri | 17 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
 | `architect init` | 13 test: config + 3 istemci dosyası + AGENTS.md bloğu; ikinci koşu hiçbir şey yazmıyor |
@@ -291,9 +315,9 @@ architect-studio/
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
 Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 11 (2 dosya),
-app 119 (10 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
-reverse-queue, reverse-jobs, init), reverse 22 (3 dosya: index, rea, cache), sandbox 11,
-mcp 6.
+app 129 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
+reverse-queue, reverse-jobs, init, doctor), reverse 24 (3 dosya: index, rea, cache), sandbox
+11, mcp 6.
 
 ## 8. Kalan sınırlar (bilinçli)
 
@@ -346,6 +370,7 @@ pnpm nx run app:dev
 pnpm nx g @architect-studio/workspace-plugin:package <ad> --dry-run
 pnpm mcp
 pnpm architect init . --client all         # yapılandırma + MCP dosyaları + AGENTS.md bloğu
+pnpm architect doctor . --fail-on-drift    # kaydedilmiş mimari ile depo arasındaki kayma (CI)
 
 # Demo paket
 pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
