@@ -1,61 +1,87 @@
+<div align="center">
+
 # AI Principal Architect — v2.1.0
 
-Fikrini (veya mevcut bir projeni), OpenCode/Cursor/Claude gibi kodlama ajanlarının düşük
-token ile inşa edebileceği **doğrulanmış bir ajan paketine** çeviren açık kaynak, BYOK
-tabanlı araç.
+**Turn an idea — or an existing repository — into a verified, low-token agent package that coding agents can build from.**
 
-## Ne yapar?
+[![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
+[![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
+[![Tests](https://img.shields.io/badge/tests-243%20passed-brightgreen)](README.md#tests)
+[![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-1. Doğal dildeki fikri alır, mevcut bir `ArchState` JSON'u içe aktarır **veya mevcut bir
-   repoyu tersine mühendislikle analiz eder**.
-2. Mimari state'i üretir: bileşenler, bağlantılar, kararlar ve **domain entity'leri**.
-3. OpenAPI 3.1 (entity CRUD), Prisma, AsyncAPI 2.6, Mermaid, `ARCHITECTURE.md`,
-   `WHITEPAPER.md` ve ADR'leri üretir.
-4. Her artifact'ı deterministik olarak doğrular; onarılabilir hataları LLM'siz düzeltir.
-5. Görevleri `TASKS.md` dizini + `tasks/T-*.md` dilimlenmiş paketlerine böler.
-6. Paketi **sabit bellekle akan** bir ZIP olarak üretir.
-7. İstenirse paketi izole bir sandbox içinde doğrular.
-8. `.opencode/agents/{implementer,validator,reviewer}.md`, `metrics.json` ve
-   `MANIFEST.md` ile birlikte teslim eder.
+> **Language / Dil:** [English](README.md) | [Türkçe](README.tr.md)
 
-## v2.0 yetenekleri
+</div>
 
-| Yetenek | Özet |
-|---|---|
-| **Stream ZIP** | Node `Readable` + backpressure; arşiv tek buffer'a alınmaz. 24 MB'lık paket profili testte doğrulanır. |
-| **8 dil** | `tr`, `en`, `de`, `es`, `fr`, `pt`, `ja`, `zh`; API hataları ve üretilen dokümanlar seçilen dilde. |
-| **Studio sözleşmesi** | Arayüz kodu depoda tutulmaz; 11 ekran, bileşen/etkileşim listesi, tasarım token'ları ve tam API sözleşmesi [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md) içindedir. |
-| **REA** | `repoToState`: `package.json`, workspace'ler, Prisma, `docker-compose`, ADR'ler ve bileşen dosyalarından `ArchState`. |
-| **Multi-Sandbox** | `temp-dir`, `bwrap`, `podman`, `docker`, `firejail`, `systemd-run`; otomatik algılama ve güvenli fallback. |
-| **MCP** | `architect_generate`, `architect_preview`, `architect_validate`, `architect_reverse_engineer`. |
-| **Web arama** | Tavily/Brave anahtarıyla veya anahtarsız DuckDuckGo fallback'iyle güncel referanslar. |
-| **Nx monorepo** | 9 proje, `nx run-many` ile önbellekli `test`/`typecheck`, `nx graph` mimari haritası ve yerel `package` generator'ı. |
+An open-source, BYOK-based tool that turns an idea (or an existing project) into a
+**verified agent package** that coding agents such as OpenCode, Cursor and Claude can
+build from with a low token budget.
 
-## Hızlı başlangıç
+```mermaid
+flowchart LR
+    A["Idea / ArchState / Repo"] --> B["Core & REA"]
+    B --> C["Generators"]
+    C --> D["Deterministic Validators"]
+    D --> E["Task Slicer"]
+    E --> F["Stream ZIP"]
+    E --> G["Sandbox"]
+    E --> H["MCP"]
+```
+
+## Quick start
 
 ```bash
 pnpm install
-pnpm architect init .   # .architect/config.json + istemci MCP dosyaları + AGENTS.md bloğu
-pnpm dev          # nx run app:dev → http://localhost:3000
-pnpm test         # nx run-many -t test
-pnpm typecheck    # nx run-many -t typecheck
-pnpm nx graph     # mimari harita (proje grafiği), http://127.0.0.1:4211
+pnpm architect init .   # .architect/config.json + client MCP files + AGENTS.md block
+pnpm dev                # nx run app:dev → http://localhost:3000
+pnpm test               # nx run-many -t test
+pnpm typecheck          # nx run-many -t typecheck
 ```
 
-Demo modu varsayılan olarak açıktır; API anahtarı gerektirmez. Node **24.22.1** (`.nvmrc`)
-ve pnpm 10 gerekir; depo kökünde `nvm use` / `fnm use` doğru sürümü seçer.
+## What does it do?
 
-Sunucu **yalnızca HTTP API** sunar. Studio arayüzünün kaynak dosyaları (`web/*`) depoda
-yoktur; arayüz `FRONTEND_SPEC.md` sözleşmesine göre ayrıca yazılır, o yüzden `GET /` bu
-depoda `500` döner. `GET /api/*` uçlarının tamamı çalışır.
+1. Takes a natural-language idea, imports an existing `ArchState` JSON, **or** analyzes an
+   existing repository through reverse engineering.
+2. Produces the architecture state: components, connections, decisions and **domain entities**.
+3. Generates OpenAPI 3.1 (entity CRUD), Prisma, AsyncAPI 2.6, Mermaid, `ARCHITECTURE.md`,
+   `WHITEPAPER.md` and ADRs.
+4. Validates every artifact deterministically; fixes repairable issues without an LLM.
+5. Splits the work into a `TASKS.md` index plus sliced `tasks/T-*.md` packets.
+6. Produces the package as a ZIP that **streams with constant memory**.
+7. Optionally verifies the package inside an isolated sandbox.
+8. Ships it with `.opencode/agents/{implementer,validator,reviewer}.md`, `metrics.json` and
+   `MANIFEST.md`.
 
-### Node sürümü / rea launcher'ı
+## v2.0 capabilities
 
-`rea-agents` launcher'ı kendi `engines` alanında Node **`^22.23.4 || ^24.22.1 || >=26.12.1`**
-ister; REA köprüsü bu sürümlerin dışında çalışmaz ve `rea.engine` sessizce `static`'e düşer.
-Bu yüzden gereksinim depo seviyesinde sabitlendi:
+| Capability | Summary |
+|---|---|
+| **Stream ZIP** | Node `Readable` + backpressure; the archive is never buffered whole. A 24 MB package profile is verified in tests. |
+| **8 languages** | `tr`, `en`, `de`, `es`, `fr`, `pt`, `ja`, `zh`; API errors and generated documents follow the selected language. |
+| **Studio contract** | No UI code lives in the repo; 11 screens, the component/interaction list, design tokens and the full API contract are in [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md). |
+| **REA** | `repoToState`: derives an `ArchState` from `package.json`, workspaces, Prisma, `docker-compose`, ADRs and component files. |
+| **Multi-Sandbox** | `temp-dir`, `bwrap`, `podman`, `docker`, `firejail`, `systemd-run`; auto-detection and safe fallback. |
+| **MCP** | `architect_generate`, `architect_preview`, `architect_validate`, `architect_reverse_engineer`. |
+| **Web search** | Fresh references through Tavily/Brave keys or a keyless DuckDuckGo fallback. |
+| **Nx monorepo** | 9 projects, cached `test`/`typecheck` through `nx run-many`, an `nx graph` architecture map and a local `package` generator. |
 
-| Yer | Değer |
+Demo mode is on by default and needs no API key. Node **24.22.1** (`.nvmrc`) and pnpm 10 are
+required; `nvm use` / `fnm use` at the repo root picks the right version.
+
+The server exposes a **HTTP API only**. The Studio UI sources (`web/*`) are not in this
+repository; the UI is written separately against the `FRONTEND_SPEC.md` contract. Without a
+UI bundle, `GET /` returns `200` + `application/json` — an `api-only` welcome payload with the
+name, version, `FRONTEND_SPEC.md` reference and the active `/api/*` routes. Every `GET /api/*`
+endpoint works.
+
+### Node version / rea launcher
+
+The `rea-agents` launcher requires Node **`^22.23.4 || ^24.22.1 || >=26.12.1`** in its own
+`engines` field; outside those versions the REA bridge does not run and `rea.engine` silently
+falls back to `static`. The requirement is therefore pinned at the repository level:
+
+| Location | Value |
 |---|---|
 | `.nvmrc` | `24.22.1` |
 | `package.json` → `engines.node` | `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1` |
@@ -64,357 +90,364 @@ Bu yüzden gereksinim depo seviyesinde sabitlendi:
 ```bash
 nvm install && nvm use      # .nvmrc → 24.22.1
 node -v                     # v24.22.1
-pnpm install                # engines uyarısı çıkmamalı
+pnpm install                # no engine warning expected
 ```
 
-Sürüm tutmuyorsa `pnpm install` `Unsupported engine` uyarısı verir; bu durumda ya Node'u
-yükselt ya da REA köprüsünü tamamen atla (`useRea` vermeden çalıştır, `rea.engine: "static"`).
-Sistem Node'u eskiyse ve yükseltmek istemiyorsan `ARCHITECT_REA_BIN=/path/to/rea` ile
-yalnızca o süreci farklı bir Node ile çalıştırabilirsin.
+If the version does not match, `pnpm install` prints an `Unsupported engine` warning; either
+upgrade Node or skip the REA bridge entirely (run without `useRea`, `rea.engine: "static"`).
+If your system Node is older and you do not want to upgrade, point
+`ARCHITECT_REA_BIN=/path/to/rea` at a launcher that runs under a newer Node.
 
 ### BYOK
 
-İstemci demo modunu kapatır; API anahtarı, model ve OpenAI-uyumlu base URL istek gövdesinde
-(`apiKey`, `model`, `baseUrl`) gönderilir. Anahtar yalnızca istek süresince kullanılır;
-diske yazılmaz, loglanmaz ve pakete konmaz.
+The client disables demo mode; the API key, model and OpenAI-compatible base URL travel in the
+request body (`apiKey`, `model`, `baseUrl`). The key is used only for that request; it is not
+written to disk, never logged and never placed in the package.
 
-## Arayüz sözleşmesi (`FRONTEND_SPEC.md`)
+## UI contract (`FRONTEND_SPEC.md`)
 
-Studio arayüzü bu depoda kod olarak bulunmaz; sözleşmesi kök dizindeki
-[`FRONTEND_SPEC.md`](FRONTEND_SPEC.md) dosyasındadır ve backend ona göre sabitlenmiştir:
+The Studio UI is not part of this repository; its contract is
+[`FRONTEND_SPEC.md`](FRONTEND_SPEC.md) at the repo root and the backend is fixed against it:
 
-- **5 bölüm:** ürün özeti/akışlar, ekran + bileşen/etkileşim listesi, tasarım sistemi
-  (HEX palet, tipografi, dark/light, layout, responsive), tam API sözleşmesi, hata ve
-  yüklenme durumları.
-- **11 ekran/bileşen:** `IdeaComposer`, `ArchitectureCanvas` (Mermaid), `EntityTable`,
+- **5 sections:** product summary/flows, screen + component/interaction list, design system
+  (HEX palette, typography, dark/light, layout, responsive), the full API contract, and error
+  and loading states.
+- **11 screens/components:** `IdeaComposer`, `ArchitectureCanvas` (Mermaid), `EntityTable`,
   `ChatPanel`, `TaskBoard`, `MetricsGrid`, `ValidationPanel`, `ArtifactExplorer`,
   `ReverseForm`, `SandboxPanel`, `SettingsDrawer`.
-- **Bağlandığı uçlar:** `GET /api/health|version|i18n|sandboxes|rea`,
+- **Endpoints it binds to:** `GET /api/health|version|i18n|sandboxes|rea`,
   `POST /api/preview|chat|generate|reverse|sandbox`.
-- Arayüz yeni bir uç nokta gerektirmez; sözleşme mevcut backend ile birebir eşleşir.
+- The UI needs no new endpoint; the contract matches the existing backend one-to-one.
 
-Mimari sohbeti (`POST /api/chat`) doğal dil komutlarını (`Redis cache ekle`,
-`Order entity'sine status alanı koy`, `Mikroservislere böl`) deterministik olarak
-`ArchState`'e uygular; BYOK modunda LLM devreye girer, hata verirse deterministik motora
-düşer. Alan ekleme yalnızca açık alan ifadesi, tip belirten identifier veya
-camelCase/snake_case identifier ile tetiklenir; "ekle" geçen her cümle alan sayılmaz.
-Mikroservis bölme yalnızca `mikroservis`/`microservices` ya da servis kelimesi +
-`böl|split|ayır` ile çalışır.
+The architecture chat (`POST /api/chat`) applies natural-language commands (`add Redis cache`,
+`add a status field to the Order entity`, `split into microservices`) to the `ArchState`
+deterministically; in BYOK mode the LLM takes over and falls back to the deterministic engine
+on failure. Field insertion only triggers on an explicit field phrase, a typed identifier or a
+camelCase/snake_case identifier — a sentence that merely contains "add" is not treated as a
+field. Microservice splitting only runs for `microservice(s)` or a service word plus
+`split|böl|ayır`.
 
-## Nx çalışma alanı
+## Nx workspace
 
-Depo, Nx 24 üzerinde pnpm workspace olarak yapılandırılmıştır. Her paket kendi
-`project.json` (`typecheck`, varsa `test` hedefleri) ve `tsconfig.json` dosyasına sahiptir;
-ortak derleyici ayarları `tsconfig.base.json` içindedir.
+The repo is a pnpm workspace on Nx 24. Every package has its own `project.json` (`typecheck`,
+plus `test` where applicable) and `tsconfig.json`; shared compiler settings live in
+`tsconfig.base.json`.
 
-| Proje | Rol |
+| Project | Role |
 |---|---|
-| `core` | state, diff, i18n, tokenizer, metrikler, task packet |
-| `generators` | OpenAPI / Prisma / AsyncAPI / Mermaid / doküman üreticileri |
-| `validators` | deterministik doğrulama + self-heal |
-| `packager` | stream ZIP, metrikler, manifest, OpenCode ajanları |
-| `app` | pipeline, sohbet, web arama, HTTP sunucusu, CLI |
-| `reverse` | `repoToState` + morluto/rea köprüsü |
-| `sandbox` | çoklu sandbox sürücüleri |
-| `mcp` | MCP araçları + stdio sunucusu |
-| `nx-plugin` | yerel Nx generator'ları (bkz. aşağıdaki bölüm) |
+| `core` | state, diff, i18n, tokenizer, metrics, task packets |
+| `generators` | OpenAPI / Prisma / AsyncAPI / Mermaid / document generators |
+| `validators` | deterministic validation + self-heal |
+| `packager` | stream ZIP, metrics, manifest, OpenCode agents |
+| `app` | pipeline, chat, web search, HTTP server, CLI |
+| `reverse` | `repoToState` + morluto/rea bridge |
+| `sandbox` | multi-sandbox drivers |
+| `mcp` | MCP tools + stdio server |
+| `nx-plugin` | local Nx generators (see below) |
 
 ```bash
-pnpm test                      # nx run-many -t test (önbellekli)
+pnpm test                      # nx run-many -t test (cached)
 pnpm typecheck                 # nx run-many -t typecheck
 pnpm build                     # typecheck + test
 pnpm affected                  # nx affected -t typecheck test (defaultBase: main)
-pnpm nx graph --host 127.0.0.1 --port 4211   # canlı proje grafiği
-pnpm nx graph --file=graph.html              # statik grafik çıktısı
-pnpm nx show projects          # proje listesi
-pnpm nx run app:dev            # tek proje hedefi
+pnpm nx graph --host 127.0.0.1 --port 4211   # live project graph
+pnpm nx graph --file=graph.html              # static graph output
+pnpm nx show projects          # project list
+pnpm nx run app:dev            # a single project target
 ```
 
-`nx.json` içinde `useDaemonProcess: false` (CI/konteyner dostu), `analytics: false` ve
-`test`/`typecheck` hedefleri için `cache: true` ayarlıdır. Görev çıktıları `.nx/` altında
-tutulur ve bu dizin git'e girmez.
+`nx.json` sets `useDaemonProcess: false` (CI/container friendly), `analytics: false` and
+`cache: true` for the `test`/`typecheck` targets. Task output lives under `.nx/`, which is not
+committed.
 
-Paketler birbirini göreli yolla (`../../core/src/state`) import ettiği için Nx bağımlılık
-kenarlarını kendiliğinden çıkarmaz; gerçek bağımlılıklar her `project.json` içindeki
-`implicitDependencies` alanında bildirilir ve `nx graph` haritası bu kenarları gösterir.
+Because packages import each other by relative path (`../../core/src/state`), Nx does not infer
+the dependency edges itself; real dependencies are declared in each `project.json` under
+`implicitDependencies`, and the `nx graph` map shows those edges.
 
-### Yerel Nx generator'ı
+### Local Nx generator
 
-`packages/nx-plugin`, `@architect-studio/workspace-plugin` adıyla bir Nx plugin'idir
-(`generators.json` + `tsconfig.base.json` içindeki path eşlemesi). Yeni bir kütüphane
-paketini depo kurallarıyla (project.json hedefleri, tsconfig, kaynak, Vitest paketi)
-üretir:
+`packages/nx-plugin` is an Nx plugin named `@architect-studio/workspace-plugin`
+(`generators.json` + a path mapping in `tsconfig.base.json`). It scaffolds a new library
+package with the repo's conventions (project.json targets, tsconfig, source, Vitest suite):
 
 ```bash
 pnpm nx g @architect-studio/workspace-plugin:package order-flow \
   --description="Order flow orchestration"
 
-# Önizleme: hiçbir dosya yazılmaz
+# Preview: no files are written
 pnpm nx g @architect-studio/workspace-plugin:package order-flow --dry-run
 ```
 
-Üretilen dosyalar: `packages/<ad>/project.json`, `packages/<ad>/tsconfig.json`,
-`packages/<ad>/src/index.ts`, `packages/<ad>/tests/<ad>.test.ts`. Geçersiz ad (kebab-case
-değil) ve var olan paket adı reddedilir.
+Generated files: `packages/<name>/project.json`, `packages/<name>/tsconfig.json`,
+`packages/<name>/src/index.ts`, `packages/<name>/tests/<name>.test.ts`. Invalid names (not
+kebab-case) and existing package names are rejected.
 
 ### `architect init`
 
-Hedef repoyu tek komutla MCP sunucusuna bağlar:
+Connects a target repo to the MCP server in one command:
 
 ```bash
-pnpm architect init .                     # tüm istemciler
-pnpm architect init . --client opencode   # tek istemci
-pnpm architect init . --force             # mevcut dosyaların üzerine yaz
+pnpm architect init .                     # all clients
+pnpm architect init . --client opencode   # a single client
+pnpm architect init . --force             # overwrite existing files
 ```
 
-Yazdıkları: `.architect/config.json` (istemci, MCP komutu, `reverseRoots`, paket/test
-çalıştırıcı), `.cursor/mcp.json`, `.mcp.json`, `opencode.json` ve `AGENTS.md` içindeki
-`<!-- architect:start --> … <!-- architect:end -->` bloğu. Komut **idempotenttir**: ikinci
-koşu hiçbir dosyayı değiştirmez (hepsi `unchanged` raporlanır), `AGENTS.md`'de yalnızca
-kendi bloğunu günceller ve sahibi olmadığı dosyalara `--force` verilmeden dokunmaz.
-Freebuff için dosya yazmaz, MCP ekranından ekleme notu düşer.
+It writes: `.architect/config.json` (client, MCP command, `reverseRoots`, package/test
+runner), `.cursor/mcp.json`, `.mcp.json`, `opencode.json` and the
+`<!-- architect:start --> … <!-- architect:end -->` block inside `AGENTS.md`. The command is
+**idempotent**: a second run changes nothing (everything reports `unchanged`), it updates only
+its own block in `AGENTS.md`, and it never touches files it does not own without `--force`.
+For Freebuff it writes no files and leaves a note to add the server from the MCP screen.
 
 ### `architect doctor`
 
-Kaydedilmiş mimari (`.architect/state.json`) ile deponun bugünkü halini karşılaştırır:
+Compares the saved architecture (`.architect/state.json`) with the repository as it is today:
 
 ```bash
-pnpm architect doctor .                  # insan okunur rapor
-pnpm architect doctor . --json           # makine okunur rapor
-pnpm architect doctor . --fail-on-drift  # kayma varsa çıkış 1 (CI için)
+pnpm architect doctor .                  # human-readable report
+pnpm architect doctor . --json           # machine-readable report
+pnpm architect doctor . --fail-on-drift  # exit 1 on drift (for CI)
 pnpm architect doctor . --state out/state.json
-pnpm architect doctor . --write         # deponun bugünkü halini .architect/state.json'a yaz
+pnpm architect doctor . --write          # write today's repo state to .architect/state.json
 ```
 
-Drift türleri: `node`, `edge`, `entity`, `field`, `decision` × `added|removed|updated`. State
-dosyası yoksa veya bozuksa çıkış **2**, temizse **0**, `--fail-on-drift` ile kayma varsa **1**.
-`validateState` hataları da rapora düşer. Sınır: üretilmiş `openapi.yaml`/`ARCHITECTURE.md`
-geri ayrıştırılmaz; karşılaştırma yapısaldır ve rapor bunu not olarak yazar. `--write`
-state dosyasını üretir (yoksa oluşturur, varsa tazeler); tipik akış `doctor --write` → düzenle →
-`doctor --fail-on-drift`.
+Drift types: `node`, `edge`, `entity`, `field`, `decision` × `added|removed|updated`. A missing
+or corrupt state file exits **2**, a clean comparison **0**, and with `--fail-on-drift` drift
+exits **1**. `validateState` errors are reported too. Limit: generated `openapi.yaml` /
+`ARCHITECTURE.md` are not parsed back; the comparison is structural and the report says so.
+`--write` produces the state file (creates it or refreshes it); the typical flow is
+`doctor --write` → edit → `doctor --fail-on-drift`.
 
-## Dil desteği (i18n)
+## Language support (i18n)
 
-Tek kaynak `packages/core/src/i18n/locales/en.ts`; diğer diller `MessageKey` parity'siyle
-derlenir. `Accept-Language` başlığı, gövdedeki `locale` alanı ve CLI `--locale` aynı
-kataloğu kullanır. Eksik çeviri İngilizceye düşer, placeholder'lar korunur.
+The single source is `packages/core/src/i18n/locales/en.ts`; other languages are compiled with
+`MessageKey` parity. The `Accept-Language` header, the body `locale` field and the CLI
+`--locale` flag all use the same catalog. Missing translations fall back to English and
+placeholders are preserved.
 
-## Tersine mühendislik (REA)
+## Reverse engineering (REA)
 
-`packages/reverse` içindeki `repoToState(root)` şunları tarar:
+`repoToState(root)` in `packages/reverse` scans:
 
-- kök ve workspace `package.json` dosyaları → framework, veritabanı, kuyruk ve dış servisler,
-- `prisma/schema.prisma` → entity'ler, alanlar, primary/unique ve ilişkiler,
-- `docker-compose.y(a)ml` / `compose.y(a)ml` → servis, veritabanı ve kuyruk düğümleri,
-- `docs/adr/**`, `adr/**`, `decisions/**` → ADR kararları,
-- `src/app|pages|components` altındaki bileşen dosyaları → UI düğümü (framework yoksa).
+- root and workspace `package.json` files → framework, database, queue and external services,
+- `prisma/schema.prisma` → entities, fields, primary/unique and relations,
+- `docker-compose.y(a)ml` / `compose.y(a)ml` → service, database and queue nodes,
+- `docs/adr/**`, `adr/**`, `decisions/**` → ADR decisions,
+- component files under `src/app|pages|components` → a UI node (when no framework is found).
 
-`node_modules`, `.git`, `dist`, `build`, `out`, `coverage`, `vendor`, `target` gibi dizinler
-ve 512 KB üstü dosyalar atlanır. Sonuç `validateState` ile doğrulanır ve doğrudan
-paketlenebilir. CLI: `--reverse <dir>`, API: `POST /api/reverse`, arayüz: `ReverseForm`
+Directories such as `node_modules`, `.git`, `dist`, `build`, `out`, `coverage`, `vendor`,
+`target` and files above 512 KB are skipped. The result is validated with `validateState` and
+can be packaged directly. CLI: `--reverse <dir>`, API: `POST /api/reverse`, UI: `ReverseForm`
 (`FRONTEND_SPEC.md` §2.2).
 
-### morluto/rea köprüsü
+### morluto/rea bridge
 
-`--use-rea` (API'de `useRea: true`, MCP'de `useRea`) [`morluto/rea`](https://github.com/morluto/rea)
-ile köprü kurar:
+`--use-rea` (API `useRea: true`, MCP `useRea`) bridges to
+[`morluto/rea`](https://github.com/morluto/rea):
 
-- `rea` veya `rea-agents` PATH'te varsa `rea analyze-javascript-application <path> --json`
-  (gerekirse `rea analyze` / `rea inspect`) çalıştırılır; stdout 54 KB'lık bir
-  `--filter-output` projeksiyonundan geçirilir (tam zarf ~34 MB), REA'nın
-  `normalized_result` dokümanı modül/asset/paket/endpoint/Electron bulgularına çevrilir.
-- Kurulu değilse yerleşik analizör devreye girer: dosya imzaları (ELF/PE/Mach-O/WASM/SQLite),
-  Electron `.asar` başlığı, minified bundle imzaları, `.env.example` anahtar adları (değerler
-  okunmaz), Dockerfile taban tabanı ve dış endpoint'ler. Bulgular aynı `evidence` şemasındadır,
-  böylece alt katman hangi motorun çalıştığını bilmek zorunda kalmaz.
-- Belirli bir kurulumu işaret etmek için `ARCHITECT_REA_BIN=/path/to/rea` kullan.
-  `rea-agents` launcher'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; bu yüzden depo
-  kökünde `.nvmrc` = `24.22.1` ve `package.json` → `engines.node` aynı aralık sabittir
-  (ayrıntı: [Node sürümü](#node-sürümü--rea-launcherı)).
-- REA bulguları `mergeReaFindings` ile `ArchState`'e katılır: veritabanı, kuyruk ve dış servis
-  düğümleri kanıt yollarıyla (`props.evidence`) eklenir; mevcut adlar tekrar eklenmez.
-- Yanıtta motor `rea.engine` (`rea` | `rea-agents` | `static`), `rea.findings`,
-  `rea.scannedArtifacts` ve `rea.warnings` (REA sınırlamaları) döner. `GET /api/rea`
-  yalnızca algılama sonucunu verir.
+- If `rea` or `rea-agents` is on `PATH`, it runs
+  `rea analyze-javascript-application <path> --json` (`rea analyze` / `rea inspect` when
+  needed); stdout passes through a 54 KB `--filter-output` projection (the full envelope is
+  ~34 MB), and REA's `normalized_result` document is converted into module/asset/package/
+  endpoint/Electron findings.
+- If REA is not installed, the built-in analyzer takes over: file signatures
+  (ELF/PE/Mach-O/WASM/SQLite), the Electron `.asar` header, minified bundle signatures,
+  `.env.example` key names (values are never read), the Dockerfile base image and external
+  endpoints. Findings share the same `evidence` schema, so the layer above never needs to know
+  which engine ran.
+- Use `ARCHITECT_REA_BIN=/path/to/rea` to point at a specific installation. The `rea-agents`
+  launcher requires Node `^22.23.4 || ^24.22.1 || >=26.12.1`; that is why `.nvmrc` (`24.22.1`)
+  and `package.json` → `engines.node` pin the same range at the repo root (details:
+  [Node version](#node-version--rea-launcher)).
+- REA findings merge into the `ArchState` through `mergeReaFindings`: database, queue and
+  external-service nodes are added with evidence paths (`props.evidence`); existing names are
+  not duplicated.
+- The response carries `rea.engine` (`rea` | `rea-agents` | `static`), `rea.findings`,
+  `rea.scannedArtifacts` and `rea.warnings` (REA limitations). `GET /api/rea` returns only the
+  detection result.
 
-### Artımlı reverse (içerik-hash önbelleği)
+### Incremental reverse (content-hash cache)
 
-`repoToStateCached`, sonucu dosya envanterinin (yol, boyut, mtime) + analizörün gerçekten
-okuduğu dosyaların SHA-256 içeriğinin (manifestler, Prisma, Compose, ADR, `.env.example`,
-Dockerfile; ≤64 KB) + sonucu etkileyen seçeneklerin (yol tabanı, `useRea`, `maxFiles`,
-`maxDepth`, `ignore`) hash'iyle anahtarlar. Anahtar aynıysa sonuç
-`.architect/cache/reverse/<key>.json` dosyasından okunur: manifest parse, merge, doğrulama ve
-`rea` alt süreci tamamen atlanır; yanıtta `cacheHit: true` döner.
+`repoToStateCached` keys its result by the hash of the file inventory (path, size, mtime) plus
+the SHA-256 content of the files the analyzer actually reads (manifests, Prisma, Compose, ADRs,
+`.env.example`, Dockerfile; ≤64 KB) plus the options that affect the result (path base,
+`useRea`, `maxFiles`, `maxDepth`, `ignore`). On a hit the result is read from
+`.architect/cache/reverse/<key>.json`: manifest parsing, merging, validation and the `rea`
+child process are all skipped, and the response reports `cacheHit: true`.
 
-- `POST /api/reverse { cache: false }` önbelleği atlar; başka bir dizin için
-  `ARCHITECT_CACHE_DIR`, kapatmak için `REVERSE_CACHE=0` kullanılır. TTL 24 saattir.
-- Girdiler değiştiğinde (manifest içeriği, dosya eklenmesi/silinmesi, seçenekler) anahtar
-  değişir, ilk istek yeniden hesaplar.
-- `.architect/cache/` git'e girmez.
-- **Ölçüm** (bu makine, `tsx`): 391 dosyalık fixture (8 Prisma modeli, Compose, 5 ADR, 380
-  component) cold **104,9 ms** → warm medyan **16,3 ms** = **6,4x**; bu depo (125 dosya)
-  60,3 ms → 9,5 ms = 6,3x; manifest düzenlenince `cacheHit: false` ile yeniden hesaplanır.
-- **CPU/RAM optimizasyonu** (aynı fixture): tek dizin yürüyüşü (`inventory` ile ön tarama
-  yeniden kullanılır), `stat` sonucundan `mtimeMs` (ikinci syscall yok), içerik özeti memo'su
-  (4096 giriş), süreç içi sonuç memo'su (4 giriş) ve `skipped` listesi 200 girdiyle sınırlı.
-  Sonuç: soğuk **110,5 → 52,9 ms**, sıcak **18,7 → 5,8 ms**, sıcak yolda dosya okuması
-  **12 → 0**, heap **10–14 MB → 11–13 MB** (düz).
+- `POST /api/reverse { cache: false }` bypasses the cache; use `ARCHITECT_CACHE_DIR` for a
+  different directory and `REVERSE_CACHE=0` to disable it. TTL is 24 hours.
+- When inputs change (manifest content, an added/removed file, options) the key changes and
+  the first request recomputes.
+- `.architect/cache/` is not committed.
+- **Measurement** (this machine, `tsx`): a 391-file fixture (8 Prisma models, Compose, 5 ADRs,
+  380 components) went from cold **104.9 ms** to a warm median of **16.3 ms** = **6.4x**; this
+  repo (125 files) 60.3 ms → 9.5 ms = 6.3x; editing a manifest recomputes with
+  `cacheHit: false`.
+- **CPU/RAM optimization** (same fixture): a single directory walk (the pre-scan is reused via
+  `inventory`), `mtimeMs` taken from the `stat` result (no second syscall), a content-digest
+  memo (4096 entries), an in-process result memo (4 entries) and a `skipped` list capped at
+  200 entries. Result: cold **110.5 → 52.9 ms**, warm **18.7 → 5.8 ms**, file reads on the
+  warm path **12 → 0**, heap **10–14 MB → 11–13 MB** (flat).
 
-### İlerleme akışı (SSE)
+### Progress stream (SSE)
 
-`POST /api/reverse/jobs` gövdesi `/api/reverse` ile aynıdır ve `202 { jobId, status, events }`
-döner. `GET /api/reverse/jobs/<id>/events` `text/event-stream` olarak `scan → rea → merge →
-validate → done|error` olaylarını akıtır; `done` olayının `payload` alanı `/api/reverse`
-yanıtının tamamıdır. `GET /api/reverse/jobs/<id>` durumu ve tüm geçmişi verir; biten işler 5
-dakika saklanır. Aynı kuyruk ve güvenlik sınırları geçerlidir.
+`POST /api/reverse/jobs` takes the same body as `/api/reverse` and returns
+`202 { jobId, status, events }`. `GET /api/reverse/jobs/<id>/events` streams
+`scan → rea → merge → validate → done|error` as `text/event-stream`; the `done` event's
+`payload` is the full `/api/reverse` response. `GET /api/reverse/jobs/<id>` returns the status
+and the whole history; finished jobs are kept for 5 minutes. The same queue and security
+limits apply.
 
-## Sandbox sürücüleri
+## Sandbox drivers
 
-`packages/sandbox` modüler bir `SandboxDriver` arayüzü sunar. Her sürücü komutu izole bir
-geçici çalışma dizininde, yalnızca güvenli ortam değişkenleriyle (`PATH`, `LANG`, `HOME`,
-`TMPDIR`; API anahtarları geçmez) çalıştırır.
+`packages/sandbox` exposes a modular `SandboxDriver` interface. Every driver runs the command
+in an isolated temporary working directory with only safe environment variables (`PATH`,
+`LANG`, `HOME`, `TMPDIR`; API keys never pass through).
 
-| Tür | İzolasyon | Gereksinim |
+| Type | Isolation | Requirement |
 |---|---|---|
-| `temp-dir` | Dizin + kısıtlı env | Her zaman kullanılabilir |
-| `bwrap` | Linux namespace | Bubblewrap |
-| `podman` | Rootless konteyner | Podman + `node:22-alpine` imajı |
-| `docker` | Konteyner | Docker + imaj |
-| `firejail` | Süreç jail'i | Firejail |
-| `systemd-run` | Geçici systemd scope | systemd kullanıcı oturumu |
+| `temp-dir` | Directory + restricted env | Always available |
+| `bwrap` | Linux namespaces | Bubblewrap |
+| `podman` | Rootless container | Podman + a `node:22-alpine` image |
+| `docker` | Container | Docker + image |
+| `firejail` | Process jail | Firejail |
+| `systemd-run` | Transient systemd scope | systemd user session |
 
-`auto` sırası: `bwrap → podman → docker → firejail → systemd-run → temp-dir`. Kurulu
-olmayan bir sürücü açıkça seçilirse net hata döner; `fallback` etkinse `temp-dir`'e düşer.
-CLI `--sandbox <tür>` / `--sandbox-command <cmd>`, API `POST /api/sandbox` ve arayüzdeki
-`SandboxPanel` aynı sürücüleri kullanır. `GET /api/sandboxes` kurulu motorları ve
-sürümlerini listeler.
+The `auto` order is: `bwrap → podman → docker → firejail → systemd-run → temp-dir`. An
+explicitly selected driver that is not installed returns a clear error; with `fallback`
+enabled it drops to `temp-dir`. CLI `--sandbox <type>` / `--sandbox-command <cmd>`, API
+`POST /api/sandbox` and the UI `SandboxPanel` all use the same drivers. `GET /api/sandboxes`
+lists the installed engines and their versions.
 
-## MCP sunucusu
+## MCP server
 
 ```bash
 pnpm mcp
 ```
 
-Dört araç stdio üzerinden sunulur: `architect_generate`, `architect_preview`,
-`architect_validate`, `architect_reverse_engineer` (`useRea: true` ile morluto/rea köprüsü).
-Claude Code, Cursor, OpenCode ve Freebuff yapılandırma örnekleri: [`docs/mcp.md`](docs/mcp.md).
+Four tools are exposed over stdio: `architect_generate`, `architect_preview`,
+`architect_validate`, `architect_reverse_engineer` (`useRea: true` for the morluto/rea bridge).
+Configuration examples for Claude Code, Cursor, OpenCode and Freebuff: [`docs/mcp.md`](docs/mcp.md).
 
-## Web araması
+## Web search
 
-`ideaToState`'ten önce opsiyonel bir arama katmanı çalışır. Sağlayıcı `auto` iken
-`TAVILY_API_KEY` veya `BRAVE_API_KEY` varsa o servis, yoksa anahtarsız DuckDuckGo
-instant-answer API'si kullanılır. Sonuçlar 4.000 karakterle sınırlı bir bağlam bloğu
-olarak prompt'a eklenir. CLI `--web-search --search-provider <auto|tavily|brave|duckduckgo>`,
-API gövdesinde `webSearch: true`, arayüzde `SettingsDrawer`/`IdeaComposer` anahtarı
+An optional search layer runs before `ideaToState`. With provider `auto` it uses
+`TAVILY_API_KEY` or `BRAVE_API_KEY` when present, otherwise the keyless DuckDuckGo
+instant-answer API. Results are added to the prompt as a context block capped at 4,000
+characters. CLI `--web-search --search-provider <auto|tavily|brave|duckduckgo>`, body field
+`webSearch: true`, and the `SettingsDrawer`/`IdeaComposer` toggle in the UI
 (`FRONTEND_SPEC.md` §2.2).
 
 ## HTTP API
 
-| Yöntem | Yol | Açıklama |
+| Method | Path | Description |
 |---|---|---|
+| GET | `/` | `api-only` welcome JSON when no UI is bundled (`name`, `version`, `mode`, `spec`, `endpoints`) |
 | GET | `/api/health` | `{ ok, version }` |
-| GET | `/api/version` | Sürüm, tokenizer ve diller |
-| GET | `/api/i18n?locale=tr` | Mesaj kataloğu |
-| GET | `/api/sandboxes` | Algılanan sandbox sürücüleri |
-| POST | `/api/preview` | State + diyagram + dosyalar + görevler + metrikler + doğrulama |
-| POST | `/api/generate` | ZIP (`application/zip`, `Content-Length` akıştan ölçülür) |
-| GET | `/api/rea` | `rea` / `rea-agents` algılama sonucu (sürüm, mod) |
-| POST | `/api/chat` | `{ state, message }` → güncel state, diyagram, dosyalar, değişiklik listesi |
-| POST | `/api/reverse` | `{ path, useRea? }` → `ArchState`, bulgular, özet, REA raporu |
-| POST | `/api/sandbox` | Paketi seçilen sandbox'ta doğrular |
+| GET | `/api/version` | Version, tokenizer and languages |
+| GET | `/api/i18n?locale=tr` | Message catalog |
+| GET | `/api/sandboxes` | Detected sandbox drivers |
+| POST | `/api/preview` | State + diagram + files + tasks + metrics + validation |
+| POST | `/api/generate` | ZIP (`application/zip`, `Content-Length` measured while streaming) |
+| GET | `/api/rea` | `rea` / `rea-agents` detection (version, mode) |
+| POST | `/api/chat` | `{ state, message }` → updated state, diagram, files, change list |
+| POST | `/api/reverse` | `{ path, useRea? }` → `ArchState`, findings, summary, REA report |
+| POST | `/api/sandbox` | Verifies the package in the selected sandbox |
 
-Ortak gövde alanları: `idea` **veya** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
-`packageManager`, `testRunner`, `locale`, `sandbox`, `webSearch`. İstek gövdesi 256 KB ile
-sınırlıdır; yazma uçları IP başına dakikalık bütçeyle korunur (`RATE_LIMIT_PER_MIN`,
-varsayılan 120). Hata kodları: `400` geçersiz girdi/state/path/sandbox (ve `path_not_allowed`),
-`413` gövde çok büyük, `429` rate limit (ve `reverse_busy`), `502` LLM sağlayıcı hatası,
-`504` `reverse_timeout`.
+Shared body fields: `idea` **or** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
+`packageManager`, `testRunner`, `locale`, `sandbox`, `webSearch`. Request bodies are limited
+to 256 KB; write endpoints are protected by a per-IP per-minute budget
+(`RATE_LIMIT_PER_MIN`, default 120). Error codes: `400` invalid input/state/path/sandbox (and
+`path_not_allowed`), `413` body too large, `429` rate limit (and `reverse_busy`), `502` LLM
+provider failure, `504` `reverse_timeout`.
 
-### `/api/reverse` güvenlik sınırları
+### `/api/reverse` security boundaries
 
-Uç nokta istemcinin adını verdiği dizini okur ve kimlik doğrulaması yoktur; bu yüzden üç
-sınır birlikte uygulanır:
+The endpoint reads a directory named by the client and has no authentication, so three limits
+apply together:
 
-| Sınır | Değişken | Varsayılan | Davranış |
+| Limit | Variable | Default | Behavior |
 |---|---|---|---|
-| Bağlanma adresi | `HOST` | `127.0.0.1` | Yalnızca yerel makine; ağa açıkken ve `REVERSE_ROOTS` boşken açılışta uyarı yazılır |
-| Okunabilir kökler | `REVERSE_ROOTS` | *(boş)* | İki nokta ile ayrılmış dizin listesi; dışındaki yollar `400 path_not_allowed` |
-| Eşzamanlılık | `REVERSE_CONCURRENCY` | `2` | Fazla istekler FIFO kuyruğa girer |
-| Kuyruk bütçesi | `REVERSE_QUEUE_TIMEOUT_MS` | `30000` | Sırada bekleyen istek `429 reverse_busy` alır |
-| İş bütçesi | `REVERSE_TIMEOUT_MS` | `120000` | Aşımda `504 reverse_timeout`; `rea` alt sürecine de aynı bütçe geçer |
+| Bind address | `HOST` | `127.0.0.1` | Local machine only; a startup warning is printed when bound to the network with an empty `REVERSE_ROOTS` |
+| Readable roots | `REVERSE_ROOTS` | *(empty)* | Colon-separated directory list; anything outside gets `400 path_not_allowed` |
+| Concurrency | `REVERSE_CONCURRENCY` | `2` | Extra requests wait in a FIFO queue |
+| Queue budget | `REVERSE_QUEUE_TIMEOUT_MS` | `30000` | A queued request gets `429 reverse_busy` |
+| Job budget | `REVERSE_TIMEOUT_MS` | `120000` | `504 reverse_timeout` on expiry; the same budget is passed to the `rea` child process |
 
-Yol çözümlemesi `path.resolve` + `fs.realpath` ile yapılır: `..` segmentleri normalize edilir
-ve sembolik bağlantılar çözüldükten sonra karşılaştırılır, yani izinli kök içindeki bir
-symlink dışarıyı gösteriyorsa reddedilir. Reddedilen yollarda çözümlenmiş yol istemciye
-döndürülmez. `REVERSE_ROOTS` boş bırakılırsa yerel kullanım geriye uyumlu kalır (her okunabilir
-yol), ama `HOST` loopback dışına alındığında bu kombinasyon **kapanır**: sunucu isteği
-`403 reverse_disabled` ile reddeder, çünkü kimlik doğrulaması olmayan bir uç dosya sistemini
-sınırsız okumamalıdır. Uyarı açılışta, ret ise istek başında verilir.
+Path resolution uses `path.resolve` + `fs.realpath`: `..` segments are normalized and symlinks
+are resolved before comparison, so a symlink inside an allowed root that points outside is
+rejected. The resolved path of a rejected target is never returned to the client. Leaving
+`REVERSE_ROOTS` empty keeps local use backward compatible (any readable path), but that
+combination **closes** once `HOST` leaves loopback: the server rejects the request with
+`403 reverse_disabled`, because an unauthenticated endpoint must not read the file system
+without bounds. The warning is printed at startup and the rejection at the start of the
+request.
 
-### Deterministik paket
+### Deterministic package
 
-ZIP girdileri sabit zaman damgası (`1980-01-01T00:00:00Z`), sabit sıralama ve `0o644` modu ile
-yazılır; `zip.sha256` arşivin baytlarından hesaplanır ve `X-Package-SHA256` başlığında döner.
-`metrics.json` içindeki süre metriği `REPRODUCIBLE=1` (veya CLI'de `--reproducible`) ile
-sıfırlanır, böylece iki koşu aynı hash'i verir:
+ZIP entries are written with a fixed timestamp (`1980-01-01T00:00:00Z`), fixed ordering and
+mode `0o644`; `zip.sha256` is computed from the archive bytes and returned in the
+`X-Package-SHA256` header. The duration metric in `metrics.json` is zeroed with
+`REPRODUCIBLE=1` (or `--reproducible` on the CLI), so two runs produce the same hash:
 
 ```bash
-pnpm architect --json state.json --out paket.zip --reproducible
-pnpm architect --reverse . --out paket.zip --reproducible
+pnpm architect --json state.json --out package.zip --reproducible
+pnpm architect --reverse . --out package.zip --reproducible
 ```
 
-Testler hem `store` hem `deflate` profilini, giriş tarih/modlarını ve ayrı süreçte üretilen
-arşivlerin aynı hash'ini doğrular.
+Tests cover both the `store` and `deflate` profiles, entry dates/modes and identical hashes for
+archives produced in separate processes.
 
 ## CLI
 
 ```bash
-# Demo paket
+# Demo package
 pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
 
-# Mevcut state'ten paket + dizine aç
+# Package from an existing state + extract to a directory
 pnpm generate -- --json examples/architecture.json --out out/package.zip --extract out/package
 
-# Tersine mühendislik + sandbox doğrulaması
+# Reverse engineering + sandbox verification
 pnpm generate -- --reverse ../my-project --use-rea --sandbox auto --out out/reverse.zip
 
-# Türkçe çıktı + canlı web araması
+# Turkish output + live web search
 pnpm generate -- --idea "..." --demo --locale tr --web-search --search-provider auto
 
-# BYOK + hedef runtime
+# BYOK + target runtime
 pnpm generate -- --idea "..." --api-key sk-... --model gpt-4o-mini \
   --package-manager npm --test-runner jest
 
-# Sadece önizleme (ZIP yazmaz)
+# Preview only (writes no ZIP)
 pnpm generate -- --json examples/architecture.json --preview
 ```
 
-Bayraklar: `--out`, `--extract`, `--base-url`, `--sandbox`, `--sandbox-command`,
-`--web-search`, `--search-provider`, `--use-rea`, `--help`.
+Flags: `--out`, `--extract`, `--base-url`, `--sandbox`, `--sandbox-command`, `--web-search`,
+`--search-provider`, `--use-rea`, `--help`.
 
-## Paket içeriği
+## Package contents
 
-- `ARCHITECTURE.md` (bileşenler + domain modeli + diagram), `WHITEPAPER.md`, `AGENTS.md`, `.cursorrules`
+- `ARCHITECTURE.md` (components + domain model + diagram), `WHITEPAPER.md`, `AGENTS.md`, `.cursorrules`
 - `adr/ADR-*.md`
-- `TASKS.md` ve `tasks/T-*.md` (kendi kendine yeterli görev paketleri)
+- `TASKS.md` and `tasks/T-*.md` (self-contained task packets)
 - `.opencode/agents/{implementer,validator,reviewer}.md`
 - `openapi.yaml`, `asyncapi.yaml`, `prisma/schema.prisma`, `diagram.mmd`
 - `metrics.json`, `MANIFEST.md`
 
-## Bellek profili
+## Memory profile
 
-ZIP, `JSZip.generateNodeStream` çıktısının Node `PassThrough`'a köprülenmesiyle üretilir;
-boyut, arşiv belleğe alınmadan sayan bir `Writable` üzerinden ölçülür. `build-package`
-token metriğini dosya dosya hesaplar (tüm artifact'ları tek string'de birleştirmez).
-`packages/packager/tests/memory.test.ts` 24 MB'lık, sıkıştırılamayan bir paketi
-`--expose-gc` ile ayrı süreçte profiller: canlı heap yükün yarısının altında kalır ve tek
-parça 4 MB'ı geçmez.
+The ZIP is produced by piping `JSZip.generateNodeStream` output into a Node `PassThrough`; the
+size is measured by a `Writable` that counts without keeping the archive in memory.
+`build-package` computes the token metric file by file (it never joins all artifacts into one
+string). `packages/packager/tests/memory.test.ts` profiles a 24 MB, incompressible package in a
+separate process with `--expose-gc`: live heap stays below half the payload and no single chunk
+exceeds 4 MB.
 
-## Metrikler
+## Metrics
 
-Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
+Token counts use a real BPE tokenizer (`gpt-tokenizer`).
 
-| Metrik | Hedef |
+| Metric | Target |
 |---|---|
 | `packet_prompt_tokens_p95` | ≤ 1500 |
 | `packet_prompt_tokens_max` | ≤ 2500 |
@@ -422,7 +455,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 | `duplicate_context_ratio` | ≤ 0.05 |
 | `files_per_task` | ≤ 5 |
 | `dependency_depth` | ≤ 4 |
-| `parallel_groups` | ≥ min(3, düğüm sayısı − 1) |
+| `parallel_groups` | ≥ min(3, node count − 1) |
 | `subagent_steps` | ≤ 8 |
 | `contract_coverage` | 100% |
 | `acceptance_coverage` | 100% |
@@ -435,70 +468,74 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 | `package_size_kb` | ≤ 500 |
 | `state_to_package_ms` | < 10000 |
 
-## Testler
+## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 243 test, 25 dosya, 8 paket
-pnpm typecheck   # nx run-many -t typecheck — 9 proje
+pnpm test        # nx run-many -t test — 243 tests, 25 files, 8 packages
+pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```
 
-Kapsam: core/state/diff/task-packet, 8 dilli i18n, generator'lar, doğrulayıcılar, packager,
-stream ZIP bellek profili, 54 düğümlü stres + fuzz + eşzamanlı indirme, HTTP API, tersine
-mühendislik (REA zarfı + sahte CLI), sohbet niyetleri, sandbox sürücüleri, web arama ve MCP
-araçları. `nx-plugin` generator'ı `nx g ... --dry-run` ve gerçek üretim + `tsc`/Vitest ile
-elle doğrulanır. Sözleşme testleri (`packages/app/tests/contract.test.ts`) her ucu
-`packages/app/src/contract.ts` şemasına karşı doğrular, ZIP başlıklarını bağlar ve
-`FRONTEND_SPEC.md` §4'teki uç listesini `ENDPOINTS` ile iki yönlü karşılaştırır; spec'e uç
-eklemek ya da uç kaldırmak testi kırar.
+Coverage: core/state/diff/task-packet, 8-language i18n, generators, validators, packager,
+stream ZIP memory profile, a 54-node stress run + fuzz + concurrent downloads, the HTTP API,
+reverse engineering (REA envelope + fake CLI), chat intents, sandbox drivers, web search and MCP
+tools. The `nx-plugin` generator is verified by hand with `nx g ... --dry-run`, a real
+generation, `tsc` and Vitest. Contract tests (`packages/app/tests/contract.test.ts`) validate
+every endpoint against `packages/app/src/contract.ts`, bind the ZIP headers and compare the
+endpoint list in `FRONTEND_SPEC.md` §4 with `ENDPOINTS` in both directions; adding or removing
+an endpoint breaks the test.
 
 ## Docker
 
 ```bash
 docker build -t architect-studio .
-# Depoyu /workspace'e bağla; imaj reverse için yalnızca burayı okur.
+# Mount the repo at /workspace; the image reads only that path for reverse.
 docker run --rm -p 3000:3000 -v "$PWD:/workspace" architect-studio
 ```
 
-**İmajın varsayılanları güvenli:** `HOST=0.0.0.0` (yayınlanan porta erişim için) ve
-`REVERSE_ROOTS=/workspace`. Yani `/api/reverse` konteynerin tüm dosya sistemini değil, yalnızca
-bağladığın çalışma alanını okuyabilir; istekte `path: "/workspace/<repo>"` verilir. Bu
-denklemin dışına çıkmak istersen `REVERSE_ROOTS`'u genişlet ya da `-e REVERSE_ROOTS=` ile
-boşalt — boşaltırsan sunucu `HOST` loopback dışında olduğu için `/api/reverse` isteklerini
-`403 reverse_disabled` ile reddeder. Ağa açık + allowlist'siz dosya okuma kombinasyonu
-desteklenmez; aynı kural `docker` dışındaki kurulumlar için de geçerlidir.
+**The image defaults are safe:** `HOST=0.0.0.0` (so the published port is reachable) and
+`REVERSE_ROOTS=/workspace`. That means `/api/reverse` can read only the mounted workspace, not
+the container's whole file system; pass `path: "/workspace/<repo>"` in the request. To go
+outside that equation, widen `REVERSE_ROOTS` or empty it with `-e REVERSE_ROOTS=` — if you
+empty it, the server rejects `/api/reverse` with `403 reverse_disabled` because `HOST` is
+outside loopback. Network-exposed file reading without an allowlist is not supported; the same
+rule applies to non-Docker setups.
 
-`.env.example` artık `HOST` satırını **yorumda** tutar, böylece
-`docker run --env-file .env.example` konteyner içinde loopback'e bağlanmaya zorlamaz (bu
-kombinasyon port yayınlandığı hâlde sunucunun dışarıdan erişilemez olmasına yol açıyordu).
-Farklı bir adres/port için açıkça geç: `-e HOST=0.0.0.0 -e PORT=8080`.
+`.env.example` keeps the `HOST` line **commented out**, so `docker run --env-file .env.example`
+does not force the container onto loopback (a combination that published the port while making
+the server unreachable from outside). Pass a different address/port explicitly:
+`-e HOST=0.0.0.0 -e PORT=8080`.
 
-`/api/health` üzerinden healthcheck tanımlıdır. Sandbox konteynerleri için Docker/Podman
-soketinin konteynere verilmesi gerekir; `temp-dir` ve `bwrap` bu gereksinimi duymaz.
+A healthcheck is defined against `/api/health`. Sandbox containers need the Docker/Podman
+socket passed into the container; `temp-dir` and `bwrap` do not.
 
 ## CI
 
-`.github/workflows/ci.yml`: `.nvmrc` (Node 24.22.1) ile `typecheck`, `test` ve Docker image build.
+`.github/workflows/ci.yml`: `typecheck`, `test` and a Docker image build on `.nvmrc`
+(Node 24.22.1).
 
-## Bilinçli sınırlar
+## Deliberate limits
 
-- Kimlik doğrulama, kullanıcı/oturum ve kalıcılık yoktur; sunucu tek süreç ve in-memory'dir.
-- **Arayüz kodü yoktur:** `web/*` silindi, yerine `FRONTEND_SPEC.md` sözleşmesi geçti;
-  `GET /` bu depoda `500` döner, tüm `/api/*` uçları çalışır.
-- Görev metinleri node türüne göre şablonlanır; LLM yalnızca state üretir.
-- Kabul kriterleri üretilir, hedef kod tabanında çalıştırılmaz.
-- Sandbox, komut çalıştırma izolasyonu sağlar; `podman`/`docker` imajının önceden
-  çekilmiş olması gerekir.
-- Tarayıcı E2E (Playwright) yoktur; indirme akışı HTTP seviyesinde test edilir.
-- Web araması `auto` modunda anahtarsız DuckDuckGo'ya düşer; sonuç kalitesi sağlayıcıya bağlıdır.
-- `rea` CLI'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; daha eski Node'da köprü
-  yerleşik analizöre düşer (`rea.engine: "static"`). Sabitlenen sürüm `.nvmrc` (24.22.1) ve
-  `package.json` → `engines.node` içinde; CI `.nvmrc`'ı okur, Docker imajı `node:24-alpine`.
+- No authentication, users/sessions or persistence; the server is a single in-memory process.
+- **No UI code:** `web/*` was removed and replaced by the `FRONTEND_SPEC.md` contract; `GET /`
+  returns a `200` `api-only` welcome JSON when no UI bundle exists, and every `/api/*` endpoint
+  works.
+- Task text is templated per node kind; the LLM only produces the state.
+- Acceptance criteria are generated, not executed against the target codebase.
+- The sandbox isolates command execution; `podman`/`docker` images must already be pulled.
+- There is no browser E2E (Playwright); the download flow is tested at the HTTP level.
+- Web search falls back to keyless DuckDuckGo in `auto` mode; result quality depends on the
+  provider.
+- The `rea` CLI requires Node `^22.23.4 || ^24.22.1 || >=26.12.1`; on older Node the bridge
+  falls back to the built-in analyzer (`rea.engine: "static"`). The pinned version lives in
+  `.nvmrc` (24.22.1) and `package.json` → `engines.node`; CI reads `.nvmrc` and the Docker image
+  is `node:24-alpine`.
 
-## Tasarım ve plan
+## Design and plan
 
-- `FRONTEND_SPEC.md` — Studio arayüzü sözleşmesi (ekranlar, tasarım sistemi, API, hata durumları)
+- `FRONTEND_SPEC.md` — Studio UI contract (screens, design system, API, error states)
 - `docs/superpowers/specs/2026-11-22-agent-package-design.md`
 - `docs/superpowers/plans/2026-11-22-usable-mvp.md`
-- `docs/mcp.md` — MCP araçları ve istemci yapılandırmaları
-- `PROJECT-SUMMARY.md` — geliştirici devir notu
+- `docs/mcp.md` — MCP tools and client configurations
+- `PROJECT-SUMMARY.md` — developer handover notes
+- `CONTRIBUTING.md` — setup, checks and adding packages
