@@ -31,6 +31,7 @@ async function main(): Promise<void> {
     return;
   }
   const args = parseArgs(argv);
+  if (args.reproducible) process.env.REPRODUCIBLE = "1";
   const out = args.out ?? "out/agent-package.zip";
   if (args.locale !== undefined && !isLocale(args.locale)) {
     throw new Error(`Unsupported locale: ${args.locale}. Use one of ${LOCALES.join(", ")}.`);
@@ -129,6 +130,7 @@ async function main(): Promise<void> {
     await pipeline(result.zip.stream(), createWriteStream(out));
     console.log(`Package written to ${out}`);
   }
+  console.log(`Package SHA-256: ${result.zip.sha256}`);
 
   if (args.extract) {
     const root = resolve(args.extract);
@@ -178,7 +180,8 @@ function parseArgs(argv: string[]) {
     webSearch: boolean;
     searchProvider?: SearchProvider;
     useRea: boolean;
-  } = { demo: false, preview: false, webSearch: false, useRea: false };
+    reproducible: boolean;
+  } = { demo: false, preview: false, webSearch: false, useRea: false, reproducible: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -240,6 +243,9 @@ function parseArgs(argv: string[]) {
       case "--use-rea":
         result.useRea = true;
         break;
+      case "--reproducible":
+        result.reproducible = true;
+        break;
       case "--search-provider": {
         const value = next();
         if (!isSearchProvider(value)) {
@@ -264,7 +270,7 @@ function printHelp(): void {
 
 Usage:
   pnpm architect init [dir] [--client cursor|claude|opencode|freebuff|all] [--force]
-  pnpm architect doctor [dir] [--state <path>] [--json] [--fail-on-drift]
+  pnpm architect doctor [dir] [--state <path>] [--json] [--fail-on-drift] [--write]
   pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
   pnpm generate -- --json architecture.json --out out/package.zip
   pnpm generate -- --reverse ../my-project --use-rea --sandbox auto

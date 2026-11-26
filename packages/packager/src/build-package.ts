@@ -26,6 +26,8 @@ export interface BuildOptions {
   extraFiles?: Record<string, string>;
   taskOptions?: TaskBuildOptions;
   locale?: Locale;
+  /** Freezes timing-dependent output so two runs hash identically. */
+  reproducible?: boolean;
 }
 
 export interface PackageResult {
@@ -42,6 +44,7 @@ const PLACEHOLDER_METRICS: MetricReport[] = [
 
 export async function buildPackage(state: ArchState, options: BuildOptions = {}): Promise<PackageResult> {
   const startedAt = Date.now();
+  const reproducible = options.reproducible ?? process.env.REPRODUCIBLE === "1";
   const stateErrors = validateState(state);
   if (stateErrors.length > 0) {
     throw new Error(`Invalid architecture state: ${stateErrors.join("; ")}`);
@@ -116,7 +119,7 @@ export async function buildPackage(state: ArchState, options: BuildOptions = {})
     gteMetric("deterministic_coverage", validation.deterministicCoverage, 0.9),
     lteMetric("index_tokens", taskMetrics.indexTokens, 800),
     lteMetric("package_size_kb", 0, 500),
-    lteMetric("state_to_package_ms", Date.now() - startedAt, 10000),
+    lteMetric("state_to_package_ms", reproducible ? 0 : Date.now() - startedAt, 10000),
   ];
 
   files["metrics.json"] = JSON.stringify(baseMetrics, null, 2);

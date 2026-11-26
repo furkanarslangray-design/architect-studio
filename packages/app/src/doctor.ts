@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { validateState } from "../../core/src/diff";
 import { parseState, type ArchState } from "../../core/src/state";
 import { repoToState } from "../../reverse/src";
@@ -40,11 +40,15 @@ export interface DoctorReport {
   /** Structural problems the validator found in either state. */
   errors: string[];
   notes: string[];
+  /** Set to the written path when `--write` saved the current state. */
+  written?: string;
 }
 
 export interface DoctorOptions {
   root?: string;
   statePath?: string;
+  /** Saves the analysed state to `statePath` before reporting. */
+  write?: boolean;
 }
 
 function counts(state: ArchState): StateCounts {
@@ -153,20 +157,24 @@ export function doctorProject(options: DoctorOptions = {}): DoctorReport {
     notes: [],
   };
 
-  if (!existsSync(statePath)) {
+  if (!existsSync(statePath) && !options.write) {
     report.errors.push(`Saved state not found: ${statePath}`);
-    report.notes.push("Run `pnpm architect init .` and save a state, or pass --state <path>.");
+    report.notes.push("Run `pnpm architect doctor . --write` to save the current architecture, or pass --state <path>.");
     return report;
   }
 
-  let saved: ArchState;
-  try {
-    saved = parseState(JSON.parse(readFileSync(statePath, "utf8")));
-  } catch (error) {
-    report.errors.push(`Saved state is not a valid ArchState: ${error instanceof Error ? error.message : "unknown error"}`);
-    return report;
+  let saved: ArchState | undefined;
+  if (existsSync(statePath)) {
+    try {
+      saved = parseState(JSON.parse(readFileSync(statePath, "utf8")));
+    } catch (error) {
+      report.errors.push(
+        `Saved state is not a valid ArchState: ${error instanceof Error ? error.message : "unknown error"}`,
+      );
+      return report;
+    }
+    report.saved = counts(saved);
   }
-  report.saved = counts(saved);
 
   let current: ArchState;
   try {
@@ -177,9 +185,19 @@ export function doctorProject(options: DoctorOptions = {}): DoctorReport {
   }
   report.current = counts(current);
 
-  report.errors.push(...validateState(saved).map((issue) => `saved: ${issue}`));
+  if (options.write) {
+    mkdirSync(dirname(statePath), { recursive: true });
+    writeFileSync(statePath, `${JSON.stringify(current, null, 2)}\n`);
+    report.written = statePath;
+    report.saved = report.current;
+    report.notes.push("Wrote the analysed state; run doctor again to check for drift.");
+  }
+
   report.errors.push(...validateState(current).map((issue) => `current: ${issue}`));
-  report.drift = compareStates(saved, current);
+  if (saved) {
+    report.errors.push(...validateState(saved).map((issue) => `saved: ${issue}`));
+    report.drift = options.write ? [] : compareStates(saved, current);
+  }
   report.notes.push("Artifact files (openapi.yaml, ARCHITECTURE.md) are not parsed back; drift is structural only.");
   report.ok = report.drift.length === 0 && report.errors.length === 0;
   return report;
@@ -204,14 +222,22 @@ export function formatDoctorReport(report: DoctorReport): string {
     for (const change of report.drift) lines.push(`     ${change.action.padEnd(7)} ${change.kind.padEnd(8)} ${change.target}`);
   }
   for (const error of report.errors) lines.push(`  ✗ ${error}`);
+  if (report.written) lines.push(`  ✓ wrote state: ${report.written}`);
   for (const note of report.notes) lines.push(`  · ${note}`);
   return lines.join("\n");
 }
 
-export function parseDoctorArgs(argv: string[]): { root?: string; statePath?: string; json: boolean; failOnDrift: boolean } {
-  const result: { root?: string; statePath?: string; json: boolean; failOnDrift: boolean } = {
+export function parseDoctorArgs(argv: string[]): {
+  root?: string;
+  statePath?: string;
+  json: boolean;
+  failOnDrift: boolean;
+  write: boolean;
+} {
+  const result: { root?: string; statePath?: string; json: boolean; failOnDrift: boolean; write: boolean } = {
     json: false,
     failOnDrift: false,
+    write: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -221,6 +247,10 @@ export function parseDoctorArgs(argv: string[]): { root?: string; statePath?: st
     }
     if (arg === "--fail-on-drift") {
       result.failOnDrift = true;
+      continue;
+    }
+    if (arg === "--write") {
+      result.write = true;
       continue;
     }
     if (arg === "--state") {
@@ -246,7 +276,7 @@ export function parseDoctorArgs(argv: string[]): { root?: string; statePath?: st
 /** 0 = clean, 1 = drift with --fail-on-drift, 2 = missing/invalid input. */
 export function runDoctorCommand(argv: string[]): number {
   const args = parseDoctorArgs(argv);
-  const report = doctorProject({ root: args.root, statePath: args.statePath });
+  const report = doctorProject({ root: args.root, statePath: args.statePath, write: args.write });
   if (args.json) console.log(JSON.stringify(report, null, 2));
   else console.log(formatDoctorReport(report));
 

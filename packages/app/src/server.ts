@@ -425,6 +425,7 @@ export function createServer(options: ServerOptions = {}) {
           "Content-Length": String(result.zip.sizeBytes),
           "Cache-Control": "no-store",
           "X-Metrics-Passed": `${passed}/${result.metrics.length}`,
+          "X-Package-SHA256": result.zip.sha256,
           "X-Task-Count": String(taskCount),
           "X-Validation": result.validation.ok ? "ok" : "failed",
           "X-Entities": String(result.state.entities.length),

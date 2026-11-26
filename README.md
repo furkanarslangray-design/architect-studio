@@ -183,12 +183,15 @@ pnpm architect doctor .                  # insan okunur rapor
 pnpm architect doctor . --json           # makine okunur rapor
 pnpm architect doctor . --fail-on-drift  # kayma varsa çıkış 1 (CI için)
 pnpm architect doctor . --state out/state.json
+pnpm architect doctor . --write         # deponun bugünkü halini .architect/state.json'a yaz
 ```
 
 Drift türleri: `node`, `edge`, `entity`, `field`, `decision` × `added|removed|updated`. State
 dosyası yoksa veya bozuksa çıkış **2**, temizse **0**, `--fail-on-drift` ile kayma varsa **1**.
 `validateState` hataları da rapora düşer. Sınır: üretilmiş `openapi.yaml`/`ARCHITECTURE.md`
-geri ayrıştırılmaz; karşılaştırma yapısaldır ve rapor bunu not olarak yazar.
+geri ayrıştırılmaz; karşılaştırma yapısaldır ve rapor bunu not olarak yazar. `--write`
+state dosyasını üretir (yoksa oluşturur, varsa tazeler); tipik akış `doctor --write` → düzenle →
+`doctor --fail-on-drift`.
 
 ## Dil desteği (i18n)
 
@@ -348,6 +351,21 @@ yol), ama `HOST` loopback dışına alındığında bu kombinasyon **kapanır**:
 `403 reverse_disabled` ile reddeder, çünkü kimlik doğrulaması olmayan bir uç dosya sistemini
 sınırsız okumamalıdır. Uyarı açılışta, ret ise istek başında verilir.
 
+### Deterministik paket
+
+ZIP girdileri sabit zaman damgası (`1980-01-01T00:00:00Z`), sabit sıralama ve `0o644` modu ile
+yazılır; `zip.sha256` arşivin baytlarından hesaplanır ve `X-Package-SHA256` başlığında döner.
+`metrics.json` içindeki süre metriği `REPRODUCIBLE=1` (veya CLI'de `--reproducible`) ile
+sıfırlanır, böylece iki koşu aynı hash'i verir:
+
+```bash
+pnpm architect --json state.json --out paket.zip --reproducible
+pnpm architect --reverse . --out paket.zip --reproducible
+```
+
+Testler hem `store` hem `deflate` profilini, giriş tarih/modlarını ve ayrı süreçte üretilen
+arşivlerin aynı hash'ini doğrular.
+
 ## CLI
 
 ```bash
@@ -420,7 +438,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 233 test, 24 dosya, 8 paket
+pnpm test        # nx run-many -t test — 241 test, 25 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```

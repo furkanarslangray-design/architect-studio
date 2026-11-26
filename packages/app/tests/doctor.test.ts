@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -96,7 +96,41 @@ describe("doctorProject", () => {
     const report = doctorProject({ root });
     expect(report.ok).toBe(false);
     expect(report.errors[0]).toContain("Saved state not found");
-    expect(report.notes.join(" ")).toContain("architect init");
+    expect(report.notes.join(" ")).toContain("--write");
+  });
+
+  it("creates the state file with --write when none exists", () => {
+    expect(existsSync(statePath)).toBe(false);
+    const report = doctorProject({ root, write: true });
+    expect(report.ok).toBe(true);
+    expect(report.written).toBe(statePath);
+    expect(existsSync(statePath)).toBe(true);
+    expect(formatDoctorReport(report)).toContain("wrote state");
+
+    const rerun = doctorProject({ root });
+    expect(rerun.ok).toBe(true);
+    expect(rerun.drift).toEqual([]);
+    expect(rerun.saved).toEqual(rerun.current);
+  });
+
+  it("refreshes a stale state with --write", () => {
+    saveState();
+    writeManifest({ express: "^4.0.0", redis: "^5.0.0" });
+    expect(doctorProject({ root }).ok).toBe(false);
+
+    const report = doctorProject({ root, write: true });
+    expect(report.ok).toBe(true);
+    expect(report.written).toBe(statePath);
+    expect(report.saved).toEqual(report.current);
+    expect(readFileSync(statePath, "utf8")).toContain("event-bus-queue");
+    expect(doctorProject({ root })).toMatchObject({ ok: true, drift: [] });
+  });
+
+  it("writes to an explicit --state path, creating its directory", () => {
+    const custom = join(root, "nested", "dir", "state.json");
+    const report = doctorProject({ root, statePath: custom, write: true });
+    expect(report.written).toBe(custom);
+    expect(existsSync(custom)).toBe(true);
   });
 
   it("fails cleanly when the saved state is corrupt", () => {
@@ -121,7 +155,9 @@ describe("doctor CLI", () => {
       statePath: "s.json",
       json: true,
       failOnDrift: true,
+      write: false,
     });
+    expect(parseDoctorArgs(["--write"])).toMatchObject({ write: true });
     expect(parseDoctorArgs(["--state=other.json"])).toMatchObject({ statePath: "other.json" });
     expect(() => parseDoctorArgs(["--state"])).toThrow(/--state needs a path/);
     expect(() => parseDoctorArgs(["--nope"])).toThrow(/Unknown option/);
@@ -141,6 +177,8 @@ describe("doctor CLI", () => {
     const empty = join(root, "no-state-here");
     mkdirSync(empty, { recursive: true });
     expect(runDoctorCommand([empty])).toBe(2);
+    expect(runDoctorCommand([empty, "--write"])).toBe(0);
+    expect(existsSync(join(empty, ".architect", "state.json"))).toBe(true);
 
     log.mockClear();
     expect(runDoctorCommand([root, "--json"])).toBe(0);

@@ -36,7 +36,7 @@ yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
 | 3 | §8 `ArchState` şema sürümleme | §1 (şema altyapısı) | Kalıcılık ve doctor bunun üstüne kurulur; veri yazılmadan önce sürüm kavramı olmalı |
 | 4 | §10 `@architect-studio/*` alias + sınır kuralları | §1 | Import'lara **bir kez** dokunmak için: 4, 5, 9, 11 zaten bu dosyaları değiştirecek |
 | 5 | §3 `architect init` ✅ | §2 (config alanları) | İlk kullanım deneyimi; §9'un `config.json`'ına dayanak |
-| 6 | §6 Deterministik ZIP | — | Ucuz ve §7'nin ön koşulu; paket hash'i erken sabitlenir |
+| 6 | §6 Deterministik ZIP ✅ | — | Ucuz ve §7'nin ön koşulu; paket hash'i erken sabitlenir |
 | 7 | §7 Altın korpus | §6 | Snapshot'lar ancak ZIP bayt-bayt sabitken anlamlı |
 | 8 | §4 Artımlı reverse + SSE ✅ | §2 (kuyruk) | Önbellek anahtarı §2'nin yol çözümlemesini kullanır; geliştirme döngüsünü kısaltır |
 | 9 | §9 SQLite kalıcılık + revizyonlar | §3, §8 | En pahalı indirme (11 MB); state sürümü ve config oturmuş olmalı |
@@ -336,7 +336,17 @@ not olarak yazar. Testler: `doctor.test.ts` 10, `cache.test.ts` +2.
 
 ---
 
-## 6. Deterministik (bayt-bayt aynı) ZIP — S
+## 6. Deterministik (bayt-bayt aynı) ZIP — S · **UYGULANDI**
+
+**Teslim (2026-11-24):** `packages/packager/src/zip.ts` — girdiler sabit `date`
+(`1980-01-01T00:00:00Z`), `unixPermissions: 0o644`, ada göre sıralama, `platform: "UNIX"`;
+`store`/`deflate` profili seçilebilir. `ZipStream` artık `sha256` taşır ve ölçüm geçişinde
+hesaplanır (ek tampon yok). `build-package.ts` `reproducible` seçeneği / `REPRODUCIBLE=1` ile
+`state_to_package_ms` metriğini sıfırlar. `/api/generate` `X-Package-SHA256` başlığını döner,
+CLI hash'i yazar ve `--reproducible` bayrağını sunar. Testler: `reproducible.test.ts` (5),
+`server.test.ts` başlık/hash eşleşmesi. Doğrulama: aynı fixture iki ayrı süreçte
+`6d6870…7cb1` verdi; dokümanlarda zaman damgası üretilmediği için hash yalnızca süre metriğine
+duyarlıydı.
 
 **Amaç:** Aynı girdiden aynı paket hash'i; paketin kaynağı kanıtlanabilsin.
 

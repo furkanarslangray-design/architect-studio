@@ -418,13 +418,15 @@ Content-Disposition: attachment; filename="agent-package.zip"
 Cache-Control: no-store
 X-Metrics-Passed: 15/16
 X-Task-Count: 4
+X-Package-SHA256: 6d687003c7ef97393ab380b1ebd95b3baa7fed7df89d28ef6e61db15780f7cb1
 X-Validation: ok
 X-Entities: 3
 X-Tokenizer: gpt-tokenizer
 X-Locale: tr
 ```
 Arayüz bu başlıkları indirme sonrası "özet" olarak gösterir; gövdeyi `Blob` +
-`URL.createObjectURL` ile indirir.
+`URL.createObjectURL` ile indirir. `X-Package-SHA256` gövdenin bayt-bayt SHA-256'sıdır;
+`REPRODUCIBLE=1` (veya `--reproducible`) ile aynı girdi aynı hash'i üretir.
 
 #### `POST /api/chat`
 **İstek:**

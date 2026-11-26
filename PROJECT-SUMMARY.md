@@ -208,6 +208,7 @@ idea / ArchState / repository
   durum + olay geçmişi; `GET /api/reverse/jobs/:id/events` `text/event-stream` ile
   `scan → rea → merge → validate → done|error` akıtır. `seq` artımlıdır; biten işe sonradan
   bağlanan istemci tüm geçmişi alır ve akış kapanır. Aynı yol allowlist'i ve kuyruk geçerli.
+- Doğrulama: 233 → 241 test; doctor `--write` ve deterministik ZIP testleri eklendi.
 - Ölçüm (bu makine): 391 dosyalık fixture **104,9 ms → 16,3 ms (6,4x)**; depo 60,3 → 9,5 ms
   (6,3x); manifest düzenlenince `cacheHit: false`. Anahtar artık çözümlenmiş kök dizini de
   içerir: aynı içerikli iki ayrı checkout ayrı girdi üretir (testle doğrulandı).
@@ -219,7 +220,19 @@ idea / ArchState / repository
   `added|removed|updated` üretir. `validateState` hataları da rapora girer.
 - CLI: `pnpm architect doctor [dir] [--state <path>] [--json] [--fail-on-drift]`;
   çıkış **0** temiz, **1** `--fail-on-drift` + kayma, **2** state yok/bozuk.
+- `--write` state dosyasını üretir (yoksa oluşturur, varsa tazeler); ipucu artık
+  `doctor --write`'a yönlendirir.
 - Sınır: üretilmiş `openapi.yaml`/`ARCHITECTURE.md` geri ayrıştırılmaz, kayma yapısaldır.
+
+#### Deterministik ZIP (Plan §6)
+
+- `zip.ts`: girdi zaman damgası `1980-01-01T00:00:00Z`, `unixPermissions: 0o644`, adlara göre
+  sabit sıralama, `platform: "UNIX"`; `store`/`deflate` profilleri seçilebilir.
+- `ZipStream.sha256`: ölçüm geçişinde arşiv baytlarından hesaplanır (ekstra tampon yok).
+- `/api/generate` → `X-Package-SHA256`; CLI → `Package SHA-256:` satırı; `--reproducible`
+  veya `REPRODUCIBLE=1` `state_to_package_ms` metriğini sıfırlar.
+- Doğrulama: aynı fixture iki ayrı süreçte `6d6870…7cb1` hash'ini verdi; testler byte eşitliği,
+  giriş tarih/modları ve iki sıkıştırma profilini kapsıyor.
 
 #### Kalite kapısı ve CPU/RAM optimizasyonu (2026-11-24)
 
@@ -291,8 +304,10 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 24 dosya, 233/233 test geçti |
-| `architect doctor` | 10 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
+| `pnpm test` | 8 proje, 25 dosya, 241/241 test geçti |
+| Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
+| `doctor --write` | 3 test: state oluşturma, tazeleme, özel `--state` yolu |
+| `architect doctor` | 13 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
 | CPU/RAM optimizasyonu | cold 110,5 → 52,9 ms, warm 18,7 → 5,8 ms, sıcak yolda okuma 12 → 0, heap düz |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
 | Sözleşme testleri | 17 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
@@ -314,7 +329,7 @@ architect-studio/
 | REA köprüsü | sahte `rea` CLI'ı, `normalized_result` zarfı, Evidence projeksiyonu, ASAR/ELF/env/Dockerfile analizi testli |
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
-Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 11 (2 dosya),
+Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 16 (3 dosya),
 app 129 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
 reverse-queue, reverse-jobs, init, doctor), reverse 24 (3 dosya: index, rea, cache), sandbox
 11, mcp 6.
@@ -371,6 +386,7 @@ pnpm nx g @architect-studio/workspace-plugin:package <ad> --dry-run
 pnpm mcp
 pnpm architect init . --client all         # yapılandırma + MCP dosyaları + AGENTS.md bloğu
 pnpm architect doctor . --fail-on-drift    # kaydedilmiş mimari ile depo arasındaki kayma (CI)
+pnpm architect doctor . --write             # state dosyasını üret/tazele
 
 # Demo paket
 pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo

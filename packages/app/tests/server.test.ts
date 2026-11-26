@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer } from "../src/server";
 
@@ -44,8 +45,11 @@ describe("HTTP server", () => {
     expect(response.headers.get("x-validation")).toBe("ok");
     expect(response.headers.get("x-task-count")).toBe("4");
     expect(response.headers.get("x-entities")).toBe("1");
+    const digest = response.headers.get("x-package-sha256") ?? "";
+    expect(digest).toMatch(/^[0-9a-f]{64}$/);
     const buffer = await response.arrayBuffer();
     expect(buffer.byteLength).toBeGreaterThan(1000);
+    expect(createHash("sha256").update(Buffer.from(buffer)).digest("hex")).toBe(digest);
   });
 
   it("previews architecture, tasks, metrics and validation without zipping", async () => {
