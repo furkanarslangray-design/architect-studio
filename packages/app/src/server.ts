@@ -21,7 +21,15 @@ import {
 } from "../../core/src/i18n";
 import { buildPackage, type PackageResult } from "../../packager/src";
 import { generateMermaid } from "../../generators/src";
-import { detectRea, repoToState, repoToStateWithRea, summarizeReverse } from "../../reverse/src";
+import {
+  detectRea,
+  repoToStateCached,
+  summarizeReverse,
+  type CachedReverseResult,
+  type ReverseOptions,
+} from "../../reverse/src";
+import { createJobStore, type ReverseJob, type ReverseJobEvent } from "./jobs";
+import type { ReversePhase } from "../../reverse/src";
 import {
   detectSandboxes,
   isSandboxType,
@@ -70,6 +78,8 @@ export interface ServerOptions {
   reverseTimeoutMs?: number;
   /** Address the server is bound to; non-loopback disables `/api/reverse` without roots. */
   host?: string;
+  /** Overrides the content-hash cache directory (default `<cwd>/.architect/cache/reverse`). */
+  reverseCacheDir?: string;
 }
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
@@ -86,7 +96,25 @@ export function createServer(options: ServerOptions = {}) {
     queueTimeoutMs: options.reverseQueueTimeoutMs ?? numberFromEnv(process.env.REVERSE_QUEUE_TIMEOUT_MS, 30_000),
     timeoutMs: options.reverseTimeoutMs ?? numberFromEnv(process.env.REVERSE_TIMEOUT_MS, 120_000),
   });
+  const jobs = createJobStore();
+  const reverseCacheDir = options.reverseCacheDir;
   const listenHost = options.host ?? resolveListenHost(process.env);
+
+  const startReverseJob = (job: ReverseJob, target: string, body: Record<string, unknown>) => {
+    const reverseOptions = {
+      ...reverseOptionsFrom(body, reverseQueue.timeoutMs, reverseCacheDir),
+      onPhase: (phase: ReversePhase) => jobs.emit(job.id, phase),
+    };
+    void reverseQueue
+      .run(() => repoToStateCached(target, reverseOptions))
+      .then((result) => jobs.finish(job.id, "done", reversePayload(result)))
+      .catch((error: unknown) => {
+        jobs.finish(job.id, "error", {
+          code: error instanceof ReverseQueueError ? error.code : "reverse_failed",
+          message: error instanceof Error ? error.message : "unknown error",
+        });
+      });
+  };
   // An unauthenticated path reader must never be reachable from the network
   // without an allowlist: no roots + a wide bind is a misconfiguration, not a
   // warning.
@@ -171,6 +199,68 @@ export function createServer(options: ServerOptions = {}) {
         return;
       }
 
+      if (request.method === "POST" && request.url === "/api/reverse/jobs") {
+        enforceRateLimit(buckets, rateLimit, clientKey(request));
+        const body = await readJsonBody(request);
+        const pathValue = typeof body.path === "string" ? body.path.trim() : "";
+        if (!pathValue) {
+          throw new HttpError(400, { key: "error.invalidPath", vars: { path: "" }, code: "invalid_path" });
+        }
+        if (reverseDisabled) {
+          throw new HttpError(403, {
+            key: "error.reverseFailed",
+            vars: {
+              detail: `REVERSE_ROOTS must be set when the server is not bound to loopback (HOST=${listenHost})`,
+            },
+            code: "reverse_disabled",
+          });
+        }
+        let target: string;
+        try {
+          target = resolveReversePath(pathValue, reverseRoots);
+        } catch (error) {
+          if (error instanceof ReversePathError && error.code === "path_not_allowed") {
+            throw new HttpError(400, {
+              key: "error.reverseFailed",
+              vars: { detail: `${error.message} (see REVERSE_ROOTS)` },
+              code: "path_not_allowed",
+            });
+          }
+          throw new HttpError(400, {
+            key: "error.invalidPath",
+            vars: { path: pathValue },
+            code: "invalid_path",
+          });
+        }
+
+        const job = jobs.create();
+        sendJson(response, 202, {
+          jobId: job.id,
+          status: `/api/reverse/jobs/${job.id}`,
+          events: `/api/reverse/jobs/${job.id}/events`,
+        });
+        startReverseJob(job, target, body);
+        return;
+      }
+
+      if (request.method === "GET" && request.url?.startsWith("/api/reverse/jobs/")) {
+        const match = /^\/api\/reverse\/jobs\/([^/]+)(\/events)?$/.exec(request.url);
+        if (!match) throw new HttpError(404, { key: "error.notFound", code: "not_found" });
+        const job = jobs.get(decodeURIComponent(match[1]));
+        if (!job) throw new HttpError(404, { key: "error.notFound", code: "not_found" });
+        if (!match[2]) {
+          sendJson(response, 200, {
+            jobId: job.id,
+            state: job.state,
+            createdAt: new Date(job.createdAt).toISOString(),
+            events: job.events,
+          });
+          return;
+        }
+        streamJobEvents(response, job, jobs);
+        return;
+      }
+
       if (request.method === "POST" && request.url === "/api/reverse") {
         enforceRateLimit(buckets, rateLimit, clientKey(request));
         const body = await readJsonBody(request);
@@ -207,35 +297,10 @@ export function createServer(options: ServerOptions = {}) {
         }
 
         try {
-          const reverseOptions = {
-            maxFiles: typeof body.maxFiles === "number" ? body.maxFiles : undefined,
-            maxDepth: typeof body.maxDepth === "number" ? body.maxDepth : undefined,
-            ...(reverseQueue.timeoutMs > 0 ? { rea: { timeoutMs: reverseQueue.timeoutMs } } : {}),
-          };
-          const result = await reverseQueue.run(async () =>
-            body.useRea === true
-              ? await repoToStateWithRea(target, reverseOptions)
-              : repoToState(target, reverseOptions),
+          const result = await reverseQueue.run(() =>
+            repoToStateCached(target, reverseOptionsFrom(body, reverseQueue.timeoutMs, reverseCacheDir)),
           );
-          sendJson(response, 200, {
-            summary: summarizeReverse(result),
-            root: result.root,
-            state: result.state,
-            findings: result.findings,
-            warnings: result.warnings,
-            scannedFiles: result.scannedFiles,
-            ...(result.rea
-              ? {
-                  rea: {
-                    engine: result.rea.engine,
-                    detection: result.rea.detection,
-                    scannedArtifacts: result.rea.scannedArtifacts,
-                    warnings: result.rea.warnings,
-                    findings: result.rea.findings,
-                  },
-                }
-              : {}),
-          });
+          sendJson(response, 200, reversePayload(result));
         } catch (error) {
           if (error instanceof ReverseQueueError) {
             if (error.code === "reverse_busy") {
@@ -490,6 +555,80 @@ async function describeSandbox(requested: unknown) {
       version: item.version,
     })),
   };
+}
+
+function reverseOptionsFrom(
+  body: Record<string, unknown>,
+  timeoutMs: number,
+  cacheDir: string | undefined,
+): ReverseOptions {
+  return {
+    maxFiles: typeof body.maxFiles === "number" ? body.maxFiles : undefined,
+    maxDepth: typeof body.maxDepth === "number" ? body.maxDepth : undefined,
+    ...(timeoutMs > 0 ? { rea: { timeoutMs } } : {}),
+    ...(body.cache === false
+      ? { cache: { enabled: false } }
+      : cacheDir
+        ? { cache: { dir: cacheDir } }
+        : {}),
+  };
+}
+
+function reversePayload(result: CachedReverseResult) {
+  return {
+    summary: summarizeReverse(result),
+    root: result.root,
+    state: result.state,
+    findings: result.findings,
+    warnings: result.warnings,
+    scannedFiles: result.scannedFiles,
+    cacheHit: result.cacheHit,
+    ...(result.rea
+      ? {
+          rea: {
+            engine: result.rea.engine,
+            detection: result.rea.detection,
+            scannedArtifacts: result.rea.scannedArtifacts,
+            warnings: result.rea.warnings,
+            findings: result.rea.findings,
+          },
+        }
+      : {}),
+  };
+}
+
+function streamJobEvents(
+  response: ServerResponse,
+  job: ReverseJob,
+  store: { subscribe: (id: string, listener: (event: ReverseJobEvent) => void) => () => void },
+): void {
+  response.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-store",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  let lastSeq = 0;
+  let finished = false;
+  const write = (event: ReverseJobEvent) => {
+    if (finished || response.writableEnded) return;
+    if (event.seq <= lastSeq) return;
+    lastSeq = event.seq;
+    response.write(`id: ${event.seq}\ndata: ${JSON.stringify(event)}\n\n`);
+    if (event.type === "done" || event.type === "error") {
+      finished = true;
+      response.end();
+    }
+  };
+  // Subscribe before replaying so a job that finishes in between cannot be lost.
+  const unsubscribe = store.subscribe(job.id, write);
+  for (const event of job.events) write(event);
+  if (finished || job.state !== "running") {
+    if (!response.writableEnded) response.end();
+    unsubscribe();
+    return;
+  }
+  response.on("close", unsubscribe);
 }
 
 function previewPayload(result: BuiltPackage, locale: Locale) {

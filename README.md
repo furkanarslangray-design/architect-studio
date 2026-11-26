@@ -218,6 +218,32 @@ ile köprü kurar:
   `rea.scannedArtifacts` ve `rea.warnings` (REA sınırlamaları) döner. `GET /api/rea`
   yalnızca algılama sonucunu verir.
 
+### Artımlı reverse (içerik-hash önbelleği)
+
+`repoToStateCached`, sonucu dosya envanterinin (yol, boyut, mtime) + analizörün gerçekten
+okuduğu dosyaların SHA-256 içeriğinin (manifestler, Prisma, Compose, ADR, `.env.example`,
+Dockerfile; ≤64 KB) + sonucu etkileyen seçeneklerin (yol tabanı, `useRea`, `maxFiles`,
+`maxDepth`, `ignore`) hash'iyle anahtarlar. Anahtar aynıysa sonuç
+`.architect/cache/reverse/<key>.json` dosyasından okunur: manifest parse, merge, doğrulama ve
+`rea` alt süreci tamamen atlanır; yanıtta `cacheHit: true` döner.
+
+- `POST /api/reverse { cache: false }` önbelleği atlar; başka bir dizin için
+  `ARCHITECT_CACHE_DIR`, kapatmak için `REVERSE_CACHE=0` kullanılır. TTL 24 saattir.
+- Girdiler değiştiğinde (manifest içeriği, dosya eklenmesi/silinmesi, seçenekler) anahtar
+  değişir, ilk istek yeniden hesaplar.
+- `.architect/cache/` git'e girmez.
+- **Ölçüm** (bu makine, `tsx`): 391 dosyalık fixture (8 Prisma modeli, Compose, 5 ADR, 380
+  component) cold **104,9 ms** → warm medyan **16,3 ms** = **6,4x**; bu depo (125 dosya)
+  60,3 ms → 9,5 ms = 6,3x; manifest düzenlenince `cacheHit: false` ile yeniden hesaplanır.
+
+### İlerleme akışı (SSE)
+
+`POST /api/reverse/jobs` gövdesi `/api/reverse` ile aynıdır ve `202 { jobId, status, events }`
+döner. `GET /api/reverse/jobs/<id>/events` `text/event-stream` olarak `scan → rea → merge →
+validate → done|error` olaylarını akıtır; `done` olayının `payload` alanı `/api/reverse`
+yanıtının tamamıdır. `GET /api/reverse/jobs/<id>` durumu ve tüm geçmişi verir; biten işler 5
+dakika saklanır. Aynı kuyruk ve güvenlik sınırları geçerlidir.
+
 ## Sandbox sürücüleri
 
 `packages/sandbox` modüler bir `SandboxDriver` arayüzü sunar. Her sürücü komutu izole bir
@@ -373,7 +399,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 205 test, 20 dosya, 8 paket
+pnpm test        # nx run-many -t test — 221 test, 23 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```

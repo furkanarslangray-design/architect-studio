@@ -195,6 +195,22 @@ idea / ArchState / repository
   `24.19.4`). `rea` launcher'ı bu aralığın dışında sessizce `static` motora düşer.
 - `.env.example` içinde `HOST` yorumda tutulur (Docker `--env-file` loopback'e bağlamasın).
 
+#### Artımlı reverse + SSE iş akışı
+
+- `packages/reverse/src/cache.ts`: `fingerprintKey` envanteri (yol, boyut, mtime), analizörün
+  okuduğu dosyaların SHA-256 içeriğini (manifest, Prisma, Compose, ADR, `.env.example`,
+  Dockerfile; ≤64 KB) ve seçenekleri hash'ler. `readCache`/`writeCache` atomik yazar
+  (tmp + rename), 24 saat TTL uygular; `ARCHITECT_CACHE_DIR` yolu, `REVERSE_CACHE=0` kapatır.
+- `repoToStateCached` (`packages/reverse/src/index.ts`): isabet varsa parse/merge/validate ve
+  `rea` alt süreci atlanır; `cacheHit` alanı döner. `POST /api/reverse { cache: false }` atlar.
+- `packages/app/src/jobs.ts`: süreç içi iş deposu (5 dk TTL, 50 iş, abonelik tabanlı akış).
+- `POST /api/reverse/jobs` → `202 { jobId, status, events }`; `GET /api/reverse/jobs/:id`
+  durum + olay geçmişi; `GET /api/reverse/jobs/:id/events` `text/event-stream` ile
+  `scan → rea → merge → validate → done|error` akıtır. `seq` artımlıdır; biten işe sonradan
+  bağlanan istemci tüm geçmişi alır ve akış kapanır. Aynı yol allowlist'i ve kuyruk geçerli.
+- Ölçüm (bu makine): 391 dosyalık fixture **104,9 ms → 16,3 ms (6,4x)**; depo 60,3 → 9,5 ms
+  (6,3x); manifest düzenlenince `cacheHit: false`.
+
 ## 5. Nx monorepo
 
 - `nx.json`: `defaultBase: main`, `useDaemonProcess: false`, `namedInputs`
@@ -253,10 +269,12 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 20 dosya, 205/205 test geçti |
+| `pnpm test` | 8 proje, 23 dosya, 221/221 test geçti |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
 | Sözleşme testleri | 17 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
 | `architect init` | 13 test: config + 3 istemci dosyası + AGENTS.md bloğu; ikinci koşu hiçbir şey yazmıyor |
+| Artımlı reverse | 391 dosyalık fixture cold 104,9 ms → warm medyan 16,3 ms (**6,4x**); depo 60,3 → 9,5 ms (6,3x); manifest düzenlenince `cacheHit: false` |
+| SSE iş akışı | `POST /api/reverse/jobs` → `scan/rea/merge/validate/done`; `GET .../events` `text/event-stream`; geç bağlanma geçmişi alır |
 | Docker imajı | `node:24-alpine`, `HOST=0.0.0.0`, `REVERSE_ROOTS=/workspace` — imaj build edilmedi, yalnızca dosya düzeyinde değişti |
 | `pnpm typecheck` | 9 proje temiz |
 | `pnpm install` | temiz (allowBuilds ile ignored-build uyarısı yok) |
@@ -273,8 +291,9 @@ architect-studio/
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
 Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 11 (2 dosya),
-app 112 (9 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
-reverse-queue, init), reverse 13 (2 dosya), sandbox 11, mcp 6.
+app 119 (10 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
+reverse-queue, reverse-jobs, init), reverse 22 (3 dosya: index, rea, cache), sandbox 11,
+mcp 6.
 
 ## 8. Kalan sınırlar (bilinçli)
 

@@ -484,6 +484,7 @@ içinde `"LLM unavailable, used the deterministic parser: …"` döner).
   "findings": [{ "kind": "service", "source": "package.json", "detail": "express → API Service" }],
   "warnings": ["REA limitation: Graph coverage is incomplete; …"],
   "scannedFiles": 2,
+  "cacheHit": false,
   "rea": {
     "engine": "rea",
     "detection": { "available": true, "engine": "rea", "binary": "/path/.bin/rea", "version": "rea@6.10.1", "modes": [], "reason": null },
@@ -502,6 +503,31 @@ içinde `"LLM unavailable, used the deterministic parser: …"` döner).
   }
 }
 ```
+
+`cacheHit: true` ise yanıt içerik-hash önbelleğinden geldi; `cache: false` göndererek
+önbellek atlanır. Alan her yanıtta bulunur.
+
+#### `POST /api/reverse/jobs` ve `GET /api/reverse/jobs/{id}/events`
+
+Uzun süren analiz için iş (job) akışı; istek gövdesi `/api/reverse` ile aynıdır.
+
+**Yanıt — `202`:**
+```json
+{ "jobId": "0f0c…", "status": "/api/reverse/jobs/0f0c…", "events": "/api/reverse/jobs/0f0c…/events" }
+```
+
+- `GET /api/reverse/jobs/{id}` → `{ jobId, state: "running"|"done"|"error", createdAt, events: [...] }`
+- `GET /api/reverse/jobs/{id}/events` → `text/event-stream`; her olay `data:` satırında JSON:
+
+```json
+{ "seq": 1, "type": "scan", "at": "2026-11-24T19:00:00.000Z" }
+```
+
+`type` sırası: `scan` → `rea` (yalnızca `useRea`) → `merge` → `validate` → `done` | `error`.
+`done` olayının `payload` alanı `/api/reverse` yanıtının tamamıdır; `error` olayının payload'ı
+`{ "code": "reverse_timeout" | "reverse_busy" | "reverse_failed", "message": "…" }` içerir.
+`seq` artımlıdır, böylece yeniden bağlanan istemci gördüğü `seq`'ten sonrasını uygular. Biten işe
+sonradan bağlanan istemci tüm geçmişi alır ve akış kapanır; işler 5 dakika saklanır.
 
 #### `POST /api/sandbox`
 **İstek:**

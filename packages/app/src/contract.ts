@@ -19,6 +19,8 @@ export const ENDPOINTS = [
   { method: "POST", path: "/api/generate" },
   { method: "POST", path: "/api/chat" },
   { method: "POST", path: "/api/reverse" },
+  { method: "POST", path: "/api/reverse/jobs" },
+  { method: "GET", path: "/api/reverse/jobs" },
   { method: "POST", path: "/api/sandbox" },
 ] as const;
 
@@ -314,6 +316,8 @@ export const reverseResponseSchema = z
     findings: z.array(reverseFindingSchema),
     warnings: z.array(z.string()),
     scannedFiles: z.number().int().nonnegative(),
+    /** True when the response was served from the content-hash cache. */
+    cacheHit: z.boolean(),
     rea: z
       .object({
         engine: z.enum(["rea", "rea-agents", "static"]),
@@ -324,6 +328,29 @@ export const reverseResponseSchema = z
       })
       .passthrough()
       .optional(),
+  })
+  .passthrough();
+
+export const reverseJobEventSchema = z
+  .object({
+    seq: z.number().int().positive(),
+    type: z.enum(["scan", "rea", "merge", "validate", "done", "error"]),
+    at: z.string().min(1),
+    message: z.string().optional(),
+    payload: z.unknown().optional(),
+  })
+  .passthrough();
+
+export const reverseJobCreatedSchema = z
+  .object({ jobId: z.string().min(1), status: z.string().min(1), events: z.string().min(1) })
+  .passthrough();
+
+export const reverseJobStatusSchema = z
+  .object({
+    jobId: z.string().min(1),
+    state: z.enum(["running", "done", "error"]),
+    createdAt: z.string().min(1),
+    events: z.array(reverseJobEventSchema).min(1),
   })
   .passthrough();
 

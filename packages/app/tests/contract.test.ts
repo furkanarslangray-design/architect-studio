@@ -76,8 +76,11 @@ describe("FRONTEND_SPEC.md parity", () => {
     const section = spec.slice(start, end);
 
     const documented = new Set<string>();
-    for (const match of section.matchAll(/`(GET|POST)\s+(\/api\/[a-z0-9-]+)/g)) {
-      documented.add(`${match[1]} ${match[2]}`);
+    // Paths may contain `/` (job routes), and `/api/reverse/jobs/{id}` must map
+    // to the collection route that ENDPOINTS declares.
+    for (const match of section.matchAll(/`(GET|POST)\s+(\/api\/[A-Za-z0-9/-]+)/g)) {
+      const path = match[2].replace(/\{[^}]*\}/g, "").replace(/\/+$/, "");
+      documented.add(`${match[1]} ${path}`);
     }
 
     const shipped = new Set(ENDPOINTS.map((endpoint) => `${endpoint.method} ${endpoint.path}`));

@@ -1,7 +1,8 @@
 # Plan — sonraki adımlar (implementasyon planı)
 
-**Durum:** §1 (spec sözleşme testleri), §2 (reverse güvenlik sınırı) ve §3 (`architect init`)
-**uygulandı**. Kalan maddeler başlatılmadı; bu dosya plan ve uygulama notlarıdır.
+**Durum:** §1 (spec sözleşme testleri), §2 (reverse güvenlik sınırı), §3 (`architect init`)
+ve §4 (artımlı reverse + SSE) **uygulandı**. Kalan maddeler başlatılmadı; bu dosya plan ve
+uygulama notlarıdır.
 **Tarih:** 2026-11-24 · **Sürüm:** v2.1.0 üzerine
 **Kapsam:** 12 madde, değere göre sıralı; her maddede amaç, tasarım, dokunulacak dosyalar,
 adımlar, testler, kabul kriteri, risk ve efor var.
@@ -37,7 +38,7 @@ yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
 | 5 | §3 `architect init` ✅ | §2 (config alanları) | İlk kullanım deneyimi; §9'un `config.json`'ına dayanak |
 | 6 | §6 Deterministik ZIP | — | Ucuz ve §7'nin ön koşulu; paket hash'i erken sabitlenir |
 | 7 | §7 Altın korpus | §6 | Snapshot'lar ancak ZIP bayt-bayt sabitken anlamlı |
-| 8 | §4 Artımlı reverse + SSE | §2 (kuyruk) | Önbellek anahtarı §2'nin yol çözümlemesini kullanır; geliştirme döngüsünü kısaltır |
+| 8 | §4 Artımlı reverse + SSE ✅ | §2 (kuyruk) | Önbellek anahtarı §2'nin yol çözümlemesini kullanır; geliştirme döngüsünü kısaltır |
 | 9 | §9 SQLite kalıcılık + revizyonlar | §3, §8 | En pahalı indirme (11 MB); state sürümü ve config oturmuş olmalı |
 | 10 | §5 `architect doctor` | §3, §8 | Saklanan state dosyası ve sürümü olmadan denetlenecek şey yok |
 | 11 | §11 Prompt-injection sınırı | §1 | Web araması arayüzde açılmadan önce; küçük ve bağımsız |
@@ -236,7 +237,30 @@ geçersiz istemci/hedef). Yeni paket yok (0 MB). `--scan` (state dosyası üreti
 
 ---
 
-## 4. Artımlı reverse + ilerleme akışı (SSE) — M
+## 4. Artımlı reverse + ilerleme akışı (SSE) — M · **UYGULANDI**
+
+**Teslim (2026-11-24):** `packages/reverse/src/cache.ts` — `fingerprintKey` (envanter: yol,
+boyut, mtime + analizörün okuduğu dosyaların SHA-256 içeriği + seçenekler), `readCache`/
+`writeCache` (atomik tmp+rename, 24 saat TTL, `ARCHITECT_CACHE_DIR`, `REVERSE_CACHE=0`),
+`packages/reverse/src/index.ts` — `repoToStateCached` (`cacheHit`, `onPhase` faz kancaları);
+`packages/app/src/jobs.ts` — iş deposu (TTL 5 dk, 50 iş sınırı, abonelikler); `server.ts` —
+`POST /api/reverse/jobs` (`202`), `GET /api/reverse/jobs/:id`, `GET /api/reverse/jobs/:id/events`
+(SSE: `scan → rea → merge → validate → done|error`, tekrar bağlanmada geçmiş + `seq` ile
+tekilleştirme). Senkron uç da aynı önbellekten geçer ve `cacheHit` döner; `cache: false`
+önbelleği atlar. `contract.ts`, `FRONTEND_SPEC.md` §4, README güncellendi.
+
+**Ölçüm (bu makine):** 391 dosyalık fixture (Prisma 8 model, Compose, 5 ADR, 380 component)
+**104,9 ms → 16,3 ms (6,4x)**; bu depo (125 dosya) 60,3 ms → 9,5 ms (6,3x). `package.json`
+düzenlenince `cacheHit: false` (66,8 ms). Sıcak yol yalnızca stat yürüyüşü + ilgili dosya
+içeriklerini okur; parse/merge/validate ve `rea` alt süreci atlanır (REA açıkken kazanç
+baskın olarak süreç başlatmayı da atlar).
+
+Testler: `packages/reverse/tests/cache.test.ts` 9, `packages/app/tests/reverse-jobs.test.ts` 7
+(önbellek isabeti, `cache:false`, manifest değişiminde geçersizleşme, ayrı depo anahtarları,
+iş fazları, SSE akışı ve geç bağlanma, 400/404).
+
+**Sınır:** önbellek dosya tabanlı ve süreçler arası; `rea` sürümü anahtara dahil değil, 24
+saatlik TTL ile sınırlanır.
 
 **Amaç:** Ölçülen 26,7 sn'lik reverse süresini değişmeyen repoda < 1 sn'ye indirmek ve uzun
 işlemlerde istemci zaman aşımını kaldırmak.

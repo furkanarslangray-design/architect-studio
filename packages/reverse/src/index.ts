@@ -4,13 +4,28 @@ import { parse as parseYaml } from "yaml";
 import { validateState } from "../../core/src/diff";
 import { sanitizeState, type ArchEdge, type ArchNode, type ArchState, type Decision, type Entity, type NodeKind } from "../../core/src/state";
 import { analyzeWithRea, type ReaAnalysis, type ReaFinding, type ReaOptions } from "./rea";
+import { digestContents, fingerprintKey, isReverseCacheEnabled, readCache, reverseCacheDir, writeCache } from "./cache";
 
 export * from "./rea";
+export * from "./cache";
+
+export type ReversePhase = "scan" | "rea" | "merge" | "validate" | "done";
+
+export interface ReverseCacheOptions {
+  /** Defaults to `ARCHITECT_CACHE_DIR` or `<cwd>/.architect/cache/reverse`. */
+  dir?: string;
+  enabled?: boolean;
+  ttlMs?: number;
+}
 
 export interface ReverseOptions {
   maxFiles?: number;
   maxDepth?: number;
   ignore?: string[];
+  /** Coarse progress hook used by the SSE job endpoint. */
+  onPhase?: (phase: ReversePhase) => void;
+  /** Content-hash cache configuration. */
+  cache?: ReverseCacheOptions;
   /** Extra directories (for example monorepo packages) to treat as project roots. */
   roots?: string[];
   /** Merge REA (Reverse Engineer Anything) findings into the derived state. */
@@ -665,15 +680,19 @@ export function mergeReaFindings(state: ArchState, analysis: ReaAnalysis): { sta
  * (the `rea` CLI when installed, the built-in analyzer otherwise).
  */
 export async function repoToStateWithRea(root: string, options: ReverseOptions = {}): Promise<ReverseResult> {
+  options.onPhase?.("scan");
   const base = repoToState(root, options);
+  options.onPhase?.("rea");
   const analysis = await analyzeWithRea(base.root, {
     maxFiles: options.maxFiles,
     maxDepth: options.maxDepth,
     ignore: options.ignore,
     ...options.rea,
   });
+  options.onPhase?.("merge");
   const merged = mergeReaFindings(base.state, analysis);
   const sanitized = sanitizeState(merged.state);
+  options.onPhase?.("validate");
   const warnings = [...base.warnings, ...analysis.warnings, ...sanitized.removed.map((item) => `rea: ${item}`)];
   const errors = validateState(sanitized.state);
   if (errors.length > 0) {
@@ -694,6 +713,59 @@ export async function repoToStateWithRea(root: string, options: ReverseOptions =
     warnings,
     rea: analysis,
   };
+}
+
+export interface CachedReverseResult extends ReverseResult {
+  /** True when the result came from the content-hash cache. */
+  cacheHit: boolean;
+}
+
+/**
+ * `repoToState` / `repoToStateWithRea` behind a content-hash cache.
+ *
+ * The key covers the file inventory (path, size, mtime), the content of every
+ * file small enough to matter and the options that change the output, so an
+ * unchanged repository skips parsing, validation and the `rea` child process.
+ */
+export async function repoToStateCached(
+  root: string,
+  options: ReverseOptions = {},
+): Promise<CachedReverseResult> {
+  const resolvedRoot = resolve(root);
+  const enabled = options.cache?.enabled !== false && isReverseCacheEnabled();
+  const dir = options.cache?.dir ?? reverseCacheDir();
+  const onPhase = options.onPhase ?? (() => {});
+
+  onPhase("scan");
+  let key: string | undefined;
+  if (enabled) {
+    try {
+      const scanned = scan(resolvedRoot, options).files;
+      key = fingerprintKey(digestContents(resolvedRoot, scanned), {
+        useRea: options.useRea === true,
+        maxFiles: options.maxFiles,
+        maxDepth: options.maxDepth,
+        ignore: options.ignore,
+      });
+      const hit = readCache<ReverseResult>(dir, key, { ttlMs: options.cache?.ttlMs });
+      if (hit) return { ...hit, cacheHit: true };
+    } catch {
+      key = undefined;
+    }
+  }
+
+  const result = options.useRea === true
+    ? await repoToStateWithRea(resolvedRoot, options)
+    : repoToState(resolvedRoot, options);
+
+  if (enabled && key) {
+    try {
+      writeCache(dir, key, result);
+    } catch {
+      // Caching is an optimisation: a read-only or full disk must not fail the run.
+    }
+  }
+  return { ...result, cacheHit: false };
 }
 
 export function summarizeReverse(result: ReverseResult): string {
