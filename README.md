@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-243%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-244%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -471,7 +471,7 @@ Token counts use a real BPE tokenizer (`gpt-tokenizer`).
 ## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 243 tests, 25 files, 8 packages
+pnpm test        # nx run-many -t test — 244 tests, 25 files, 8 packages
 pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```

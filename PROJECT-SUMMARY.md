@@ -315,7 +315,7 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 25 dosya, 243/243 test geçti |
+| `pnpm test` | 8 proje, 25 dosya, 244/244 test geçti |
 | Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
 | `doctor --write` | 5 test: state oluşturma, tazeleme, bozuk JSON/şema onarımı, özel `--state` yolu |
 | `architect doctor` | 15 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
@@ -341,7 +341,7 @@ architect-studio/
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
 Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 16 (3 dosya),
-app 134 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
+app 135 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
 reverse-queue, reverse-jobs, init, doctor), reverse 24 (3 dosya: index, rea, cache), sandbox
 11, mcp 6.
 

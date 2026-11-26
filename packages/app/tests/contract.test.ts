@@ -245,6 +245,14 @@ describe("error contract", () => {
     });
   }
 
+  it("returns 404 not_found for the optional UI assets when web/ is absent", async () => {
+    for (const asset of ["/app.js", "/styles.css"]) {
+      const response = await fetch(`${baseUrl}${asset}`);
+      expect(response.status).toBe(404);
+      expect(errorEnvelopeSchema.parse(await response.json()).code).toBe("not_found");
+    }
+  });
+
   it("rejects an empty chat message with empty_message", async () => {
     const preview = await expectSchema(
       await post("/api/preview", { idea: "postgres orders api", demo: true }),

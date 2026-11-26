@@ -178,7 +178,12 @@ export function createServer(options: ServerOptions = {}) {
 
       if (request.method === "GET" && (request.url === "/app.js" || request.url === "/styles.css")) {
         const file = request.url.slice(1);
-        const source = readFileSync(join(process.cwd(), "web", file));
+        const source = readStatic(join("web", file));
+        // The UI bundle is optional; a missing asset is a plain 404, not an
+        // ENOENT-driven 500 from the file system read.
+        if (source === undefined) {
+          throw new HttpError(404, { key: "error.notFound", code: "not_found" });
+        }
         response.writeHead(200, {
           "Content-Type": file.endsWith(".js") ? "application/javascript; charset=utf-8" : "text/css; charset=utf-8",
           "Cache-Control": "no-store",

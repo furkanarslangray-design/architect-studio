@@ -16,7 +16,9 @@ statik dosyaları sabit yollardan sunar:
 > yeniden oluşturduğunda `GET /` doğrudan `web/index.html` dosyasını sunar. Dosyalar
 > yokken `/` isteği `500` dönmez: `200` + `application/json` ile `api-only` modunda
 > bir karşılama yanıtı verir (ad, sürüm, `FRONTEND_SPEC.md` referansı ve aktif
-> `/api/*` uç listesi); diğer tüm API uçları çalışmaya devam eder.
+> `/api/*` uç listesi); diğer tüm API uçları çalışmaya devam eder. Aynı şekilde
+> `web/app.js` ve `web/styles.css` yokken bu istekler `500` değil `404` +
+> `not_found` hata zarfı döner.
 
 ---
 
