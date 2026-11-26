@@ -8,7 +8,8 @@
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
 [![Tests](https://img.shields.io/badge/tests-244%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) 
+[![M8ven Verified](https://m8ven.ai/badge/mcp/furkanarslangray-design-architect-studio-hx6k8f?variant=verified)](https://m8ven.ai/mcp/furkanarslangray-design-architect-studio-hx6k8f?s=readme)
 
 > **Language / Dil:** [English](README.md) | [Türkçe](README.tr.md)
 
