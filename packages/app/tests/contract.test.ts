@@ -145,7 +145,6 @@ describe("POST contract", () => {
   it("generate streams a ZIP and exposes the documented headers", async () => {
     const response = await post("/api/generate", { idea: "postgres orders api", demo: true });
     expect(response.status).toBe(200);
-    expectSchema(response.clone(), { parse: (_value: unknown) => undefined });
     const headers = generateHeadersSchema.parse(Object.fromEntries(response.headers.entries()));
     expect(Number(headers["x-task-count"])).toBeGreaterThan(0);
     const bytes = new Uint8Array(await response.arrayBuffer());

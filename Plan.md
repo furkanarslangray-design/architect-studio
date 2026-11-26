@@ -78,7 +78,7 @@ ortamda plan tamamen çevrimdışı ilerler.
 
 **Teslim (2026-11-24):** `packages/app/src/contract.ts` — uç başına zod şeması, ortak hata
 zarfı (`error`/`code`/`details`), `ENDPOINTS` ve `ERROR_CODES` listeleri;
-`packages/app/tests/contract.test.ts` — 16 test: her uç şemaya karşı doğrulanır, ZIP
+`packages/app/tests/contract.test.ts` — 17 test: her uç şemaya karşı doğrulanır, ZIP
 başlıkları (`x-validation`, `x-task-count`, `x-entities`, `x-tokenizer`, `x-locale`)
 şemaya bağlanır, 8 hata senaryosu `code` ile eşleşir, `state` hem sözleşme şemasından hem
 `core.safeParseState`'ten geçer, `FRONTEND_SPEC.md` §4 uç listesi `ENDPOINTS` ile iki yönlü
