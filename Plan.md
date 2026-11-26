@@ -22,6 +22,57 @@ Efor birimleri: **S** ≤ 1 gün, **M** 2–3 gün, **L** 4+ gün (tek geliştir
 
 ---
 
+## 0.1 Uygulama sırası (yürütme planı)
+
+Bölüm numaraları **değer** sırasını korur; aşağıdaki tablo **yürütme** sırasıdır ve
+yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
+
+| Adım | Madde | Ön koşul | Neden burada |
+|---|---|---|---|
+| 1 | §2 `/api/reverse` güvenlik + kuyruk | — | Kimliksiz keyfî dosya okuması; ağa açılmadan önce kapanmalı, sonraki her uç aynı kuyruğu kullanacak |
+| 2 | §1 Spec uyum (contract) testleri | — | Arayüz ve tüm yeni alanlar bu şemaya göre yazılacak; en erken dondurulmalı |
+| 3 | §8 `ArchState` şema sürümleme | §1 (şema altyapısı) | Kalıcılık ve doctor bunun üstüne kurulur; veri yazılmadan önce sürüm kavramı olmalı |
+| 4 | §10 `@architect-studio/*` alias + sınır kuralları | §1 | Import'lara **bir kez** dokunmak için: 4, 5, 9, 11 zaten bu dosyaları değiştirecek |
+| 5 | §3 `architect init` | §2 (config alanları) | İlk kullanım deneyimi; §9'un `config.json`'ına dayanak |
+| 6 | §6 Deterministik ZIP | — | Ucuz ve §7'nin ön koşulu; paket hash'i erken sabitlenir |
+| 7 | §7 Altın korpus | §6 | Snapshot'lar ancak ZIP bayt-bayt sabitken anlamlı |
+| 8 | §4 Artımlı reverse + SSE | §2 (kuyruk) | Önbellek anahtarı §2'nin yol çözümlemesini kullanır; geliştirme döngüsünü kısaltır |
+| 9 | §9 SQLite kalıcılık + revizyonlar | §3, §8 | En pahalı indirme (11 MB); state sürümü ve config oturmuş olmalı |
+| 10 | §5 `architect doctor` | §3, §8 | Saklanan state dosyası ve sürümü olmadan denetlenecek şey yok |
+| 11 | §11 Prompt-injection sınırı | §1 | Web araması arayüzde açılmadan önce; küçük ve bağımsız |
+| 12 | §12 LLM eval harness | §1, §4 | Uçlar ve hata kodları sabitken kayıt/oynatma anlamlı |
+| 13 | Arayüz (`FRONTEND_SPEC.md`) | §1, §2, §3, §11 | Sözleşme testleri + güvenlik + init bitmeden başlanmaz |
+
+Kritik yol: **1 → 2 → 3 → 4 → 9** (yaklaşık 7–9 gün). Arayüz, 1–2 tamamlanınca
+paralel başlayabilir; §4, §6, §7 arka planda ilerler.
+
+## 0.2 Paket ve indirme maliyeti (görev başına)
+
+Ölçüm: `npm pack --dry-run --json` ile alınan **sıkıştırılmış indirme** ve **disk**
+boyutları (kayıt defteri meta verisi, 2026-11-24). Transitif bağımlılıklar `npm pack`
+çıktısına girmez; ölçülmemiş olanlar tahmin olarak işaretlendi.
+
+| Madde | Kurulacak paketler | İndirme | Disk | Not |
+|---|---|---|---|---|
+| §1 | *(yok — `zod` zaten kurulu)* · alternatif: `ajv@8.20.0` + `ajv-formats@3.0.1` | **0 MB** · 0,23 MB | 0 · 1,04 MB | JSON Schema doğrulaması istenirse ajv; yalnızca zod yeterliyse indirme yok |
+| §2 | *(yok)* | **0 MB** | 0 | `node:fs`, `node:path`, `node:child_process` |
+| §3 | *(yok)* | **0 MB** | 0 | Yalnızca dosya yazımı |
+| §4 | *(yok)* · opsiyonel `eventsource-parser` | **0 MB** · ~0,02 MB | 0 · ~0,05 MB | SSE elle yazılır; `node:crypto` hash için yeter |
+| §5 | *(yok)* · opsiyonel `picocolors@1.1.1` | **0 MB** · ~0,01 MB | 0 · 0,01 MB | Renkli tablo süsü; zorunlu değil |
+| §6 | *(yok — `jszip` kurulu)* | **0 MB** | 0 | |
+| §7 | *(yok — `vitest` snapshot)* | **0 MB** | 0 | |
+| §8 | *(yok — `zod` kurulu)* | **0 MB** | 0 | §1'de ajv seçildiyse onu paylaşır |
+| §9 | `better-sqlite3@13.2.0` + `@types/better-sqlite3@9.6.0` | **11,09 MB** | 26,51 MB | Prebuilt binary dahil; en pahalı madde. Alternatif: yerleşik `node:sqlite` → **0 MB** (Node 24'te deneysel API, `import { DatabaseSync } from "node:sqlite"`) |
+| §10 | `eslint@10.15.0` + `@nx/eslint-plugin@24.0.7` | **0,64 MB** + transitif ~4–7 MB *(tahmin)* | 3,05 MB + ~15–20 MB *(tahmin)* | Transitif: `@typescript-eslint/*`, `@eslint/*`. Sınır kuralı istenmezse 0 MB |
+| §11 | *(yok)* | **0 MB** | 0 | |
+| §12 | *(yok)* | **0 MB** | 0 | Kayıt dosyaları repo içinde, model çağrısı BYOK |
+
+**Toplam zorunlu indirme: ~11,1 MB** (tamamı §9'da). §10 dahil edilirse ~12–19 MB;
+§9 yerine `node:sqlite` seçilirse **zorunlu indirme 0 MB** olur ve internet kısıtlı
+ortamda plan tamamen çevrimdışı ilerler.
+
+---
+
 ## 1. Spec uyum testleri (`FRONTEND_SPEC.md` ↔ backend) — S/M
 
 **Amaç:** Spec'i "doküman"dan yürütülebilir kontrata çevirmek. Arayüz yazılmadan önce

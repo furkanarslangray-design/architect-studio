@@ -41,11 +41,35 @@ pnpm typecheck    # nx run-many -t typecheck
 pnpm nx graph     # mimari harita (proje grafiği), http://127.0.0.1:4211
 ```
 
-Demo modu varsayılan olarak açıktır; API anahtarı gerektirmez. Node >= 22 ve pnpm gerekir.
+Demo modu varsayılan olarak açıktır; API anahtarı gerektirmez. Node **24.22.1** (`.nvmrc`)
+ve pnpm 10 gerekir; depo kökünde `nvm use` / `fnm use` doğru sürümü seçer.
 
 Sunucu **yalnızca HTTP API** sunar. Studio arayüzünün kaynak dosyaları (`web/*`) depoda
 yoktur; arayüz `FRONTEND_SPEC.md` sözleşmesine göre ayrıca yazılır, o yüzden `GET /` bu
 depoda `500` döner. `GET /api/*` uçlarının tamamı çalışır.
+
+### Node sürümü / rea launcher'ı
+
+`rea-agents` launcher'ı kendi `engines` alanında Node **`^22.23.4 || ^24.22.1 || >=26.12.1`**
+ister; REA köprüsü bu sürümlerin dışında çalışmaz ve `rea.engine` sessizce `static`'e düşer.
+Bu yüzden gereksinim depo seviyesinde sabitlendi:
+
+| Yer | Değer |
+|---|---|
+| `.nvmrc` | `24.22.1` |
+| `package.json` → `engines.node` | `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1` |
+| `.github/workflows/ci.yml` | `actions/setup-node` → `node-version-file: .nvmrc` |
+
+```bash
+nvm install && nvm use      # .nvmrc → 24.22.1
+node -v                     # v24.22.1
+pnpm install                # engines uyarısı çıkmamalı
+```
+
+Sürüm tutmuyorsa `pnpm install` `Unsupported engine` uyarısı verir; bu durumda ya Node'u
+yükselt ya da REA köprüsünü tamamen atla (`useRea` vermeden çalıştır, `rea.engine: "static"`).
+Sistem Node'u eskiyse ve yükseltmek istemiyorsan `ARCHITECT_REA_BIN=/path/to/rea` ile
+yalnızca o süreci farklı bir Node ile çalıştırabilirsin.
 
 ### BYOK
 
@@ -167,7 +191,9 @@ ile köprü kurar:
   okunmaz), Dockerfile taban tabanı ve dış endpoint'ler. Bulgular aynı `evidence` şemasındadır,
   böylece alt katman hangi motorun çalıştığını bilmek zorunda kalmaz.
 - Belirli bir kurulumu işaret etmek için `ARCHITECT_REA_BIN=/path/to/rea` kullan.
-  `rea-agents` launcher'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister.
+  `rea-agents` launcher'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; bu yüzden depo
+  kökünde `.nvmrc` = `24.22.1` ve `package.json` → `engines.node` aynı aralık sabittir
+  (ayrıntı: [Node sürümü](#node-sürümü--rea-launcherı)).
 - REA bulguları `mergeReaFindings` ile `ArchState`'e katılır: veritabanı, kuyruk ve dış servis
   düğümleri kanıt yollarıyla (`props.evidence`) eklenir; mevcut adlar tekrar eklenmez.
 - Yanıtta motor `rea.engine` (`rea` | `rea-agents` | `static`), `rea.findings`,
@@ -344,7 +370,8 @@ soketinin konteynere verilmesi gerekir; `temp-dir` ve `bwrap` bu gereksinimi duy
 - Tarayıcı E2E (Playwright) yoktur; indirme akışı HTTP seviyesinde test edilir.
 - Web araması `auto` modunda anahtarsız DuckDuckGo'ya düşer; sonuç kalitesi sağlayıcıya bağlıdır.
 - `rea` CLI'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; daha eski Node'da köprü
-  yerleşik analizöre düşer (`rea.engine: "static"`).
+  yerleşik analizöre düşer (`rea.engine: "static"`). Sabitlenen sürüm `.nvmrc` (24.22.1) ve
+  `package.json` → `engines.node` içinde; CI `.nvmrc`'ı okur, Docker imajı hâlâ `node:22-alpine`.
 
 ## Tasarım ve plan
 
