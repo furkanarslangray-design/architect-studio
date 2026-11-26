@@ -207,7 +207,9 @@ describe("REA bridge", () => {
 
   it("derives a valid state from a repository with REA findings attached", async () => {
     const root = fixtureProject();
-    const result = await repoToStateWithRea(root);
+    // The repo installs `rea-agents`, so node_modules/.bin may contain a real
+    // CLI; pin the built-in analyzer so the assertion does not depend on PATH.
+    const result = await repoToStateWithRea(root, { rea: { staticOnly: true } });
     expect(result.rea).toBeTruthy();
     expect(result.rea?.engine).toBe("static");
     expect(validateState(result.state)).toEqual([]);

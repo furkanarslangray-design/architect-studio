@@ -220,9 +220,19 @@ idea / ArchState / repository
   `added|removed|updated` üretir. `validateState` hataları da rapora girer.
 - CLI: `pnpm architect doctor [dir] [--state <path>] [--json] [--fail-on-drift]`;
   çıkış **0** temiz, **1** `--fail-on-drift` + kayma, **2** state yok/bozuk.
-- `--write` state dosyasını üretir (yoksa oluşturur, varsa tazeler); ipucu artık
+- `--write` state dosyasını üretir (yoksa oluşturur, varsa tazeler); bozuk/şema dışı dosya
+  da `--write` ile yeniden yazılır (çıkış 0), `--write` yoksa çıkış 2 kalır; ipucu artık
   `doctor --write`'a yönlendirir.
 - Sınır: üretilmiş `openapi.yaml`/`ARCHITECTURE.md` geri ayrıştırılmaz, kayma yapısaldır.
+
+#### CI düzeltmeleri (2026-11-26)
+
+- `verify` işi: `rea.test.ts` içindeki "derives a valid state…" testi, PATH'te bulunan
+  gerçek `rea` CLI'sını (devDependency `rea-agents` → `node_modules/.bin/rea`) seçtiği için
+  `static` beklerken `rea` alıyordu. Test `rea: { staticOnly: true }` ile sabitlendi; CI
+  benzeri PATH (çalışan sahte `rea`) ile doğrulandı.
+- `docker` işi: Dockerfile kaldırılmış `web/` dizinini kopyalıyordu (`"/web": not found`).
+  `COPY web ./web` kaldırıldı; tüm COPY kaynaklarının varlığı betikle kontrol edildi.
 
 #### Deterministik ZIP (Plan §6)
 
@@ -304,10 +314,10 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 25 dosya, 241/241 test geçti |
+| `pnpm test` | 8 proje, 25 dosya, 243/243 test geçti |
 | Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
-| `doctor --write` | 3 test: state oluşturma, tazeleme, özel `--state` yolu |
-| `architect doctor` | 13 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
+| `doctor --write` | 5 test: state oluşturma, tazeleme, bozuk JSON/şema onarımı, özel `--state` yolu |
+| `architect doctor` | 15 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
 | CPU/RAM optimizasyonu | cold 110,5 → 52,9 ms, warm 18,7 → 5,8 ms, sıcak yolda okuma 12 → 0, heap düz |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
 | Sözleşme testleri | 17 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |

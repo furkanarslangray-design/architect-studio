@@ -6,7 +6,6 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json vitest.config.ts ./
 COPY packages ./packages
-COPY web ./web
 COPY examples ./examples
 
 RUN pnpm install --frozen-lockfile

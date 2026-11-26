@@ -141,6 +141,27 @@ describe("doctorProject", () => {
     expect(report.errors[0]).toContain("not a valid ArchState");
   });
 
+  it("rewrites a corrupt state with --write instead of failing", () => {
+    mkdirSync(join(root, ".architect"), { recursive: true });
+    writeFileSync(statePath, "{not json");
+    expect(doctorProject({ root }).ok).toBe(false);
+
+    const report = doctorProject({ root, write: true });
+    expect(report.ok).toBe(true);
+    expect(report.written).toBe(statePath);
+    expect(report.notes.join(" ")).toContain("rewriting it");
+    expect(() => JSON.parse(readFileSync(statePath, "utf8"))).not.toThrow();
+    expect(doctorProject({ root })).toMatchObject({ ok: true, drift: [] });
+  });
+
+  it("rewrites a state that parses as JSON but fails the schema", () => {
+    mkdirSync(join(root, ".architect"), { recursive: true });
+    writeFileSync(statePath, JSON.stringify({ version: 1, nodes: "nope" }));
+    expect(doctorProject({ root }).ok).toBe(false);
+    expect(doctorProject({ root, write: true }).ok).toBe(true);
+    expect(doctorProject({ root }).ok).toBe(true);
+  });
+
   it("accepts an explicit --state path", () => {
     const custom = join(root, "custom-state.json");
     writeFileSync(custom, JSON.stringify(repoToState(root).state));
@@ -179,6 +200,13 @@ describe("doctor CLI", () => {
     expect(runDoctorCommand([empty])).toBe(2);
     expect(runDoctorCommand([empty, "--write"])).toBe(0);
     expect(existsSync(join(empty, ".architect", "state.json"))).toBe(true);
+
+    const corrupt = join(root, "corrupt-repo");
+    mkdirSync(join(corrupt, ".architect"), { recursive: true });
+    writeFileSync(join(corrupt, ".architect", "state.json"), "{broken");
+    expect(runDoctorCommand([corrupt])).toBe(2);
+    expect(runDoctorCommand([corrupt, "--write"])).toBe(0);
+    expect(runDoctorCommand([corrupt])).toBe(0);
 
     log.mockClear();
     expect(runDoctorCommand([root, "--json"])).toBe(0);

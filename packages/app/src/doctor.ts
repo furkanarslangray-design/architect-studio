@@ -167,13 +167,17 @@ export function doctorProject(options: DoctorOptions = {}): DoctorReport {
   if (existsSync(statePath)) {
     try {
       saved = parseState(JSON.parse(readFileSync(statePath, "utf8")));
+      report.saved = counts(saved);
     } catch (error) {
-      report.errors.push(
-        `Saved state is not a valid ArchState: ${error instanceof Error ? error.message : "unknown error"}`,
-      );
-      return report;
+      const detail = error instanceof Error ? error.message : "unknown error";
+      if (!options.write) {
+        report.errors.push(`Saved state is not a valid ArchState: ${detail}`);
+        return report;
+      }
+      // --write regenerates the state from the repository, so a broken file is
+      // recoverable instead of a dead end.
+      report.notes.push(`Saved state is not a valid ArchState (${detail}); rewriting it.`);
     }
-    report.saved = counts(saved);
   }
 
   let current: ArchState;
