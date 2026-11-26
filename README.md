@@ -278,8 +278,10 @@ sınır birlikte uygulanır:
 Yol çözümlemesi `path.resolve` + `fs.realpath` ile yapılır: `..` segmentleri normalize edilir
 ve sembolik bağlantılar çözüldükten sonra karşılaştırılır, yani izinli kök içindeki bir
 symlink dışarıyı gösteriyorsa reddedilir. Reddedilen yollarda çözümlenmiş yol istemciye
-döndürülmez. `REVERSE_ROOTS` boş bırakılırsa davranış geriye uyumlu kalır (her okunabilir
-yol), ancak `HOST` loopback dışına alındığında bu kombinasyon uyarı üretir.
+döndürülmez. `REVERSE_ROOTS` boş bırakılırsa yerel kullanım geriye uyumlu kalır (her okunabilir
+yol), ama `HOST` loopback dışına alındığında bu kombinasyon **kapanır**: sunucu isteği
+`403 reverse_disabled` ile reddeder, çünkü kimlik doğrulaması olmayan bir uç dosya sistemini
+sınırsız okumamalıdır. Uyarı açılışta, ret ise istek başında verilir.
 
 ## CLI
 
@@ -362,21 +364,38 @@ Kapsam: core/state/diff/task-packet, 8 dilli i18n, generator'lar, doğrulayıcı
 stream ZIP bellek profili, 54 düğümlü stres + fuzz + eşzamanlı indirme, HTTP API, tersine
 mühendislik (REA zarfı + sahte CLI), sohbet niyetleri, sandbox sürücüleri, web arama ve MCP
 araçları. `nx-plugin` generator'ı `nx g ... --dry-run` ve gerçek üretim + `tsc`/Vitest ile
-elle doğrulanır.
+elle doğrulanır. Sözleşme testleri (`packages/app/tests/contract.test.ts`) her ucu
+`packages/app/src/contract.ts` şemasına karşı doğrular, ZIP başlıklarını bağlar ve
+`FRONTEND_SPEC.md` §4'teki uç listesini `ENDPOINTS` ile iki yönlü karşılaştırır; spec'e uç
+eklemek ya da uç kaldırmak testi kırar.
 
 ## Docker
 
 ```bash
 docker build -t architect-studio .
-docker run --rm -p 3000:3000 --env-file .env.example architect-studio
+# Depoyu /workspace'e bağla; imaj reverse için yalnızca burayı okur.
+docker run --rm -p 3000:3000 -v "$PWD:/workspace" architect-studio
 ```
+
+**İmajın varsayılanları güvenli:** `HOST=0.0.0.0` (yayınlanan porta erişim için) ve
+`REVERSE_ROOTS=/workspace`. Yani `/api/reverse` konteynerin tüm dosya sistemini değil, yalnızca
+bağladığın çalışma alanını okuyabilir; istekte `path: "/workspace/<repo>"` verilir. Bu
+denklemin dışına çıkmak istersen `REVERSE_ROOTS`'u genişlet ya da `-e REVERSE_ROOTS=` ile
+boşalt — boşaltırsan sunucu `HOST` loopback dışında olduğu için `/api/reverse` isteklerini
+`403 reverse_disabled` ile reddeder. Ağa açık + allowlist'siz dosya okuma kombinasyonu
+desteklenmez; aynı kural `docker` dışındaki kurulumlar için de geçerlidir.
+
+`.env.example` artık `HOST` satırını **yorumda** tutar, böylece
+`docker run --env-file .env.example` konteyner içinde loopback'e bağlanmaya zorlamaz (bu
+kombinasyon port yayınlandığı hâlde sunucunun dışarıdan erişilemez olmasına yol açıyordu).
+Farklı bir adres/port için açıkça geç: `-e HOST=0.0.0.0 -e PORT=8080`.
 
 `/api/health` üzerinden healthcheck tanımlıdır. Sandbox konteynerleri için Docker/Podman
 soketinin konteynere verilmesi gerekir; `temp-dir` ve `bwrap` bu gereksinimi duymaz.
 
 ## CI
 
-`.github/workflows/ci.yml`: pnpm + Node 22 ile `typecheck`, `test` ve Docker image build.
+`.github/workflows/ci.yml`: `.nvmrc` (Node 24.22.1) ile `typecheck`, `test` ve Docker image build.
 
 ## Bilinçli sınırlar
 
@@ -391,7 +410,7 @@ soketinin konteynere verilmesi gerekir; `temp-dir` ve `bwrap` bu gereksinimi duy
 - Web araması `auto` modunda anahtarsız DuckDuckGo'ya düşer; sonuç kalitesi sağlayıcıya bağlıdır.
 - `rea` CLI'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; daha eski Node'da köprü
   yerleşik analizöre düşer (`rea.engine: "static"`). Sabitlenen sürüm `.nvmrc` (24.22.1) ve
-  `package.json` → `engines.node` içinde; CI `.nvmrc`'ı okur, Docker imajı hâlâ `node:22-alpine`.
+  `package.json` → `engines.node` içinde; CI `.nvmrc`'ı okur, Docker imajı `node:24-alpine`.
 
 ## Tasarım ve plan
 

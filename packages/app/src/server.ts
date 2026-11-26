@@ -68,6 +68,8 @@ export interface ServerOptions {
   reverseConcurrency?: number;
   reverseQueueTimeoutMs?: number;
   reverseTimeoutMs?: number;
+  /** Address the server is bound to; non-loopback disables `/api/reverse` without roots. */
+  host?: string;
 }
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
@@ -84,6 +86,11 @@ export function createServer(options: ServerOptions = {}) {
     queueTimeoutMs: options.reverseQueueTimeoutMs ?? numberFromEnv(process.env.REVERSE_QUEUE_TIMEOUT_MS, 30_000),
     timeoutMs: options.reverseTimeoutMs ?? numberFromEnv(process.env.REVERSE_TIMEOUT_MS, 120_000),
   });
+  const listenHost = options.host ?? resolveListenHost(process.env);
+  // An unauthenticated path reader must never be reachable from the network
+  // without an allowlist: no roots + a wide bind is a misconfiguration, not a
+  // warning.
+  const reverseDisabled = !isLoopbackHost(listenHost) && reverseRoots.length === 0;
 
   return createHttpServer(async (request, response) => {
     let locale = normalizeLocale(request.headers["accept-language"]);
@@ -170,6 +177,15 @@ export function createServer(options: ServerOptions = {}) {
         const pathValue = typeof body.path === "string" ? body.path.trim() : "";
         if (!pathValue) {
           throw new HttpError(400, { key: "error.invalidPath", vars: { path: "" }, code: "invalid_path" });
+        }
+        if (reverseDisabled) {
+          throw new HttpError(403, {
+            key: "error.reverseFailed",
+            vars: {
+              detail: `REVERSE_ROOTS must be set when the server is not bound to loopback (HOST=${listenHost})`,
+            },
+            code: "reverse_disabled",
+          });
         }
 
         let target: string;
@@ -407,14 +423,14 @@ export function startServer(
   port = Number(process.env.PORT ?? 3000),
   host = resolveListenHost(process.env),
 ): void {
-  const server = createServer();
+  const server = createServer({ host });
   const roots = parseReverseRoots(process.env.REVERSE_ROOTS);
   server.listen(port, host, () => {
     console.log(`AI Principal Architect running at http://${host}:${port}`);
     if (!isLoopbackHost(host) && roots.length === 0) {
       console.warn(
         `[architect] HOST=${host} is reachable from the network but REVERSE_ROOTS is unset: ` +
-          "/api/reverse can read any path this process can reach. Set REVERSE_ROOTS to restrict it.",
+          "/api/reverse is disabled (403 reverse_disabled). Set REVERSE_ROOTS to enable it.",
       );
     }
   });

@@ -377,3 +377,48 @@ describe("listen host policy", () => {
     expect(isLoopbackHost("10.0.0.7")).toBe(false);
   });
 });
+
+describe("reverse disabled on a wide bind", () => {
+  let wide: Server;
+  let wideUrl: string;
+
+  beforeAll(async () => {
+    // HOST is not loopback and REVERSE_ROOTS is empty: the endpoint must refuse.
+    wide = createServer({ host: "0.0.0.0", reverseRoots: [] });
+    await new Promise<void>((resolve) => wide.listen(0, "127.0.0.1", () => resolve()));
+    const address = wide.address() as AddressInfo;
+    wideUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => wide.close((error) => (error ? reject(error) : resolve())));
+  });
+
+  it("refuses every reverse request instead of reading the filesystem", async () => {
+    const response = await fetch(`${wideUrl}/api/reverse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: join(fixtures, "service") }),
+    });
+    expect(response.status).toBe(403);
+    const payload = (await response.json()) as any;
+    expect(payload.code).toBe("reverse_disabled");
+    expect(payload.error).toContain("REVERSE_ROOTS");
+  });
+
+  it("stays available on a wide bind once roots are configured", async () => {
+    const configured = createServer({ host: "0.0.0.0", reverseRoots: [join(fixtures, "service")] });
+    await new Promise<void>((resolve) => configured.listen(0, "127.0.0.1", () => resolve()));
+    const address = configured.address() as AddressInfo;
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/reverse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: join(fixtures, "service") }),
+      });
+      expect(response.status).toBe(200);
+    } finally {
+      await new Promise<void>((resolve, reject) => configured.close((error) => (error ? reject(error) : resolve())));
+    }
+  });
+});

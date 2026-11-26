@@ -13,8 +13,12 @@ RUN pnpm install --frozen-lockfile
 
 ENV NODE_ENV=production
 ENV PORT=3000
-# The API is unauthenticated; widen the bind only inside the image.
+# The API is unauthenticated. The image must be reachable through its published
+# port, so it binds wide, but reverse engineering is limited to the mounted
+# workspace instead of the whole container filesystem.
 ENV HOST=0.0.0.0
+ENV REVERSE_ROOTS=/workspace
+RUN mkdir -p /workspace && chown node:node /workspace
 EXPOSE 3000
 
 USER node

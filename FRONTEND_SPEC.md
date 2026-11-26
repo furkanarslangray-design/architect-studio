@@ -246,7 +246,16 @@ Dokunma hedefleri en az 44×44 px; tablo satırları mobilde 56 px.
   "name": "architect-studio",
   "version": "2.1.0",
   "tokenizer": "gpt-tokenizer",
-  "locales": ["tr", "en", "de", "es", "fr", "pt", "ja", "zh"]
+  "locales": [
+    { "id": "tr", "label": "Türkçe" },
+    { "id": "en", "label": "English" },
+    { "id": "de", "label": "Deutsch" },
+    { "id": "es", "label": "Español" },
+    { "id": "fr", "label": "Français" },
+    { "id": "pt", "label": "Português" },
+    { "id": "ja", "label": "日本語" },
+    { "id": "zh", "label": "中文" }
+  ]
 }
 ```
 
@@ -255,7 +264,16 @@ Dokunma hedefleri en az 44×44 px; tablo satırları mobilde 56 px.
 {
   "locale": "de",
   "defaultLocale": "en",
-  "locales": ["tr", "en", "de", "es", "fr", "pt", "ja", "zh"],
+  "locales": [
+    { "id": "tr", "label": "Türkçe" },
+    { "id": "en", "label": "English" },
+    { "id": "de", "label": "Deutsch" },
+    { "id": "es", "label": "Español" },
+    { "id": "fr", "label": "Français" },
+    { "id": "pt", "label": "Português" },
+    { "id": "ja", "label": "日本語" },
+    { "id": "zh", "label": "中文" }
+  ],
   "messages": {
     "ui.preview": "Zuerst ansehen",
     "ui.generate": "Paket erstellen",
@@ -364,7 +382,7 @@ Dokunma hedefleri en az 44×44 px; tablo satırları mobilde 56 px.
       "id": "T-001",
       "title": "Implement Order domain and persistence",
       "dependsOn": [],
-      "wave": 1,
+      "wave": "wave-0",
       "files": ["src/domain/order.ts"],
       "tokens": 1840,
       "entities": ["Order"]
@@ -539,6 +557,7 @@ Tüm hatalar aynı zarfta döner:
 | 400 | `invalid_json` | Gövde JSON değil | Toast: "İstek biçimi hatalı" |
 | 400 | `invalid_path` | Reverse yolu yok/dizin değil | Yol alanı altında hata; son örnek yollar önerilir |
 | 400 | `path_not_allowed` | Yol `REVERSE_ROOTS` dışında (symlink/`..` dahil) | Yol alanında hata + "sunucuda izinli kökler" ipucu; çözümlenmiş yol gösterilmez |
+| 403 | `reverse_disabled` | Sunucu ağa açık ama `REVERSE_ROOTS` tanımsız | Kalıcı alert: "Sunucuda reverse için izinli kök yok"; ayar düzeltilmeden tekrar denenmez |
 | 429 | `reverse_busy` | Eşzamanlı reverse kotası dolu | Toast + `Retry-After` sonrası "tekrar dene" önerisi; form girdisi korunur |
 | 504 | `reverse_timeout` | Reverse işi süre bütçesini aştı | Kalıcı alert: `maxDepth`/`maxFiles` küçültme önerisi |
 | 400 | `invalid_sandbox` | Desteklenmeyen kum havuzu | Seçici varsayılana döner + toast |

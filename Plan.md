@@ -1,7 +1,7 @@
 # Plan — sonraki adımlar (implementasyon planı)
 
-**Durum:** §2 (reverse güvenlik sınırı) **uygulandı**. Kalan maddeler başlatılmadı; bu dosya
-plan ve uygulama notlarıdır.
+**Durum:** §1 (spec sözleşme testleri) ve §2 (reverse güvenlik sınırı) **uygulandı**.
+Kalan maddeler başlatılmadı; bu dosya plan ve uygulama notlarıdır.
 **Tarih:** 2026-11-24 · **Sürüm:** v2.1.0 üzerine
 **Kapsam:** 12 madde, değere göre sıralı; her maddede amaç, tasarım, dokunulacak dosyalar,
 adımlar, testler, kabul kriteri, risk ve efor var.
@@ -31,7 +31,7 @@ yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
 | Adım | Madde | Ön koşul | Neden burada |
 |---|---|---|---|
 | 1 | §2 `/api/reverse` güvenlik + kuyruk ✅ | — | Kimliksiz keyfî dosya okuması; ağa açılmadan önce kapanmalı, sonraki her uç aynı kuyruğu kullanacak |
-| 2 | §1 Spec uyum (contract) testleri | — | Arayüz ve tüm yeni alanlar bu şemaya göre yazılacak; en erken dondurulmalı |
+| 2 | §1 Spec uyum (contract) testleri ✅ | — | Arayüz ve tüm yeni alanlar bu şemaya göre yazılacak; en erken dondurulmalı |
 | 3 | §8 `ArchState` şema sürümleme | §1 (şema altyapısı) | Kalıcılık ve doctor bunun üstüne kurulur; veri yazılmadan önce sürüm kavramı olmalı |
 | 4 | §10 `@architect-studio/*` alias + sınır kuralları | §1 | Import'lara **bir kez** dokunmak için: 4, 5, 9, 11 zaten bu dosyaları değiştirecek |
 | 5 | §3 `architect init` | §2 (config alanları) | İlk kullanım deneyimi; §9'un `config.json`'ına dayanak |
@@ -74,7 +74,25 @@ ortamda plan tamamen çevrimdışı ilerler.
 
 ---
 
-## 1. Spec uyum testleri (`FRONTEND_SPEC.md` ↔ backend) — S/M
+## 1. Spec uyum testleri (`FRONTEND_SPEC.md` ↔ backend) — S/M · **UYGULANDI**
+
+**Teslim (2026-11-24):** `packages/app/src/contract.ts` — uç başına zod şeması, ortak hata
+zarfı (`error`/`code`/`details`), `ENDPOINTS` ve `ERROR_CODES` listeleri;
+`packages/app/tests/contract.test.ts` — 16 test: her uç şemaya karşı doğrulanır, ZIP
+başlıkları (`x-validation`, `x-task-count`, `x-entities`, `x-tokenizer`, `x-locale`)
+şemaya bağlanır, 8 hata senaryosu `code` ile eşleşir, `state` hem sözleşme şemasından hem
+`core.safeParseState`'ten geçer, `FRONTEND_SPEC.md` §4 uç listesi `ENDPOINTS` ile iki yönlü
+karşılaştırılır. Yeni paket yok (zod zaten bağımlılık, **0 MB**).
+
+**Yakalanan iki gerçek sözleşme farkı (spec düzeltildi):**
+
+- `locales` düz string dizisi değil, `[{ id, label }]` nesneleri döner (`localeNames()`) —
+  `GET /api/version` ve `GET /api/i18n` örnekleri güncellendi; arayüz `<option value={id}>`
+  ile etiketi doğrudan kullanabilir.
+- Paket `wave` alanı sayı değil, string grup kimliği (`"wave-0"`); spec örneği düzeltildi.
+
+Ayrıca `/api/sandbox` yanıtındaki `workspace` alanı `temp-dir` sürücüsünde boş dönebildiği
+şemaya yansıtıldı.
 
 **Amaç:** Spec'i "doküman"dan yürütülebilir kontrata çevirmek. Arayüz yazılmadan önce
 sözleşmeyi dondurmak.
