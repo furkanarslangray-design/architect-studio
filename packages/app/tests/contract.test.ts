@@ -16,6 +16,7 @@ import {
   previewResponseSchema,
   reaSchema,
   reverseResponseSchema,
+  rootWelcomeSchema,
   sandboxResponseSchema,
   sandboxesSchema,
   versionSchema,
@@ -96,7 +97,13 @@ describe("FRONTEND_SPEC.md parity", () => {
 });
 
 describe("GET contract", () => {
-  it("health, version, i18n, sandboxes and rea match their schemas", async () => {
+  it("root, health, version, i18n, sandboxes and rea match their schemas", async () => {
+    const welcome = await expectSchema(await fetch(`${baseUrl}/`), rootWelcomeSchema);
+    expect(welcome.version).toBe("2.1.0");
+    expect(welcome.mode).toBe("api-only");
+    expect(welcome.endpoints).toContain("GET /api/health");
+    expect(welcome.endpoints).toContain("POST /api/generate");
+
     expect(await expectSchema(await fetch(`${baseUrl}/api/health`), healthSchema)).toMatchObject({ ok: true });
 
     const version = await expectSchema(await fetch(`${baseUrl}/api/version`), versionSchema);

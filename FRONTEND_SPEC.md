@@ -13,8 +13,10 @@ statik dosyaları sabit yollardan sunar:
 | `node_modules/mermaid/dist/mermaid.min.js` | `GET /vendor/mermaid.min.js` (sunucu doğrudan servis eder) |
 
 > Not: `web/` klasörü bu görev kapsamında silinmiştir. Yeni arayüz bu üç dosyayı
-> yeniden oluşturduğunda `GET /` çalışır hale gelir. Dosyalar yoksa `/` isteği
-> `ENOENT` nedeniyle 500 döner; diğer tüm API uçları çalışmaya devam eder.
+> yeniden oluşturduğunda `GET /` doğrudan `web/index.html` dosyasını sunar. Dosyalar
+> yokken `/` isteği `500` dönmez: `200` + `application/json` ile `api-only` modunda
+> bir karşılama yanıtı verir (ad, sürüm, `FRONTEND_SPEC.md` referansı ve aktif
+> `/api/*` uç listesi); diğer tüm API uçları çalışmaya devam eder.
 
 ---
 
@@ -234,6 +236,19 @@ Dokunma hedefleri en az 44×44 px; tablo satırları mobilde 56 px.
 - **JSON yanıtları:** `Cache-Control: no-store`.
 
 ### 4.2 Uç noktalar
+
+#### `GET /`
+Arayüz dosyaları yokken (`web/index.html` bulunmuyorken) dönen karşılama yanıtı:
+```json
+{
+  "name": "architect-studio",
+  "version": "2.1.0",
+  "mode": "api-only",
+  "spec": "FRONTEND_SPEC.md",
+  "endpoints": ["GET /api/health", "GET /api/version", "POST /api/generate"]
+}
+```
+`endpoints` listesi `packages/app/src/contract.ts` içindeki `ENDPOINTS` ile aynıdır.
 
 #### `GET /api/health`
 ```json

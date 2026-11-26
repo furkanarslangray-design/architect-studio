@@ -44,6 +44,7 @@ import { isSearchProvider, type WebSearchResult } from "./web-search";
 import { isLoopbackHost, resolveListenHost } from "./listen-host";
 import { parseReverseRoots, resolveReversePath, ReversePathError } from "./reverse-guard";
 import { createReverseQueue, ReverseQueueError } from "./reverse-queue";
+import { ENDPOINTS } from "./contract";
 
 const MAX_BODY_BYTES = 256 * 1024;
 export const APP_VERSION = "2.1.0";
@@ -188,14 +189,27 @@ export function createServer(options: ServerOptions = {}) {
       }
 
       if (request.method === "GET" && (request.url === "/" || request.url === "/index.html")) {
-        const html = readFileSync(join(process.cwd(), "web", "index.html"), "utf8");
-        response.writeHead(200, {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-store",
-          "Content-Security-Policy":
-            "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:",
+        // A UI is optional: when `web/index.html` exists it is served, otherwise
+        // the root answers with a machine-readable welcome payload instead of
+        // the ENOENT-driven 500 this route used to produce.
+        const html = readStatic("web/index.html");
+        if (html !== undefined) {
+          response.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            "Content-Security-Policy":
+              "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:",
+          });
+          response.end(html);
+          return;
+        }
+        sendJson(response, 200, {
+          name: "architect-studio",
+          version: APP_VERSION,
+          mode: "api-only",
+          spec: "FRONTEND_SPEC.md",
+          endpoints: ENDPOINTS.map((endpoint) => `${endpoint.method} ${endpoint.path}`),
         });
-        response.end(html);
         return;
       }
 
@@ -734,6 +748,14 @@ function sendJson(
     ...headers,
   });
   response.end(body);
+}
+
+function readStatic(relativePath: string): Buffer | undefined {
+  try {
+    return readFileSync(join(process.cwd(), relativePath));
+  } catch {
+    return undefined;
+  }
 }
 
 function clientKey(request: IncomingMessage): string {

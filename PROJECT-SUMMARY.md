@@ -68,7 +68,8 @@ idea / ArchState / repository
 ### Frontend (kod yok, sözleşme var)
 
 - `web/index.html`, `web/app.js`, `web/styles.css` **kaldırıldı**; `packages/app/src/server.ts`
-  yalnızca HTTP API sunar ve `GET /` bu depoda `500` döner (statik dosya yok).
+  yalnızca HTTP API sunar; statik dosya yokken `GET /` `200` + `application/json` ile
+  `api-only` karşılama yanıtı verir (ad, sürüm, `FRONTEND_SPEC.md` referansı, `/api/*` uçları).
 - Yerine kök dizinde `FRONTEND_SPEC.md`: 5 bölüm — ürün özeti/akışlar, 11 ekran ve
   bileşen/etkileşim listesi, tasarım sistemi (HEX token'lar, tipografi, dark/light,
   layout, responsive), tüm uçların istek/yanıt sözleşmesi, hata + yüklenme durumları.
@@ -333,7 +334,7 @@ architect-studio/
 | CLI reverse | mevcut repo analizi → geçerli `ArchState` + paket |
 | API reverse (HTTP) | `POST /api/reverse { useRea: true }` gerçek fixture'da `200`, `rea.engine: "rea"`, 4 REA bulgusu, 1 artifact |
 | 8 dil | katalog parity + yerelleştirilmiş doküman/manifest doğrulaması |
-| API | preview/generate/reverse/sandbox/sandboxes/chat/rea uçları testli; `GET /` beklendiği gibi `500` |
+| API | preview/generate/reverse/sandbox/sandboxes/chat/rea uçları testli; `GET /` `200` `api-only` karşılama JSON'u döner |
 | MCP | dört araç, ZIP yazımı, hata içerikleri ve `useRea` testli |
 | Sohbet | TR/EN niyetler, tip çıkarımı, mikroservis bölme, LLM fallback ve `/api/chat` testli |
 | REA köprüsü | sahte `rea` CLI'ı, `normalized_result` zarfı, Evidence projeksiyonu, ASAR/ELF/env/Dockerfile analizi testli |
@@ -348,8 +349,8 @@ reverse-queue, reverse-jobs, init, doctor), reverse 24 (3 dosya: index, rea, cac
 
 - Kimlik doğrulama, kullanıcı/oturum, kalıcılık yok; sunucu tek süreç ve in-memory.
 - Rate limit süreç başına; çok örnekli dağıtımda paylaşılmaz.
-- **Studio arayüzü kod olarak yok:** `FRONTEND_SPEC.md` sözleşme; `GET /` `500` döner,
-  tüm `/api/*` uçları çalışır.
+- **Studio arayüzü kod olarak yok:** `FRONTEND_SPEC.md` sözleşme; `GET /` arayüz dosyası
+  yokken `200` `api-only` karşılama JSON'u döner, tüm `/api/*` uçları çalışır.
 - Görev metinleri şablon; LLM yalnızca state üretir. Kabul kriterleri hedef repoda
   çalıştırılmaz.
 - Sandbox `podman`/`docker` sürücüleri imajın önceden çekilmiş olmasını bekler; Docker

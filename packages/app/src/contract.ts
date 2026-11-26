@@ -121,6 +121,17 @@ export const archStateSchema = z
 
 export const healthSchema = z.object({ ok: z.literal(true), version: z.string().min(1) });
 
+/** `GET /` in api-only mode: no UI bundle, just a pointer at the API. */
+export const rootWelcomeSchema = z
+  .object({
+    name: z.literal("architect-studio"),
+    version: z.string().min(1),
+    mode: z.literal("api-only"),
+    spec: z.literal("FRONTEND_SPEC.md"),
+    endpoints: z.array(z.string().min(1)).min(1),
+  })
+  .passthrough();
+
 export const localeSchema = z
   .object({ id: z.string().min(2), label: z.string().min(1) })
   .passthrough();
