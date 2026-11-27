@@ -9,7 +9,7 @@
 [![Tests](https://img.shields.io/badge/tests-314%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![pnpm](https://img.shields.io/badge/pnpm-10-F69220?logo=pnpm&logoColor=white)](pnpm-lock.yaml)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![M8ven Verified](https://m8ven.ai/badge/mcp/furkanarslangray-design-architect-studio-hx6k8f?variant=verified)](https://m8ven.ai/mcp/furkanarslangray-design-architect-studio-hx6k8f?s=readme)
 
 > **Language / Dil:** [English](README.md) | [Türkçe](README.tr.md)
@@ -635,7 +635,9 @@ flowchart TD
 
 CLI `--sandbox <type>` / `--sandbox-command <cmd>`, API `POST /api/sandbox` and the UI
 `SandboxPanel` all use the same drivers. `GET /api/sandboxes` lists the installed engines
-and their versions.
+and their versions. A version probe is a health check, so it is capped at 2 s and a timed-out
+probe kills the whole process tree (POSIX process group): an installed but hanging binary
+reports itself unavailable instead of stalling the request or the test run.
 
 ## MCP server
 
@@ -1021,4 +1023,6 @@ Token counts use a real BPE tokenizer (`gpt-tokenizer`).
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 Architect Studio
+contributors. The license grants a patent license (section 3) and requires modified files to
+carry prominent change notices (section 4b).

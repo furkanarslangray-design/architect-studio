@@ -11,7 +11,7 @@
 [![Tests](https://img.shields.io/badge/tests-314%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![pnpm](https://img.shields.io/badge/pnpm-10-F69220?logo=pnpm&logoColor=white)](pnpm-lock.yaml)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 </div>
 
@@ -553,7 +553,9 @@ flowchart TD
 
 CLI `--sandbox <tür>` / `--sandbox-command <cmd>`, API `POST /api/sandbox` ve arayüzdeki
 `SandboxPanel` aynı sürücüleri kullanır. `GET /api/sandboxes` kurulu motorları ve
-sürümlerini listeler.
+sürümlerini listeler. Sürüm sorgusu bir sağlık kontrolüdür: 2 sn ile sınırlıdır ve zaman
+aşımında tüm süreç ağacı (POSIX süreç grubu) öldürülür; kurulu ama asılan bir ikili isteği
+veya test koşusunu bekletmek yerine kendini kullanılamaz olarak bildirir.
 
 ## MCP sunucusu
 
@@ -928,4 +930,6 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 
 ## Lisans
 
-MIT — bkz. [`LICENSE`](LICENSE).
+Apache License 2.0 — bkz. [`LICENSE`](LICENSE). Telif 2026 Architect Studio katkıcıları.
+Lisans patent hakkı (bölüm 3) tanır ve değiştirilen dosyaların belirgin değişiklik notu
+taşımasını ister (bölüm 4b).

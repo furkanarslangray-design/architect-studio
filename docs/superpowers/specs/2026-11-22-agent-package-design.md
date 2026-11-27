@@ -131,6 +131,6 @@ temizlenir (duplicate/dangling/self-loop/missing referans).
 
 ### Altyapı
 
-Dockerfile + healthcheck, `.env.example`, MIT lisansı ve GitHub Actions CI eklendi.
+Dockerfile + healthcheck, `.env.example`, Apache-2.0 lisansı ve GitHub Actions CI eklendi.
 Tarayıcı E2E ve tam OpenAPI meta-şema doğrulaması hâlâ kapsam dışıdır; bunlar sıradaki
 iyileştirme adaylarıdır.

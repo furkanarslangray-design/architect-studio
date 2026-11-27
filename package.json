@@ -3,6 +3,7 @@
   "version": "2.2.0",
   "private": true,
   "description": "AI Principal Architect — idea to a verified, entity-aware agent package",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "nx run app:dev",
     "start": "nx run app:start",
