@@ -359,14 +359,15 @@ architect-studio/
 | REA köprüsü | sahte `rea` CLI'ı, `normalized_result` zarfı, Evidence projeksiyonu, ASAR/ELF/env/Dockerfile analizi testli |
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
-Test dağılımı: core 41 (5 dosya), generators 10, validators 10, packager 28 (4 dosya),
-app 135 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
-reverse-queue, reverse-jobs, init, doctor), reverse 24 (3 dosya: index, rea, cache), sandbox
-11, mcp 6.
+Test dağılımı: core 44 (5 dosya), generators 10, validators 10, packager 53 (5 dosya),
+app 147 (13 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
+reverse-queue, reverse-jobs, init, doctor, store, projects), reverse 24 (3 dosya: index, rea,
+cache), sandbox 11, mcp 6.
 
 ## 8. Kalan sınırlar (bilinçli)
 
-- Kimlik doğrulama, kullanıcı/oturum, kalıcılık yok; sunucu tek süreç ve in-memory.
+- Kimlik doğrulama ve kullanıcı/oturum yok. Kalıcılık opt-in: `ARCHITECT_DB` verilmezse depo
+  in-memory kalır; dosya modunda tek süreç varsayılır (çok süreçli kilit yönetimi yok).
 - Rate limit süreç başına; çok örnekli dağıtımda paylaşılmaz.
 - **Studio arayüzü kod olarak yok:** `FRONTEND_SPEC.md` sözleşme; `GET /` arayüz dosyası
   yokken `200` `api-only` karşılama JSON'u döner, tüm `/api/*` uçları çalışır.
