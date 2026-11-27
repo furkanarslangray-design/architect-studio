@@ -41,6 +41,7 @@ export const de: Record<MessageKey, string> = {
 
   "error.invalidIdea": "Schreibe mindestens 3 Zeichen für deine Idee.",
   "error.invalidState": "Ungültiger Architekturzustand: {detail}",
+  "error.invalidName": "Der Projektname muss zwischen 1 und 80 Zeichen lang sein.",
   "error.invalidJson": "Ungültiger JSON-Body",
   "error.payloadTooLarge": "Anfrage-Body ist zu groß",
   "error.rateLimited": "Zu viele Anfragen. Versuche es gleich noch einmal.",

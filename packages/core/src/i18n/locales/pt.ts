@@ -41,6 +41,7 @@ export const pt: Record<MessageKey, string> = {
 
   "error.invalidIdea": "Escreva pelo menos 3 caracteres para sua ideia.",
   "error.invalidState": "Estado de arquitetura inválido: {detail}",
+  "error.invalidName": "O nome do projeto deve ter entre 1 e 80 caracteres.",
   "error.invalidJson": "Corpo JSON inválido",
   "error.payloadTooLarge": "Corpo da requisição muito grande",
   "error.rateLimited": "Muitas requisições. Tente novamente em instantes.",

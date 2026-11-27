@@ -11,7 +11,7 @@ import {
   type ToolResult,
 } from "./tools";
 
-export const MCP_SERVER_VERSION = "2.1.0";
+export const MCP_SERVER_VERSION = "2.2.0";
 
 const locale = z.string().describe("Output language: en, tr, de, es, fr, pt, ja or zh").optional();
 const runtime = {

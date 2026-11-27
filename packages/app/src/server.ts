@@ -29,6 +29,7 @@ import {
   type ReverseOptions,
 } from "../../reverse/src";
 import { createJobStore, type ReverseJob, type ReverseJobEvent } from "./jobs";
+import { createProjectStore } from "./store";
 import type { ReversePhase } from "../../reverse/src";
 import {
   detectSandboxes,
@@ -47,7 +48,7 @@ import { createReverseQueue, ReverseQueueError } from "./reverse-queue";
 import { ENDPOINTS } from "./contract";
 
 const MAX_BODY_BYTES = 256 * 1024;
-export const APP_VERSION = "2.1.0";
+export const APP_VERSION = "2.2.0";
 
 type BuiltPackage = PackageResult & {
   state: ArchState;
@@ -88,6 +89,10 @@ export interface ServerOptions {
   host?: string;
   /** Overrides the content-hash cache directory (default `<cwd>/.architect/cache/reverse`). */
   reverseCacheDir?: string;
+  /** SQLite file for projects/revisions; omitted keeps the store in memory. */
+  dbPath?: string;
+  /** Newest revisions kept per project (default 50). */
+  maxRevisions?: number;
 }
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
@@ -105,6 +110,10 @@ export function createServer(options: ServerOptions = {}) {
     timeoutMs: options.reverseTimeoutMs ?? numberFromEnv(process.env.REVERSE_TIMEOUT_MS, 120_000),
   });
   const jobs = createJobStore();
+  const store = createProjectStore({
+    path: options.dbPath ?? process.env.ARCHITECT_DB,
+    maxRevisions: options.maxRevisions,
+  });
   const reverseCacheDir = options.reverseCacheDir;
   const listenHost = options.host ?? resolveListenHost(process.env);
 
@@ -128,7 +137,7 @@ export function createServer(options: ServerOptions = {}) {
   // warning.
   const reverseDisabled = !isLoopbackHost(listenHost) && reverseRoots.length === 0;
 
-  return createHttpServer(async (request, response) => {
+  const server = createHttpServer(async (request, response) => {
     let locale = normalizeLocale(request.headers["accept-language"]);
     try {
       applySecurityHeaders(response);
@@ -223,6 +232,82 @@ export function createServer(options: ServerOptions = {}) {
           endpoints: ENDPOINTS.map((endpoint) => `${endpoint.method} ${endpoint.path}`),
         });
         return;
+      }
+
+      if (request.url === "/api/projects" || request.url?.startsWith("/api/projects/")) {
+        const pathname = new URL(request.url, "http://localhost").pathname;
+
+        if (request.method === "GET" && pathname === "/api/projects") {
+          sendJson(response, 200, { projects: store.listProjects(), mode: store.mode });
+          return;
+        }
+
+        if (request.method === "POST" && pathname === "/api/projects") {
+          enforceRateLimit(buckets, rateLimit, clientKey(request));
+          const body = await readJsonBody(request);
+          const name = typeof body.name === "string" ? body.name.trim() : "";
+          if (name.length === 0 || name.length > 80) {
+            throw new HttpError(400, { key: "error.invalidName", code: "invalid_name" });
+          }
+          sendJson(response, 201, { project: store.createProject(name) });
+          return;
+        }
+
+        const match = /^\/api\/projects\/([^/]+)(?:\/(revisions|restore)\/?([^/]*))?$/.exec(pathname);
+        if (!match) throw new HttpError(404, { key: "error.notFound", code: "not_found" });
+        const projectId = decodeURIComponent(match[1]);
+        const section = match[2];
+        const revisionId = match[3] ? decodeURIComponent(match[3]) : undefined;
+        const project = store.getProject(projectId);
+        if (!project) throw new HttpError(404, { key: "error.notFound", code: "not_found" });
+
+        if (!section && request.method === "GET") {
+          sendJson(response, 200, {
+            project,
+            revisions: store.listRevisions(projectId),
+            packages: store.countPackages(projectId),
+          });
+          return;
+        }
+
+        if (section === "revisions" && request.method === "GET") {
+          sendJson(response, 200, {
+            project,
+            revisions: store.listRevisions(projectId),
+            packages: store.countPackages(projectId),
+          });
+          return;
+        }
+
+        if (section === "revisions" && request.method === "POST") {
+          enforceRateLimit(buckets, rateLimit, clientKey(request));
+          const body = await readJsonBody(request);
+          const parsed = safeParseStateReport(body.state);
+          if (!parsed.success) {
+            const issue = parsed.error.issues[0];
+            const detail = issue ? `${issue.path.join(".") || "root"}: ${issue.message}` : "schema error";
+            throw new HttpError(400, { key: "error.invalidState", vars: { detail }, code: "invalid_state" });
+          }
+          const revision = store.addRevision(projectId, {
+            state: parsed.data,
+            message: typeof body.message === "string" ? body.message.slice(0, 500) : "",
+            source:
+              typeof body.source === "string" && body.source.length > 0 ? body.source.slice(0, 40) : "manual",
+          });
+          if (!revision) throw new HttpError(404, { key: "error.notFound", code: "not_found" });
+          sendJson(response, 201, { revision, ...withStateWarnings(parsed.warnings) });
+          return;
+        }
+
+        if (section === "restore" && request.method === "POST" && revisionId) {
+          enforceRateLimit(buckets, rateLimit, clientKey(request));
+          const revision = store.restoreRevision(projectId, revisionId);
+          if (!revision) throw new HttpError(404, { key: "error.notFound", code: "not_found" });
+          sendJson(response, 201, { revision, restoredFrom: revisionId });
+          return;
+        }
+
+        throw new HttpError(404, { key: "error.notFound", code: "not_found" });
       }
 
       if (request.method === "POST" && request.url === "/api/reverse/jobs") {
@@ -444,6 +529,15 @@ export function createServer(options: ServerOptions = {}) {
           return;
         }
 
+        if (typeof body.projectId === "string") {
+          store.addPackage({
+            projectId: body.projectId,
+            revisionId: typeof body.revisionId === "string" ? body.revisionId : undefined,
+            sha256: result.zip.sha256,
+            bytes: result.zip.sizeBytes,
+          });
+        }
+
         const passed = result.metrics.filter((metric) => metric.pass).length;
         const taskCount = Object.keys(result.files).filter((path) => path.startsWith("tasks/")).length;
         response.writeHead(200, {
@@ -511,13 +605,20 @@ export function createServer(options: ServerOptions = {}) {
       });
     }
   });
+
+  server.on("close", () => store.close());
+  return server;
 }
 
 export function startServer(
   port = Number(process.env.PORT ?? 3000),
   host = resolveListenHost(process.env),
 ): void {
-  const server = createServer({ host });
+  const server = createServer({
+    host,
+    // The long-running server persists by default; library use and tests stay in memory.
+    dbPath: process.env.ARCHITECT_DB ?? join(process.cwd(), ".architect", "architect.db"),
+  });
   const roots = parseReverseRoots(process.env.REVERSE_ROOTS);
   server.listen(port, host, () => {
     console.log(`AI Principal Architect running at http://${host}:${port}`);

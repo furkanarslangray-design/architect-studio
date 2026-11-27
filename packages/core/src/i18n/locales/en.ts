@@ -39,6 +39,7 @@ export const en = {
 
   "error.invalidIdea": "Write at least 3 characters for your idea.",
   "error.invalidState": "Invalid architecture state: {detail}",
+  "error.invalidName": "Project name must be between 1 and 80 characters.",
   "error.invalidJson": "Invalid JSON body",
   "error.payloadTooLarge": "Request body too large",
   "error.rateLimited": "Too many requests. Try again shortly.",

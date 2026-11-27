@@ -41,6 +41,7 @@ export const zh: Record<MessageKey, string> = {
 
   "error.invalidIdea": "请至少输入 3 个字符的想法。",
   "error.invalidState": "无效的架构状态：{detail}",
+  "error.invalidName": "项目名称长度必须在 1 到 80 个字符之间。",
   "error.invalidJson": "无效的 JSON 请求体",
   "error.payloadTooLarge": "请求体过大",
   "error.rateLimited": "请求过多，请稍后重试。",

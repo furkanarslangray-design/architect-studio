@@ -21,12 +21,15 @@ export const ENDPOINTS = [
   { method: "POST", path: "/api/reverse" },
   { method: "POST", path: "/api/reverse/jobs" },
   { method: "GET", path: "/api/reverse/jobs" },
+  { method: "GET", path: "/api/projects" },
+  { method: "POST", path: "/api/projects" },
   { method: "POST", path: "/api/sandbox" },
 ] as const;
 
 export const ERROR_CODES = [
   "invalid_idea",
   "invalid_state",
+  "invalid_name",
   "empty_message",
   "invalid_json",
   "invalid_path",
@@ -353,6 +356,45 @@ export const reverseJobEventSchema = z
     payload: z.unknown().optional(),
   })
   .passthrough();
+
+export const projectSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    createdAt: z.string().min(1),
+    revisionCount: z.number().int().nonnegative(),
+  })
+  .passthrough();
+
+export const revisionSummarySchema = z
+  .object({
+    id: z.string().min(1),
+    projectId: z.string().min(1),
+    message: z.string(),
+    source: z.string().min(1),
+    createdAt: z.string().min(1),
+  })
+  .passthrough();
+
+export const revisionSchema = revisionSummarySchema.extend({ state: archStateSchema });
+
+export const projectsResponseSchema = z.object({
+  projects: z.array(projectSchema),
+  /** `file` when `ARCHITECT_DB` opened, `memory` otherwise. */
+  mode: z.enum(["file", "memory"]),
+});
+
+export const projectDetailSchema = z.object({
+  project: projectSchema,
+  revisions: z.array(revisionSummarySchema),
+  packages: z.number().int().nonnegative(),
+});
+
+export const revisionResponseSchema = z.object({
+  revision: revisionSchema,
+  stateWarnings: z.array(z.string().min(1)).min(1).optional(),
+  restoredFrom: z.string().min(1).optional(),
+});
 
 export const reverseJobCreatedSchema = z
   .object({ jobId: z.string().min(1), status: z.string().min(1), events: z.string().min(1) })

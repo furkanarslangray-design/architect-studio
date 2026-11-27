@@ -27,10 +27,10 @@ describe("HTTP server", () => {
   it("reports health and version", async () => {
     const response = await fetch(`${baseUrl}/api/health`);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, version: "2.1.0" });
+    expect(await response.json()).toEqual({ ok: true, version: "2.2.0" });
 
     const version = await fetch(`${baseUrl}/api/version`);
-    expect(await version.json()).toMatchObject({ name: "architect-studio", version: "2.1.0" });
+    expect(await version.json()).toMatchObject({ name: "architect-studio", version: "2.2.0" });
   });
 
   it("generates a ZIP in demo mode", async () => {

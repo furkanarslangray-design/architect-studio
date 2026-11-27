@@ -244,7 +244,7 @@ Arayüz dosyaları yokken (`web/index.html` bulunmuyorken) dönen karşılama ya
 ```json
 {
   "name": "architect-studio",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "mode": "api-only",
   "spec": "FRONTEND_SPEC.md",
   "endpoints": ["GET /api/health", "GET /api/version", "POST /api/generate"]
@@ -254,14 +254,14 @@ Arayüz dosyaları yokken (`web/index.html` bulunmuyorken) dönen karşılama ya
 
 #### `GET /api/health`
 ```json
-{ "ok": true, "version": "2.1.0" }
+{ "ok": true, "version": "2.2.0" }
 ```
 
 #### `GET /api/version`
 ```json
 {
   "name": "architect-studio",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "tokenizer": "gpt-tokenizer",
   "locales": [
     { "id": "tr", "label": "Türkçe" },
@@ -553,6 +553,58 @@ Uzun süren analiz için iş (job) akışı; istek gövdesi `/api/reverse` ile a
 `seq` artımlıdır, böylece yeniden bağlanan istemci gördüğü `seq`'ten sonrasını uygular. Biten işe
 sonradan bağlanan istemci tüm geçmişi alır ve akış kapanır; işler 5 dakika saklanır.
 
+#### `GET /api/projects`, `POST /api/projects` ve revizyon uçları
+
+Yeniden açıp kaldığı yerden devam etmek için proje + revizyon geçmişi. Depo bir SQLite
+dosyasıdır (`ARCHITECT_DB`); değişken tanımlı değilse süreç içi bellek kullanılır ve
+`mode: "memory"` döner (bugünkü davranış). Proje başına en yeni 50 revizyon saklanır.
+
+`GET /api/projects`:
+```json
+{
+  "mode": "file",
+  "projects": [
+    { "id": "0f0c…", "name": "Storefront", "createdAt": "2026-11-27T10:00:00.000Z", "revisionCount": 3 }
+  ]
+}
+```
+
+`POST /api/projects` → `201`; gövde `{ "name": "Storefront" }`:
+```json
+{ "project": { "id": "0f0c…", "name": "Storefront", "createdAt": "…", "revisionCount": 0 } }
+```
+
+`GET /api/projects/{id}` ve `GET /api/projects/{id}/revisions`:
+```json
+{
+  "project": { "id": "0f0c…", "name": "Storefront", "createdAt": "…", "revisionCount": 3 },
+  "revisions": [
+    { "id": "9a1e…", "projectId": "0f0c…", "message": "add db", "source": "manual", "createdAt": "…" }
+  ],
+  "packages": 1
+}
+```
+`revisions` yeniden eskiye sıralıdır; `state` listeye dahil edilmez.
+
+`POST /api/projects/{id}/revisions` → `201`; gövde `{ "state": ArchState, "message": "add db", "source": "chat" }`:
+```json
+{
+  "revision": { "id": "9a1e…", "projectId": "0f0c…", "message": "add db", "source": "chat", "createdAt": "…", "state": { "version": 1, "nodes": [] } },
+  "stateWarnings": ["state.version is missing; assuming 1. …"]
+}
+```
+`stateWarnings` yalnızca migrasyon gerektiğinde döner. `source` varsayılanı `manual`.
+
+`POST /api/projects/{id}/restore/{revisionId}` → `201`; gövde yok. Seçilen revizyonun state'i
+**yeni bir revizyon** olarak eklenir (`source: "restore"`) ve tam state döner:
+```json
+{ "revision": { "…": "…", "state": { "version": 1, "nodes": [] } }, "restoredFrom": "9a1e…" }
+```
+Bilinmeyen proje/revizyon `404 not_found`, boş/uzun ad `400 invalid_name`, geçersiz state
+`400 invalid_state` döner. `/api/generate` gövdesine `projectId` (ve isteğe bağlı
+`revisionId`) eklenirse üretilen ZIP'in `sha256`/boyutu projeye kaydedilir; yanıttaki
+`packages` sayısı bu kayıtları sayar.
+
 #### `POST /api/sandbox`
 **İstek:**
 ```json
@@ -603,6 +655,7 @@ Tüm hatalar aynı zarfta döner:
 | --- | --- | --- | --- |
 | 400 | `invalid_idea` | Fikir 3 karakterden kısa | Composer altında inline hata, toast yok |
 | 400 | `invalid_state` | ArchState şeması geçersiz | Kalıcı alert + "mimariyi sıfırla" butonu |
+| 400 | `invalid_name` | Proje adı boş veya 80 karakterden uzun | Proje adı alanında inline hata |
 | 400 | `empty_message` | Boş sohbet mesajı | Girdi kenarı kırmızı, toast yok |
 | 400 | `invalid_json` | Gövde JSON değil | Toast: "İstek biçimi hatalı" |
 | 400 | `invalid_path` | Reverse yolu yok/dizin değil | Yol alanı altında hata; son örnek yollar önerilir |

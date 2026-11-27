@@ -1,6 +1,6 @@
 > **Dil / Language:** [Türkçe](README.tr.md) | [English](README.md)
 
-# AI Principal Architect — v2.1.0
+# AI Principal Architect — v2.2.0
 
 Fikrini (veya mevcut bir projeni), OpenCode/Cursor/Claude gibi kodlama ajanlarının düşük
 token ile inşa edebileceği **doğrulanmış bir ajan paketine** çeviren açık kaynak, BYOK
@@ -93,8 +93,8 @@ Studio arayüzü bu depoda kod olarak bulunmaz; sözleşmesi kök dizindeki
 - **11 ekran/bileşen:** `IdeaComposer`, `ArchitectureCanvas` (Mermaid), `EntityTable`,
   `ChatPanel`, `TaskBoard`, `MetricsGrid`, `ValidationPanel`, `ArtifactExplorer`,
   `ReverseForm`, `SandboxPanel`, `SettingsDrawer`.
-- **Bağlandığı uçlar:** `GET /api/health|version|i18n|sandboxes|rea`,
-  `POST /api/preview|chat|generate|reverse|sandbox` ve reverse ilerleme akışı:
+- **Bağlandığı uçlar:** `GET /api/health|version|i18n|sandboxes|rea|projects`,
+  `POST /api/preview|chat|generate|reverse|sandbox|projects` ve reverse ilerleme akışı:
   `POST /api/reverse/jobs`, `GET /api/reverse/jobs/{id}`,
   `GET /api/reverse/jobs/{id}/events` (SSE).
 - Arayüz yeni bir uç nokta gerektirmez; sözleşme mevcut backend ile birebir eşleşir.
@@ -274,6 +274,23 @@ validate → done|error` olaylarını akıtır; `done` olayının `payload` alan
 yanıtının tamamıdır. `GET /api/reverse/jobs/<id>` durumu ve tüm geçmişi verir; biten işler 5
 dakika saklanır. Aynı kuyruk ve güvenlik sınırları geçerlidir.
 
+### Proje ve revizyon geçmişi (SQLite)
+
+`packages/app/src/store.ts` projeleri, revizyonları ve üretilen paketleri saklar; böylece bir
+oturum kaldığı yerden açılabilir. `better-sqlite3` yerine yerleşik `node:sqlite`
+(`DatabaseSync`) kullanılır: yeni bağımlılık ve native derleme yok, sabitlenen Node aralığı
+modülü zaten içeriyor.
+
+- `ARCHITECT_DB=/yol/architect.db` dosyayı açar; `pnpm start` / `pnpm dev` varsayılan olarak
+  `.architect/architect.db` kullanır. Değişken yoksa (kütüphane kullanımı ve testler) depo
+  bellekte kalır ve `GET /api/projects` `mode: "memory"` döner; bugünkü davranış korunur.
+- Açılamayan bir yol istekleri düşürmek yerine belleğe düşer.
+- Tablolar: `projects(id, name, created_at)`, `revisions(id, project_id, state_json, message,
+  source, created_at)`, `packages(id, project_id, revision_id, sha256, bytes, created_at)`;
+  proje başına en yeni 50 revizyon saklanır.
+- `POST /api/generate` gövdesinde `projectId` (isteğe bağlı `revisionId`) varsa ZIP'in
+  `sha256` ve bayt boyutu projeye kaydedilir.
+
 ## Sandbox sürücüleri
 
 `packages/sandbox` modüler bir `SandboxDriver` arayüzü sunar. Her sürücü komutu izole bir
@@ -331,6 +348,12 @@ API gövdesinde `webSearch: true`, arayüzde `SettingsDrawer`/`IdeaComposer` ana
 | POST | `/api/reverse/jobs` | `/api/reverse` ile aynı gövde; `202 { jobId, status, events }` |
 | GET | `/api/reverse/jobs/{id}` | İş durumu ve tüm olay geçmişi |
 | GET | `/api/reverse/jobs/{id}/events` | `text/event-stream`: `scan → rea → merge → validate → done\|error` |
+| GET | `/api/projects` | Projeler ve revizyon sayıları (`mode: file\|memory`) |
+| POST | `/api/projects` | `{ name }` → `201 { project }` |
+| GET | `/api/projects/{id}` | Proje, revizyon geçmişi ve paket sayısı |
+| POST | `/api/projects/{id}/revisions` | `{ state, message? }` → `201 { revision }` |
+| GET | `/api/projects/{id}/revisions` | Revizyon geçmişi, yeniden eskiye (state yok) |
+| POST | `/api/projects/{id}/restore/{revisionId}` | Revizyonu yeni bir revizyon olarak geri yükler |
 | POST | `/api/sandbox` | Paketi seçilen sandbox'ta doğrular |
 
 Ortak gövde alanları: `idea` **veya** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
@@ -448,7 +471,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 294 test, 28 dosya, 8 paket
+pnpm test        # nx run-many -t test — 305 test, 30 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```

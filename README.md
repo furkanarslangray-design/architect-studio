@@ -1,12 +1,12 @@
 <div align="center">
 
-# AI Principal Architect — v2.1.0
+# AI Principal Architect — v2.2.0
 
 **Turn an idea — or an existing repository — into a verified, low-token agent package that coding agents can build from.**
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-294%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-305%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) 
 [![M8ven Verified](https://m8ven.ai/badge/mcp/furkanarslangray-design-architect-studio-hx6k8f?variant=verified)](https://m8ven.ai/mcp/furkanarslangray-design-architect-studio-hx6k8f?s=readme)
@@ -116,8 +116,8 @@ The Studio UI is not part of this repository; its contract is
 - **11 screens/components:** `IdeaComposer`, `ArchitectureCanvas` (Mermaid), `EntityTable`,
   `ChatPanel`, `TaskBoard`, `MetricsGrid`, `ValidationPanel`, `ArtifactExplorer`,
   `ReverseForm`, `SandboxPanel`, `SettingsDrawer`.
-- **Endpoints it binds to:** `GET /api/health|version|i18n|sandboxes|rea`,
-  `POST /api/preview|chat|generate|reverse|sandbox`, plus the reverse progress
+- **Endpoints it binds to:** `GET /api/health|version|i18n|sandboxes|rea|projects`,
+  `POST /api/preview|chat|generate|reverse|sandbox|projects`, plus the reverse progress
   stream: `POST /api/reverse/jobs`, `GET /api/reverse/jobs/{id}` and
   `GET /api/reverse/jobs/{id}/events` (SSE).
 - The UI needs no new endpoint; the contract matches the existing backend one-to-one.
@@ -302,6 +302,23 @@ child process are all skipped, and the response reports `cacheHit: true`.
 and the whole history; finished jobs are kept for 5 minutes. The same queue and security
 limits apply.
 
+### Project and revision history (SQLite)
+
+`packages/app/src/store.ts` keeps projects, revisions and generated packages so a session can
+be reopened where it stopped. It uses the built-in `node:sqlite` (`DatabaseSync`) instead of
+`better-sqlite3`: no dependency or native build is added and the pinned Node range already
+ships it.
+
+- `ARCHITECT_DB=/path/to/architect.db` opens a file; `pnpm start` / `pnpm dev` default to
+  `.architect/architect.db`. Without the variable (library use and tests) the store stays in
+  memory and `GET /api/projects` reports `mode: "memory"`, so today's behavior is unchanged.
+- An unopenable path also falls back to memory instead of failing requests.
+- Tables: `projects(id, name, created_at)`, `revisions(id, project_id, state_json, message,
+  source, created_at)` and `packages(id, project_id, revision_id, sha256, bytes, created_at)`;
+  the newest 50 revisions per project are kept.
+- `POST /api/generate` with `projectId` (and optional `revisionId`) records the ZIP's
+  `sha256` and byte size against the project.
+
 ## Sandbox drivers
 
 `packages/sandbox` exposes a modular `SandboxDriver` interface. Every driver runs the command
@@ -359,6 +376,12 @@ characters. CLI `--web-search --search-provider <auto|tavily|brave|duckduckgo>`,
 | POST | `/api/reverse/jobs` | Same body as `/api/reverse`; `202 { jobId, status, events }` |
 | GET | `/api/reverse/jobs/{id}` | Job state plus the full event history |
 | GET | `/api/reverse/jobs/{id}/events` | `text/event-stream`: `scan → rea → merge → validate → done\|error` |
+| GET | `/api/projects` | Projects with revision counts (`mode: file\|memory`) |
+| POST | `/api/projects` | `{ name }` → `201 { project }` |
+| GET | `/api/projects/{id}` | Project, revision history and package count |
+| POST | `/api/projects/{id}/revisions` | `{ state, message? }` → `201 { revision }` |
+| GET | `/api/projects/{id}/revisions` | Revision history, newest first (no state) |
+| POST | `/api/projects/{id}/restore/{revisionId}` | Restores a revision as a new revision |
 | POST | `/api/sandbox` | Verifies the package in the selected sandbox |
 
 Shared body fields: `idea` **or** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
@@ -477,7 +500,7 @@ Token counts use a real BPE tokenizer (`gpt-tokenizer`).
 ## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 294 tests, 28 files, 8 packages
+pnpm test        # nx run-many -t test — 305 tests, 30 files, 8 packages
 pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```

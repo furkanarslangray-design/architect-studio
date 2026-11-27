@@ -41,6 +41,7 @@ export const ja: Record<MessageKey, string> = {
 
   "error.invalidIdea": "アイデアを3文字以上で入力してください。",
   "error.invalidState": "無効なアーキテクチャ状態です: {detail}",
+  "error.invalidName": "プロジェクト名は1〜80文字で入力してください。",
   "error.invalidJson": "無効な JSON ボディです",
   "error.payloadTooLarge": "リクエストボディが大きすぎます",
   "error.rateLimited": "リクエストが多すぎます。しばらくしてから再試行してください。",

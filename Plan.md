@@ -458,7 +458,7 @@ stabil.
 
 ---
 
-## 9. Kalıcılık: proje ve revizyon geçmişi (SQLite) — M/L
+## 9. Kalıcılık: proje ve revizyon geçmişi (SQLite) — M/L · **UYGULANDI**
 
 **Amaç:** "Yeniden aç, kaldığın yerden devam et"; arayüzdeki geri alma gerçek olsun.
 
@@ -478,8 +478,24 @@ stabil.
 - `packages/app/src/store.ts` (yeni), `packages/app/src/server.ts`, `packages/app/src/cli.ts`
 - `packages/app/tests/store.test.ts` (yeni, geçici DB), `FRONTEND_SPEC.md` §4
 
+**Uygulama notları**
+
+- `better-sqlite3` yerine yerleşik `node:sqlite` (`DatabaseSync`) kullanıldı: yeni paket
+  kurulmadı, native derleme yok; `engines.node` aralığı modülü zaten içeriyor.
+  `node:sqlite` deneysel uyarısı verir, veri yolu ve API kararlıdır.
+- `createProjectStore({ path })`: yol yoksa `:memory:`; dosya açılamazsa sessizce belleğe düşer.
+  `ARCHITECT_DB` verilmezse `createServer()` bellekte kalır (testler ve kütüphane kullanımı),
+  `pnpm start` / `pnpm dev` `.architect/architect.db` ile başlar.
+- Uçlar: `GET/POST /api/projects`, `GET /api/projects/:id`, `GET/POST
+  /api/projects/:id/revisions`, `POST /api/projects/:id/restore/:revisionId`; `/api/generate`
+  gövdesindeki `projectId` ile ZIP'in `sha256`/boyutu `packages` tablosuna yazılır.
+- Yazma uçları mevcut rate limit + 256 KB gövde limitine tabi; proje başına en yeni 50
+  revizyon tutulur. Boş/uzun ad `400 invalid_name` (8 dilde çevrildi).
+- `FRONTEND_SPEC.md` §4.2/§5, `README.md`, `README.tr.md`, `PROJECT-SUMMARY.md` güncellendi.
+
 **Kabul kriteri:** Bir proje oluşturup iki revizyon eklenir, ilkine dönülür ve state
-birebir aynı döner; DB dosyası silinince davranış in-memory'ye düşer.
+birebir aynı döner; DB dosyası silinince davranış in-memory'ye düşer. ✔ (store 6 test,
+endpoint 5 test, app 147/147)
 **Bağımlılık:** 8 (state sürümü) ve 3 (`config.json`).
 
 ---

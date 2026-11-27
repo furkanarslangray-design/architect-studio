@@ -41,6 +41,7 @@ export const tr: Record<MessageKey, string> = {
 
   "error.invalidIdea": "Fikrini en az 3 karakterle yaz.",
   "error.invalidState": "Geçersiz mimari state: {detail}",
+  "error.invalidName": "Proje adı 1–80 karakter arasında olmalı.",
   "error.invalidJson": "Geçersiz JSON gövdesi",
   "error.payloadTooLarge": "İstek gövdesi çok büyük",
   "error.rateLimited": "Çok fazla istek. Kısa süre sonra tekrar dene.",

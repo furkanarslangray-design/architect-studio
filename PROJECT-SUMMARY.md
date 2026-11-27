@@ -1,4 +1,4 @@
-# PROJECT-SUMMARY — AI Principal Architect (v2.1.0)
+# PROJECT-SUMMARY — AI Principal Architect (v2.2.0)
 
 Yeni geliştirici devir teslim notu. Son güncelleme: 2026-11-24.
 
@@ -6,7 +6,7 @@ Yeni geliştirici devir teslim notu. Son güncelleme: 2026-11-24.
 
 **Klasör:** `/home/furkanarslangray/architect-studio` (bu çalışma kopyasında worktree)
 **Branch:** `mvp` / `main` (çalışma dalı `freebuff/frontend-temizleme-ve-frontend-spec-olu-turma`)
-**Durum:** v2.1.0 — Nx monorepo, sohbet motoru, morluto/rea köprüsü ve arayüz sözleşmesi
+**Durum:** v2.2.0 — Nx monorepo, sohbet motoru, morluto/rea köprüsü ve arayüz sözleşmesi
 tamamlandı; `architect init`, `/api/reverse` güvenlik sınırları ve sözleşme testleri
 eklendi; test/typecheck yeşil. Studio arayüzü kod olarak depoda yok, sözleşmesi
 `FRONTEND_SPEC.md`.
@@ -214,6 +214,22 @@ idea / ArchState / repository
   (6,3x); manifest düzenlenince `cacheHit: false`. Anahtar artık çözümlenmiş kök dizini de
   içerir: aynı içerikli iki ayrı checkout ayrı girdi üretir (testle doğrulandı).
 
+#### Proje ve revizyon geçmişi (SQLite)
+
+- `packages/app/src/store.ts`: `node:sqlite` (`DatabaseSync`) üzerinde `projects`,
+  `revisions`, `packages` tabloları; her yazma `randomUUID` + ISO zaman damgası üretir.
+  `better-sqlite3` kurulmadı (yeni bağımlılık/native derleme yok).
+- `createProjectStore({ path })` yolu yoksa `:memory:` kullanır; dosya açılamazsa belleğe
+  düşer. `createServer()` `ARCHITECT_DB` yoksa bellekte kalır, `pnpm start` varsayılanı
+  `.architect/architect.db`.
+- Uçlar: `GET/POST /api/projects`, `GET /api/projects/:id`, `GET/POST
+  /api/projects/:id/revisions`, `POST /api/projects/:id/restore/:revisionId`. Restore
+  seçilen state'i yeni bir revizyon olarak yazar (`source: "restore"`); liste state taşımaz.
+- `/api/generate` gövdesinde `projectId` varsa ZIP'in `sha256`/boyutu `packages` tablosuna
+  kaydedilir; `GET /api/projects/:id` `packages` sayısını döner.
+- Sınırlar: proje başına en yeni 50 revizyon, 256 KB gövde, mevcut rate limit; boş/uzun ad
+  `400 invalid_name`. Doğrulama: `store.test.ts` 6, `projects.test.ts` 5 test.
+
 #### `architect doctor`
 
 - `packages/app/src/doctor.ts`: `doctorProject` kaydedilmiş state ile `repoToState(root)`
@@ -315,13 +331,14 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 28 dosya, 294/294 test geçti |
+| `pnpm test` | 8 proje, 30 dosya, 305/305 test geçti |
 | Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
 | `doctor --write` | 5 test: state oluşturma, tazeleme, bozuk JSON/şema onarımı, özel `--state` yolu |
 | `architect doctor` | 15 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
 | CPU/RAM optimizasyonu | cold 110,5 → 52,9 ms, warm 18,7 → 5,8 ms, sıcak yolda okuma 12 → 0, heap düz |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
 | Şema sürümleme | 12 test: `version` eksik → 1 + uyarı (`parseStateReport` / `safeParseStateReport` uyarıyı taşır), `version: 99` → `UnsupportedStateVersionError`, `safeParseState` alan hatası, `archState@1` JSON Schema sabitleri, sayı-olmayan sürüm reddi |
+| Proje/revizyon deposu | 11 test: proje oluşturma, iki revizyon + ilkine dönüş (state birebir), revizyon tavanı, dosyadan yeniden açma, bozuk yola bellek fallback'i, paket kaydı; HTTP akışı `201`/`404`/`400 invalid_name`/`invalid_state` |
 | Korpus şema uyumu | 25 test: 11 korpus dosyası zod `ArchStateSchema` ile parse edilir, zorunlu alanlar (node/edge/decision/entity/field) açıkça kontrol edilir, `ARCH_STATE_JSON_SCHEMA` required listeleri zod davranışıyla karşılaştırılır |
 | Sözleşme testleri | 19 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, migrasyon uyarısının `stateWarnings` / `X-State-Warnings` olarak görünmesi, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
 | `architect init` | 13 test: config + 3 istemci dosyası + AGENTS.md bloğu; ikinci koşu hiçbir şey yazmıyor |

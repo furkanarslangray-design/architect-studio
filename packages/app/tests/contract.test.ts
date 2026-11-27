@@ -99,7 +99,7 @@ describe("FRONTEND_SPEC.md parity", () => {
 describe("GET contract", () => {
   it("root, health, version, i18n, sandboxes and rea match their schemas", async () => {
     const welcome = await expectSchema(await fetch(`${baseUrl}/`), rootWelcomeSchema);
-    expect(welcome.version).toBe("2.1.0");
+    expect(welcome.version).toBe("2.2.0");
     expect(welcome.mode).toBe("api-only");
     expect(welcome.endpoints).toContain("GET /api/health");
     expect(welcome.endpoints).toContain("POST /api/generate");
