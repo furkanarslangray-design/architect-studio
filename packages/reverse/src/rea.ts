@@ -946,6 +946,14 @@ function tryParse(text: string): unknown {
   }
 }
 
+/** Reported when `staticOnly` asks for the built-in analyzer without a probe. */
+const STATIC_ONLY_DETECTION: ReaDetection = {
+  available: false,
+  engine: "static",
+  reason: "static-only analysis requested; the REA CLI was not probed",
+  modes: [],
+};
+
 /**
  * Produces REA findings for a repository: the installed CLI when available,
  * otherwise the built-in static analyzer. Never throws for a missing binary.
@@ -962,7 +970,11 @@ export async function analyzeWithRea(root: string, options: ReaOptions = {}): Pr
 
   if (options.staticOnly) {
     const staticResult = staticReaAnalysis(resolvedRoot, options);
-    const detection = await detectRea();
+    // `staticOnly` means "never touch the CLI". Probing here would spawn
+    // `rea --version`/`--help` only to discard the answer, which costs seconds
+    // on a loaded machine, so an already-known detection is reused and a fresh
+    // one is reported as not probed.
+    const detection = detectionCache ? await detectionCache : STATIC_ONLY_DETECTION;
     return { ...staticResult, detection };
   }
 
