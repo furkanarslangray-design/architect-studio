@@ -63,18 +63,19 @@ Bu yüzden gereksinim depo seviyesinde sabitlendi:
 |---|---|
 | `.nvmrc` | `24.22.1` |
 | `package.json` → `engines.node` | `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1` |
+| `package.json` → `devEngines.runtime` | `node 24.22.1` (`pnpm runtime set node 24.22.1 -D`) |
 | `.github/workflows/ci.yml` | `actions/setup-node` → `node-version-file: .nvmrc` |
 
 ```bash
-nvm install && nvm use      # .nvmrc → 24.22.1
-node -v                     # v24.22.1
-pnpm install                # engines uyarısı çıkmamalı
+pnpm install                # gerekirse sabitlenen runtime'ı da indirir
+pnpm exec node -v           # v24.22.1 — script'ler her zaman proje runtime'ını kullanır
 ```
 
-Sürüm tutmuyorsa `pnpm install` `Unsupported engine` uyarısı verir; bu durumda ya Node'u
-yükselt ya da REA köprüsünü tamamen atla (`useRea` vermeden çalıştır, `rea.engine: "static"`).
-Sistem Node'u eskiyse ve yükseltmek istemiyorsan `ARCHITECT_REA_BIN=/path/to/rea` ile
-yalnızca o süreci farklı bir Node ile çalıştırabilirsin.
+`devEngines.runtime` sayesinde sistem `node`'u eski olsa bile `pnpm <script>` 24.22.1 ile
+çalışır; REA köprüsü makine genelindeki Node'u değiştirmeden çalışır. Etkileşimli kabuk için
+`nvm install && nvm use` de geçerlidir. İkisi de mümkün değilse REA köprüsünü atla (`useRea`
+vermeden çalıştır, `rea.engine: "static"`) veya `ARCHITECT_REA_BIN=/path/to/rea` ile desteklenen
+bir Node altında çalışan bir launcher göster.
 
 ### BYOK
 
@@ -190,6 +191,9 @@ pnpm architect doctor . --json           # makine okunur rapor
 pnpm architect doctor . --fail-on-drift  # kayma varsa çıkış 1 (CI için)
 pnpm architect doctor . --state out/state.json
 pnpm architect doctor . --write         # deponun bugünkü halini .architect/state.json'a yaz
+pnpm architect projects list            # kayıtlı projeler (ARCHITECT_DB veya --db)
+pnpm architect projects save <id> state.json --message "db ekle"
+pnpm architect projects restore <id> <revisionId>
 ```
 
 Drift türleri: `node`, `edge`, `entity`, `field`, `decision` × `added|removed|updated`. State
@@ -237,6 +241,9 @@ ile köprü kurar:
   `rea-agents` launcher'ı Node `^22.23.4 || ^24.22.1 || >=26.12.1` ister; bu yüzden depo
   kökünde `.nvmrc` = `24.22.1` ve `package.json` → `engines.node` aynı aralık sabittir
   (ayrıntı: [Node sürümü](#node-sürümü--rea-launcherı)).
+- REA büyük ağaçlarda yavaştır: sabitlenen runtime ile iki dosyalık fixture ~6,5 sn sürdü
+  (`rea` motoru, 6.10.1); bu depo (153 dosya) 5 dakikalık bütçeyi aştı. Büyük hedeflerde
+  `maxFiles`/`maxDepth` küçük tut; köprü `REVERSE_TIMEOUT_MS` değerini `rea` alt sürecine geçirir.
 - REA bulguları `mergeReaFindings` ile `ArchState`'e katılır: veritabanı, kuyruk ve dış servis
   düğümleri kanıt yollarıyla (`props.evidence`) eklenir; mevcut adlar tekrar eklenmez.
 - Yanıtta motor `rea.engine` (`rea` | `rea-agents` | `static`), `rea.findings`,
@@ -290,6 +297,13 @@ modülü zaten içeriyor.
   proje başına en yeni 50 revizyon saklanır.
 - `POST /api/generate` gövdesinde `projectId` (isteğe bağlı `revisionId`) varsa ZIP'in
   `sha256` ve bayt boyutu projeye kaydedilir.
+- **Eşzamanlı yazıcılar:** veritabanı `journal_mode = WAL`, `synchronous = NORMAL`,
+  `busy_timeout = 5000` ile açılır; yazma ifadeleri `SQLITE_BUSY` durumunda beş kez yeniden
+  denenir. CLI veya ikinci bir sunucu süreci yazarken diğeri okuyabilir. Bir test, aynı dosyaya
+  onar revizyon ekleyen iki ayrı süreç başlatır.
+- **CLI:** `pnpm architect projects list | show <id> | save <id> <state.json> [--message] |
+  restore <id> <revisionId>`; `--db <path>` `ARCHITECT_DB`'yi geçersiz kılar. `save` yeni
+  revizyon kimliğini, `restore` geri yüklenen state JSON'unu yazar.
 
 ## Sandbox sürücüleri
 
@@ -396,6 +410,18 @@ pnpm architect --json state.json --out paket.zip --reproducible
 pnpm architect --reverse . --out paket.zip --reproducible
 ```
 
+### Güvenlik duruşu
+
+- **Bağımlılıklar:** `zod@4.6.7` (GHSA-mrhx-c7xc-m3w5 / CVE-2023-54404 için yamalı) ve
+  `vitest@5.1.2` (GHSA-82fw-gwwq-j7x9 için yamalı) sabitlendi; ikisi de ilk yamalı sürüm
+  çizgisi, `pnpm audit` artık bunları raporlamıyor.
+- **Sandbox çalıştırma:** `packages/sandbox` komutları yalnızca `spawn(file, args, { shell:
+  false })` ile çalıştırır. Argümanlar string olarak doğrulanır; komut adındaki metakarakterler
+  kabuğa değil, doğrudan argv'ye gider (testle doğrulandı).
+- **MCP girişi:** `pnpm mcp` stdio sunucusunu doğrudan `tsx` ile başlatır; ek build adımı
+  yoktur. Bir test gerçek `initialize` + `tools/list` el sıkışmasını `pnpm mcp` üzerinden
+  yapar, böylece otomatik tarayıcı aynı araç yüzeyini görür.
+
 Testler hem `store` hem `deflate` profilini, giriş tarih/modlarını ve ayrı süreçte üretilen
 arşivlerin aynı hash'ini doğrular.
 
@@ -471,7 +497,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 305 test, 30 dosya, 8 paket
+pnpm test        # nx run-many -t test — 311 test, 32 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```

@@ -10,7 +10,8 @@ Node **24.22.1** and pnpm 10 are required; the pinned version lives in `.nvmrc` 
 
 ```bash
 nvm use            # or: fnm use
-pnpm install
+pnpm install       # also fetches the pinned runtime from devEngines.runtime
+pnpm exec node -v  # v24.22.1, even if the system node is older
 ```
 
 ## Checks
@@ -19,7 +20,7 @@ Run these before opening a pull request. Both must exit `0`.
 
 ```bash
 pnpm typecheck     # nx run-many -t typecheck (9 projects)
-pnpm test          # nx run-many -t test (294 tests, 28 files)
+pnpm test          # nx run-many -t test (311 tests, 32 files)
 ```
 
 To scope a run to one package while iterating:

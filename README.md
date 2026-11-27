@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-305%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-311%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) 
 [![M8ven Verified](https://m8ven.ai/badge/mcp/furkanarslangray-design-architect-studio-hx6k8f?variant=verified)](https://m8ven.ai/mcp/furkanarslangray-design-architect-studio-hx6k8f?s=readme)
@@ -86,18 +86,19 @@ falls back to `static`. The requirement is therefore pinned at the repository le
 |---|---|
 | `.nvmrc` | `24.22.1` |
 | `package.json` → `engines.node` | `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1` |
+| `package.json` → `devEngines.runtime` | `node 24.22.1` (`pnpm runtime set node 24.22.1 -D`) |
 | `.github/workflows/ci.yml` | `actions/setup-node` → `node-version-file: .nvmrc` |
 
 ```bash
-nvm install && nvm use      # .nvmrc → 24.22.1
-node -v                     # v24.22.1
-pnpm install                # no engine warning expected
+pnpm install                # also downloads the pinned runtime when needed
+pnpm exec node -v           # v24.22.1 — scripts always use the project runtime
 ```
 
-If the version does not match, `pnpm install` prints an `Unsupported engine` warning; either
-upgrade Node or skip the REA bridge entirely (run without `useRea`, `rea.engine: "static"`).
-If your system Node is older and you do not want to upgrade, point
-`ARCHITECT_REA_BIN=/path/to/rea` at a launcher that runs under a newer Node.
+`devEngines.runtime` means `pnpm <script>` runs under 24.22.1 even when the system `node` is
+older, so the REA bridge works without changing the machine-wide Node. `nvm install && nvm use`
+still works for an interactive shell. If neither is possible, skip the REA bridge (run without
+`useRea`, `rea.engine: "static"`) or point `ARCHITECT_REA_BIN=/path/to/rea` at a launcher that
+runs under a supported Node.
 
 ### BYOK
 
@@ -212,6 +213,9 @@ pnpm architect doctor . --json           # machine-readable report
 pnpm architect doctor . --fail-on-drift  # exit 1 on drift (for CI)
 pnpm architect doctor . --state out/state.json
 pnpm architect doctor . --write          # write today's repo state to .architect/state.json
+pnpm architect projects list            # stored projects (ARCHITECT_DB or --db)
+pnpm architect projects save <id> state.json --message "add db"
+pnpm architect projects restore <id> <revisionId>
 ```
 
 Drift types: `node`, `edge`, `entity`, `field`, `decision` × `added|removed|updated`. A missing
@@ -262,6 +266,10 @@ can be packaged directly. CLI: `--reverse <dir>`, API: `POST /api/reverse`, UI: 
   launcher requires Node `^22.23.4 || ^24.22.1 || >=26.12.1`; that is why `.nvmrc` (`24.22.1`)
   and `package.json` → `engines.node` pin the same range at the repo root (details:
   [Node version](#node-version--rea-launcher)).
+- REA is slow on big trees: with the pinned runtime it analysed a two-file fixture in ~6.5 s
+  (engine `rea`, 6.10.1), while this repository (153 files) exceeded a 5-minute budget. Keep
+  `maxFiles`/`maxDepth` small for large targets; the bridge passes `REVERSE_TIMEOUT_MS` to the
+  `rea` child process.
 - REA findings merge into the `ArchState` through `mergeReaFindings`: database, queue and
   external-service nodes are added with evidence paths (`props.evidence`); existing names are
   not duplicated.
@@ -318,6 +326,13 @@ ships it.
   the newest 50 revisions per project are kept.
 - `POST /api/generate` with `projectId` (and optional `revisionId`) records the ZIP's
   `sha256` and byte size against the project.
+- **Concurrent writers:** the database opens with `journal_mode = WAL`, `synchronous =
+  NORMAL` and `busy_timeout = 5000`; write statements retry five times on `SQLITE_BUSY`. A CLI
+  or a second server process can write while another reads. A store test spawns two worker
+  processes that each add ten revisions to one file.
+- **CLI:** `pnpm architect projects list | show <id> | save <id> <state.json> [--message] |
+  restore <id> <revisionId>`, with `--db <path>` overriding `ARCHITECT_DB`. `save` prints the
+  new revision id, `restore` prints the restored state JSON.
 
 ## Sandbox drivers
 
@@ -425,6 +440,18 @@ pnpm architect --json state.json --out package.zip --reproducible
 pnpm architect --reverse . --out package.zip --reproducible
 ```
 
+### Security posture
+
+- **Dependencies:** `zod@4.6.7` (patched for GHSA-mrhx-c7xc-m3w5 / CVE-2023-54404) and
+  `vitest@5.1.2` (patched for GHSA-82fw-gwwq-j7x9) are pinned; both are the first patched
+  lines, so `pnpm audit` no longer reports them.
+- **Sandbox execution:** `packages/sandbox` runs commands through `spawn(file, args, { shell:
+  false })` only. Arguments are validated as strings, so metacharacters in a command name are
+  treated literally instead of being handed to a shell (covered by a test).
+- **MCP entry:** `pnpm mcp` starts the stdio server directly with `tsx`; no build step is
+  needed. A test performs the real `initialize` + `tools/list` handshake through `pnpm mcp`
+  so an automated scanner sees the same tool surface.
+
 Tests cover both the `store` and `deflate` profiles, entry dates/modes and identical hashes for
 archives produced in separate processes.
 
@@ -500,7 +527,7 @@ Token counts use a real BPE tokenizer (`gpt-tokenizer`).
 ## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 305 tests, 30 files, 8 packages
+pnpm test        # nx run-many -t test — 311 tests, 32 files, 8 packages
 pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```

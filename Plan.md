@@ -491,11 +491,17 @@ stabil.
   gövdesindeki `projectId` ile ZIP'in `sha256`/boyutu `packages` tablosuna yazılır.
 - Yazma uçları mevcut rate limit + 256 KB gövde limitine tabi; proje başına en yeni 50
   revizyon tutulur. Boş/uzun ad `400 invalid_name` (8 dilde çevrildi).
+- CLI bağlantısı: `packages/app/src/projects-cli.ts` → `pnpm architect projects
+  list|show|save|restore [--db <path>]`; `save` revizyon kimliğini, `restore` state JSON'unu
+  yazar. `packages/app/tests/projects-cli.test.ts` 3 test.
+- Çok süreçli yazma: `PRAGMA journal_mode = WAL`, `synchronous = NORMAL`,
+  `busy_timeout = 5000` ve `SQLITE_BUSY` üzerine 5 denemeli yazma retry'ı. Test, aynı DB
+  dosyasına onar revizyon yazan iki ayrı süreç başlatıp 20 revizyonu doğrular.
 - `FRONTEND_SPEC.md` §4.2/§5, `README.md`, `README.tr.md`, `PROJECT-SUMMARY.md` güncellendi.
 
 **Kabul kriteri:** Bir proje oluşturup iki revizyon eklenir, ilkine dönülür ve state
-birebir aynı döner; DB dosyası silinince davranış in-memory'ye düşer. ✔ (store 6 test,
-endpoint 5 test, app 147/147)
+birebir aynı döner; DB dosyası silinince davranış in-memory'ye düşer. ✔ (store 7 test,
+endpoint 5 test, CLI 3 test, app 151/151)
 **Bağımlılık:** 8 (state sürümü) ve 3 (`config.json`).
 
 ---

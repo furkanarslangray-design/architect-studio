@@ -228,7 +228,14 @@ idea / ArchState / repository
 - `/api/generate` gövdesinde `projectId` varsa ZIP'in `sha256`/boyutu `packages` tablosuna
   kaydedilir; `GET /api/projects/:id` `packages` sayısını döner.
 - Sınırlar: proje başına en yeni 50 revizyon, 256 KB gövde, mevcut rate limit; boş/uzun ad
-  `400 invalid_name`. Doğrulama: `store.test.ts` 6, `projects.test.ts` 5 test.
+  `400 invalid_name`. Doğrulama: `store.test.ts` 7 (biri iki süreçli yazma), `projects.test.ts` 5,
+  `projects-cli.test.ts` 3 test.
+- Çok süreçli yazma: WAL + `busy_timeout=5000` + `SQLITE_BUSY` retry'ı (5 deneme).
+- CLI: `packages/app/src/projects-cli.ts` → `architect projects list|show|save|restore [--db]`.
+- Güvenlik: sandbox `spawn(..., { shell: false })` + argv string doğrulaması; `pnpm mcp` stdio
+  girişi gerçek `initialize`/`tools/list` el sıkışmasıyla testli; zod 4.6.7 + vitest 5.1.2.
+- Node: `devEngines.runtime` = 24.22.1; `pnpm <script>` sistem Node'u eski olsa da bu runtime'ı
+  kullanır, REA köprüsü gerçek motorda çalışır (fixture: `rea` 6.10.1, 3 bulgu, 6,5 sn).
 
 #### `architect doctor`
 
@@ -331,14 +338,14 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 30 dosya, 305/305 test geçti |
+| `pnpm test` | 8 proje, 32 dosya, 311/311 test geçti |
 | Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
 | `doctor --write` | 5 test: state oluşturma, tazeleme, bozuk JSON/şema onarımı, özel `--state` yolu |
 | `architect doctor` | 15 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
 | CPU/RAM optimizasyonu | cold 110,5 → 52,9 ms, warm 18,7 → 5,8 ms, sıcak yolda okuma 12 → 0, heap düz |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
 | Şema sürümleme | 12 test: `version` eksik → 1 + uyarı (`parseStateReport` / `safeParseStateReport` uyarıyı taşır), `version: 99` → `UnsupportedStateVersionError`, `safeParseState` alan hatası, `archState@1` JSON Schema sabitleri, sayı-olmayan sürüm reddi |
-| Proje/revizyon deposu | 11 test: proje oluşturma, iki revizyon + ilkine dönüş (state birebir), revizyon tavanı, dosyadan yeniden açma, bozuk yola bellek fallback'i, paket kaydı; HTTP akışı `201`/`404`/`400 invalid_name`/`invalid_state` |
+| Proje/revizyon deposu | 15 test: proje oluşturma, iki revizyon + ilkine dönüş (state birebir), revizyon tavanı, dosyadan yeniden açma, bozuk yola bellek fallback'i, paket kaydı; HTTP akışı `201`/`404`/`400 invalid_name`/`invalid_state` |
 | Korpus şema uyumu | 25 test: 11 korpus dosyası zod `ArchStateSchema` ile parse edilir, zorunlu alanlar (node/edge/decision/entity/field) açıkça kontrol edilir, `ARCH_STATE_JSON_SCHEMA` required listeleri zod davranışıyla karşılaştırılır |
 | Sözleşme testleri | 19 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, migrasyon uyarısının `stateWarnings` / `X-State-Warnings` olarak görünmesi, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
 | `architect init` | 13 test: config + 3 istemci dosyası + AGENTS.md bloğu; ikinci koşu hiçbir şey yazmıyor |
@@ -354,15 +361,16 @@ architect-studio/
 | API reverse (HTTP) | `POST /api/reverse { useRea: true }` gerçek fixture'da `200`, `rea.engine: "rea"`, 4 REA bulgusu, 1 artifact |
 | 8 dil | katalog parity + yerelleştirilmiş doküman/manifest doğrulaması |
 | API | preview/generate/reverse/sandbox/sandboxes/chat/rea uçları testli; `GET /` `200` `api-only` karşılama JSON'u döner |
-| MCP | dört araç, ZIP yazımı, hata içerikleri ve `useRea` testli |
+| MCP | dört araç, ZIP yazımı, hata içerikleri ve `useRea` testli; `pnpm mcp` stdio girişi gerçek `initialize` + `tools/list` ile testli |
+| Güvenlik | zod 4.6.7 + vitest 5.1.2 (GHSA yamaları), sandbox `shell: false` argv yürütme testi, MCP tarayıcı el sıkışması |
 | Sohbet | TR/EN niyetler, tip çıkarımı, mikroservis bölme, LLM fallback ve `/api/chat` testli |
 | REA köprüsü | sahte `rea` CLI'ı, `normalized_result` zarfı, Evidence projeksiyonu, ASAR/ELF/env/Dockerfile analizi testli |
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
 Test dağılımı: core 44 (5 dosya), generators 10, validators 10, packager 53 (5 dosya),
-app 147 (13 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
-reverse-queue, reverse-jobs, init, doctor, store, projects), reverse 24 (3 dosya: index, rea,
-cache), sandbox 11, mcp 6.
+app 151 (14 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
+reverse-queue, reverse-jobs, init, doctor, store, projects, projects-cli), reverse 24 (3 dosya:
+index, rea, cache), sandbox 12, mcp 7.
 
 ## 8. Kalan sınırlar (bilinçli)
 
