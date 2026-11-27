@@ -35,7 +35,9 @@ describe("sandbox drivers", () => {
     const reported = await detectSandboxes(true);
     expect(reported.map((item) => item.id)).toEqual(AUTO_ORDER);
     expect(reported.find((item) => item.id === "temp-dir")?.available).toBe(true);
-  });
+    // Detection probes every installed binary on the host, so the CI runner's
+    // Docker/systemd probes need more than the default 5 s.
+  }, 20_000);
 
   it("runs a command in an isolated temporary directory with a restricted environment", async () => {
     process.env.ARCHITECT_SANDBOX_SECRET = "must-not-leak";

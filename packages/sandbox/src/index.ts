@@ -154,6 +154,19 @@ interface ExecResult {
   durationMs: number;
 }
 
+/** Kills the child and, on POSIX, everything it started. */
+function killProcessTree(child: { pid?: number; kill: (signal: NodeJS.Signals) => boolean }): void {
+  if (process.platform === "win32" || child.pid === undefined) {
+    child.kill("SIGKILL");
+    return;
+  }
+  try {
+    process.kill(-child.pid, "SIGKILL");
+  } catch {
+    child.kill("SIGKILL");
+  }
+}
+
 const MAX_OUTPUT_BYTES = 256 * 1024;
 
 function exec(
@@ -189,6 +202,10 @@ function exec(
       stdio: ["ignore", "pipe", "pipe"],
       shell: false,
       windowsHide: true,
+      // Own process group on POSIX so a timeout can kill the whole tree. A
+      // shell wrapper's grandchild otherwise keeps the pipes open and the
+      // promise alive long after the budget expired.
+      detached: process.platform !== "win32",
     });
 
     const append = (current: string, chunk: Buffer) => {
@@ -244,10 +261,12 @@ function exec(
       () => {
         timedOut = true;
         options.onTimeout?.();
-        child.kill("SIGKILL");
+        killProcessTree(child);
+        // `close` usually follows at once; this 250 ms net only guarantees the
+        // caller is never held past its budget when a grandchild survives.
         setTimeout(() => {
           void finish(null);
-        }, 2000).unref?.();
+        }, 250).unref?.();
       },
       options.timeoutMs ?? 30_000,
     );
@@ -279,7 +298,10 @@ async function detectBinary(
   if (!path) {
     return { id, label, isolation, available: false, binary, reason: `${binary} is not installed` };
   }
-  const probe = await exec(path, versionArgs, { env: restrictedEnv(), timeoutMs: 5000 });
+  // A version probe is a health check, not a job: a binary that needs seconds to
+  // print a version is unusable here, and `/api/sandboxes` runs this for every
+  // driver, so the wait is capped short instead of the generic job budget.
+  const probe = await exec(path, versionArgs, { env: restrictedEnv(), timeoutMs: 2000 });
   if (probe.code !== 0) {
     return {
       id,

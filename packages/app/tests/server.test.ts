@@ -169,7 +169,9 @@ describe("v2 endpoints", () => {
       "temp-dir",
     ]);
     expect(payload.sandboxes.find((item: any) => item.id === "temp-dir").available).toBe(true);
-  });
+    // The endpoint probes installed binaries; a runner's Docker/systemd probes
+    // need more than the default 5 s budget.
+  }, 20_000);
 
   it("reverse-engineers a repository from the HTTP API", async () => {
     const root = join(fixtures, "service");
