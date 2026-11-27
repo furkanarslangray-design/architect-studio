@@ -20,7 +20,7 @@ Run these before opening a pull request. Both must exit `0`.
 
 ```bash
 pnpm typecheck     # nx run-many -t typecheck (9 projects)
-pnpm test          # nx run-many -t test (311 tests, 32 files)
+pnpm test          # nx run-many -t test (314 tests, 32 files)
 ```
 
 To scope a run to one package while iterating:
