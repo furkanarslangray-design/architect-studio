@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  CURRENT_STATE_VERSION,
+  SUPPORTED_STATE_VERSIONS,
+  UnsupportedStateVersionError,
+  isStateVersion,
+  migrateState,
+} from "./state-schema";
 
 export const NodeKindSchema = z.enum(["service", "database", "queue", "external", "ui"]);
 export type NodeKind = z.infer<typeof NodeKindSchema>;
@@ -76,7 +83,14 @@ export const EntitySchema = z.object({
 export type Entity = z.infer<typeof EntitySchema>;
 
 export const ArchStateSchema = z.object({
-  version: z.number().int().positive().default(1),
+  version: z
+    .number()
+    .int()
+    .positive()
+    .refine(isStateVersion, {
+      message: `Unsupported architecture state version. Supported: ${SUPPORTED_STATE_VERSIONS.join(", ")}.`,
+    })
+    .default(CURRENT_STATE_VERSION),
   nodes: z.array(ArchNodeSchema).min(1),
   edges: z.array(ArchEdgeSchema).default([]),
   decisions: z.array(DecisionSchema).default([]),
@@ -84,16 +98,25 @@ export const ArchStateSchema = z.object({
 });
 export type ArchState = z.infer<typeof ArchStateSchema>;
 
+/** Every entry point (HTTP bodies, CLI files, MCP tools) goes through here. */
 export function parseState(input: unknown): ArchState {
-  return ArchStateSchema.parse(input);
+  return ArchStateSchema.parse(migrateState(input).value);
 }
 
 export function safeParseState(input: unknown) {
-  return ArchStateSchema.safeParse(input);
+  try {
+    return ArchStateSchema.safeParse(migrateState(input).value);
+  } catch (error) {
+    if (!(error instanceof UnsupportedStateVersionError)) throw error;
+    return {
+      success: false as const,
+      error: new z.ZodError([{ code: z.ZodIssueCode.custom, path: ["version"], message: error.message }]),
+    };
+  }
 }
 
 export function emptyState(): ArchState {
-  return { version: 1, nodes: [], edges: [], decisions: [], entities: [] };
+  return { version: CURRENT_STATE_VERSION, nodes: [], edges: [], decisions: [], entities: [] };
 }
 
 export interface SanitizeResult {

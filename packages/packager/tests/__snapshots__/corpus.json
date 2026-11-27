@@ -699,6 +699,166 @@
       }
     ]
   },
+  "legacy-versionless": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "e69d37511722d3fb519370ec3f415cc1d992f8650cfde7b60827da9d72f48bce"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "851aa9b7db080474a99d1d7df223b7952ad06e6c7c94cecaebb0ce75a6a333e7"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "9bcf6af1def683feef199fd1bbec69c588537e2d60dec06d72049df4037cbf2b"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "77da1623e41a24b49e08f91e80e72d41df21ac58090089767b04671dfc2e075f"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "0405042b2edbe6c1a1e4bdb9bd00431948110316505a58f0b09803cb48f2d3c6"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "4e87c23ce28c899bdb5edb7271e3fdc4b28250a7b5ac383d7dffff925a8034c5"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "60c038130990c23b79553b89461f6f2e0c894ddaf1f41c4580eff73f3ae55011"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "f9b47d36dd41e67d30467d01b50270b0090a9d13b7a285332db081fe2bdec4a3"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "3e96a011a01750ec2bfd16f8001a5db07fc0165fed48ce9951f780a43ea39133"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "37fd52a0e85101d91e66c94d048b0deb0167c29975df2f7c72379bf4f12647e2"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "2e1c94418f725e7f7ff8538ead8af2cfef6f6e2ea198740851466ce82ece400f"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 307,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 307,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.023,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 121,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 9.045,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
   "multilingual-ja": {
     "files": [
       {
@@ -1530,330 +1690,6 @@
       {
         "name": "package_size_kb",
         "value": 7.925,
-        "pass": true
-      },
-      {
-        "name": "state_to_package_ms",
-        "value": 0,
-        "pass": true
-      }
-    ]
-  },
-  "version-2": {
-    "files": [
-      {
-        "path": ".cursorrules",
-        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
-      },
-      {
-        "path": ".opencode/agents/implementer.md",
-        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
-      },
-      {
-        "path": ".opencode/agents/reviewer.md",
-        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
-      },
-      {
-        "path": ".opencode/agents/validator.md",
-        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
-      },
-      {
-        "path": "AGENTS.md",
-        "sha256": "9ad9913c3d60432573f177d9986ed239df6bdff32c99727bec6188ce214bfdcd"
-      },
-      {
-        "path": "ARCHITECTURE.md",
-        "sha256": "6cc5008b4babc0c5694e9725851fd673d9686a679558577b2eae844813aec46d"
-      },
-      {
-        "path": "MANIFEST.md",
-        "sha256": "fac820c48449358736a44e923816b8c6e261bfb1ae9925c6304a5eefa1d2cc95"
-      },
-      {
-        "path": "TASKS.md",
-        "sha256": "6a8e61fe17fadae30d64fadee4c2a06388d4b356672d0f975238a243da873781"
-      },
-      {
-        "path": "WHITEPAPER.md",
-        "sha256": "7cbfd617d739646706b4fe8be64ce5169c063fc83da6e4ea0249536bce70ca6b"
-      },
-      {
-        "path": "asyncapi.yaml",
-        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
-      },
-      {
-        "path": "diagram.mmd",
-        "sha256": "4e87c23ce28c899bdb5edb7271e3fdc4b28250a7b5ac383d7dffff925a8034c5"
-      },
-      {
-        "path": "metrics.json",
-        "sha256": "8c87597188877220616769e50889db8e8a1c9b7724c54b233d14213ac95c7140"
-      },
-      {
-        "path": "openapi.yaml",
-        "sha256": "3cc56b2e0818b4c698c5298f86de510fd8e22ee0fc32a6068602ed441701d701"
-      },
-      {
-        "path": "prisma/schema.prisma",
-        "sha256": "90b8baa4665ea9dcd7241cf9376281142599ef6398095c9172155898769342f5"
-      },
-      {
-        "path": "tasks/T-001.md",
-        "sha256": "7d576911ce83ceb14af2ff1ca176fc187a886983174964462c4ae320ca9fb69c"
-      },
-      {
-        "path": "tasks/T-002.md",
-        "sha256": "dbb2d0b934dd33f1eb4b262948d037624aa4053927b0cc7cfb202fa127eda29b"
-      }
-    ],
-    "metrics": [
-      {
-        "name": "packet_prompt_tokens_p95",
-        "value": 231,
-        "pass": true
-      },
-      {
-        "name": "packet_prompt_tokens_max",
-        "value": 231,
-        "pass": true
-      },
-      {
-        "name": "context_slice_ratio",
-        "value": 0.012,
-        "pass": true
-      },
-      {
-        "name": "duplicate_context_ratio",
-        "value": 0,
-        "pass": true
-      },
-      {
-        "name": "files_per_task",
-        "value": 3,
-        "pass": true
-      },
-      {
-        "name": "dependency_depth",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "parallel_groups",
-        "value": 2,
-        "pass": true
-      },
-      {
-        "name": "subagent_steps",
-        "value": 8,
-        "pass": true
-      },
-      {
-        "name": "contract_coverage",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "acceptance_coverage",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "validator_pass_rate",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "deterministic_checks",
-        "value": 14,
-        "pass": true
-      },
-      {
-        "name": "self_heal_rounds",
-        "value": 0,
-        "pass": true
-      },
-      {
-        "name": "unresolved_refs",
-        "value": 0,
-        "pass": true
-      },
-      {
-        "name": "deterministic_coverage",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "index_tokens",
-        "value": 121,
-        "pass": true
-      },
-      {
-        "name": "package_size_kb",
-        "value": 8.731,
-        "pass": true
-      },
-      {
-        "name": "state_to_package_ms",
-        "value": 0,
-        "pass": true
-      }
-    ]
-  },
-  "version-3": {
-    "files": [
-      {
-        "path": ".cursorrules",
-        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
-      },
-      {
-        "path": ".opencode/agents/implementer.md",
-        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
-      },
-      {
-        "path": ".opencode/agents/reviewer.md",
-        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
-      },
-      {
-        "path": ".opencode/agents/validator.md",
-        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
-      },
-      {
-        "path": "AGENTS.md",
-        "sha256": "b821bc58b565b94ba66e42df3713d49fbb464af2c031df13cdc60682052bd0aa"
-      },
-      {
-        "path": "ARCHITECTURE.md",
-        "sha256": "a344b445cf1c4a1bc93c6a5d01b344bc1bdd37d33e77f43d8335d471d0647f75"
-      },
-      {
-        "path": "MANIFEST.md",
-        "sha256": "b04f4bd1a059425b37ceb2b63be92a45705f82faceb8a1d2a83845eacd629683"
-      },
-      {
-        "path": "TASKS.md",
-        "sha256": "f3bf84c3cd0e4bcb229525e5824efdf3ef88db88d8817668bd14fecc988430be"
-      },
-      {
-        "path": "WHITEPAPER.md",
-        "sha256": "4edee40055adaeb897004ebedeac84d5d8bffd7c08c4a7a7fcbbea1e758edea3"
-      },
-      {
-        "path": "asyncapi.yaml",
-        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
-      },
-      {
-        "path": "diagram.mmd",
-        "sha256": "1a7f15ffb79e2a0b67be4e327c65775e30b888f0eda0185ecfca27d6229b2b2e"
-      },
-      {
-        "path": "metrics.json",
-        "sha256": "1c80b73ddea9dfef0e61ebe07bacbb404b98e353260bdbbdad5ac827f55176cb"
-      },
-      {
-        "path": "openapi.yaml",
-        "sha256": "e1a52f88064ff218e6bad071e935ae80536956e556dfbf59626b249e72d15013"
-      },
-      {
-        "path": "prisma/schema.prisma",
-        "sha256": "1598b8b0cfbfa00ecfc63c369f5e669ac985ac88feb0bab385e51b3ca0738a69"
-      },
-      {
-        "path": "tasks/T-001.md",
-        "sha256": "4716301840f4fc9719535ca047f4675929bb431f9c53a9a8e90037bce2a67056"
-      },
-      {
-        "path": "tasks/T-002.md",
-        "sha256": "f16a674bd16a25927a6ead7078e7b87b85a667edeeb09aecd0ce082a9874f787"
-      },
-      {
-        "path": "tasks/T-003.md",
-        "sha256": "f362026fa588c4afe678184d1a5dbb1f95b0a359dc87bc12971766a6bf4ddf10"
-      }
-    ],
-    "metrics": [
-      {
-        "name": "packet_prompt_tokens_p95",
-        "value": 320,
-        "pass": true
-      },
-      {
-        "name": "packet_prompt_tokens_max",
-        "value": 320,
-        "pass": true
-      },
-      {
-        "name": "context_slice_ratio",
-        "value": 0.016,
-        "pass": true
-      },
-      {
-        "name": "duplicate_context_ratio",
-        "value": 0,
-        "pass": true
-      },
-      {
-        "name": "files_per_task",
-        "value": 3,
-        "pass": true
-      },
-      {
-        "name": "dependency_depth",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "parallel_groups",
-        "value": 2,
-        "pass": true
-      },
-      {
-        "name": "subagent_steps",
-        "value": 8,
-        "pass": true
-      },
-      {
-        "name": "contract_coverage",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "acceptance_coverage",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "validator_pass_rate",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "deterministic_checks",
-        "value": 14,
-        "pass": true
-      },
-      {
-        "name": "self_heal_rounds",
-        "value": 0,
-        "pass": true
-      },
-      {
-        "name": "unresolved_refs",
-        "value": 0,
-        "pass": true
-      },
-      {
-        "name": "deterministic_coverage",
-        "value": 1,
-        "pass": true
-      },
-      {
-        "name": "index_tokens",
-        "value": 146,
-        "pass": true
-      },
-      {
-        "name": "package_size_kb",
-        "value": 10.017,
         "pass": true
       },
       {

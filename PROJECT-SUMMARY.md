@@ -315,12 +315,13 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 26 dosya, 257/257 test geçti |
+| `pnpm test` | 8 proje, 27 dosya, 265/265 test geçti |
 | Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
 | `doctor --write` | 5 test: state oluşturma, tazeleme, bozuk JSON/şema onarımı, özel `--state` yolu |
 | `architect doctor` | 15 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
 | CPU/RAM optimizasyonu | cold 110,5 → 52,9 ms, warm 18,7 → 5,8 ms, sıcak yolda okuma 12 → 0, heap düz |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
+| Şema sürümleme | 9 test: `version` eksik → 1 + uyarı, `version: 99` → `UnsupportedStateVersionError`, `safeParseState` alan hatası, `archState@1` JSON Schema sabitleri, sayı-olmayan sürüm reddi |
 | Sözleşme testleri | 17 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
 | `architect init` | 13 test: config + 3 istemci dosyası + AGENTS.md bloğu; ikinci koşu hiçbir şey yazmıyor |
 | Artımlı reverse | 391 dosyalık fixture cold 104,9 ms → warm medyan 16,3 ms (**6,4x**); depo 60,3 → 9,5 ms (6,3x); manifest düzenlenince `cacheHit: false` |
@@ -340,7 +341,7 @@ architect-studio/
 | REA köprüsü | sahte `rea` CLI'ı, `normalized_result` zarfı, Evidence projeksiyonu, ASAR/ELF/env/Dockerfile analizi testli |
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 
-Test dağılımı: core 32 (4 dosya), generators 10, validators 10, packager 29 (4 dosya),
+Test dağılımı: core 41 (5 dosya), generators 10, validators 10, packager 28 (4 dosya),
 app 135 (11 dosya: app, server, chat, web-search, stress, contract, reverse-guard,
 reverse-queue, reverse-jobs, init, doctor), reverse 24 (3 dosya: index, rea, cache), sandbox
 11, mcp 6.

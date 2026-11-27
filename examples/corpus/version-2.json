@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "nodes": [
-    { "id": "svc-1", "kind": "service", "name": "Notes API", "props": { "runtime": "node" } },
-    { "id": "db-1", "kind": "database", "name": "Notes DB", "props": { "engine": "sqlite" } }
-  ],
-  "edges": [{ "id": "e1", "from": "svc-1", "to": "db-1", "protocol": "sql" }],
-  "decisions": []
-}

@@ -387,7 +387,7 @@ bunu hem düz hem sıkıştırılmış profilde doğrular.
 
 **Dokunulan dosyalar**
 
-- `examples/corpus/*.json` (12 state), `packages/packager/tests/corpus.test.ts`,
+- `examples/corpus/*.json` (11 state), `packages/packager/tests/corpus.test.ts`,
   `packages/packager/tests/__snapshots__/corpus.json`
 - `README.md` (testler bölümü + sayılar), `README.tr.md`, `CONTRIBUTING.md`,
   `PROJECT-SUMMARY.md` (test dağılımı)
@@ -395,9 +395,11 @@ bunu hem düz hem sıkıştırılmış profilde doğrular.
 **Uygulama notları**
 
 - State'ler: `single-node`, `no-entities`, `entities`, `entities-unowned`,
-  `edge-protocols` (http/grpc/sql/event + `contractRef`), `decision-heavy`, `version-2`,
-  `version-3`, `wide-54` (54 düğüm / 72 kenar), `multilingual-tr`, `multilingual-ja`,
-  `multilingual-zh`.
+  `edge-protocols` (http/grpc/sql/event + `contractRef`), `decision-heavy`,
+  `legacy-versionless` (versiyon alanı yok; migrasyon 1'e yükseltir), `wide-54`
+  (54 düğüm / 72 kenar), `multilingual-tr`, `multilingual-ja`, `multilingual-zh`.
+- 8. adım sürüm sözleşmesini `1` ile sınırlayınca `version: 2/3` fixture'ları geçersiz kaldı;
+  yerine `legacy-versionless` eklendi (bkz. 8. adım).
 - Snapshot tek dosyada (`corpus.json`): her state için dosya listesi, her dosyanın
   SHA-256'sı ve `metrics.json` metriklerinin sayısal değerleri. Üretim `reproducible: true`
   ile yapılır; `state_to_package_ms` 0 kaldığından snapshot saatten etkilenmez.
@@ -406,15 +408,15 @@ bunu hem düz hem sıkıştırılmış profilde doğrular.
   geçirilebilir JSON olduğu için PR diff'inde gerekçe görünür.
 - Dil bütçesi: 8 dilin tamamı için `ARCHITECTURE.md` başlığı + `MANIFEST.md` başlığı
   doğrulanır; tam paket yalnızca `multilingual-tr` ve `multilingual-ja` state'lerinde üretilir.
-- Süre: `packager:test` 13 yeni test ile ~29 sn (cache'siz, 12 tam paket üretimi dahil).
+- Süre: `packager:test` 12 yeni test ile ~29 sn (cache'siz, 11 tam paket üretimi dahil).
 
 **Kabul kriteri:** Generator'larda yapılan bir değişiklik snapshot'ı değiştirirse test
-kırmızıya döner ve PR'da gerekçe ister. ✔ (13 yeni test, suite 257/257) **Bağımlılık:** 6 (deterministik ZIP) ile çok daha
+kırmızıya döner ve PR'da gerekçe ister. ✔ (12 yeni test, packager 28, suite 265/265) **Bağımlılık:** 6 (deterministik ZIP) ile çok daha
 stabil.
 
 ---
 
-## 8. `ArchState` şema sürümleme ve migrasyon — S/M
+## 8. `ArchState` şema sürümleme ve migrasyon — S/M · **UYGULANDI**
 
 **Amaç:** Kalıcılık ve arayüz gelmeden önce state sözleşmesini sabitlemek.
 
@@ -426,13 +428,33 @@ stabil.
 - `/api/preview|chat|generate` ve CLI girişleri `parseState` içinde migrasyondan geçer.
 - `docs/state-versioning.md`: alan ekleme/kaldırma kuralları, sürüm yükseltme kontrol listesi.
 
-**Dokunulacak dosyalar**
+**Dokunulan dosyalar**
 
-- `packages/core/src/state.ts` (migrasyon kancası), `packages/core/src/state-schema.ts` (yeni)
-- `packages/core/tests/state-migration.test.ts` (yeni), `PROJECT-SUMMARY.md` §8
+- `packages/core/src/state-schema.ts` (yeni: sürüm kaydı, `migrateState`,
+  `UnsupportedStateVersionError`, `archState@1` JSON Schema), `packages/core/src/state.ts`
+  (`version` refine + `parseState`/`safeParseState` migrasyon kancası)
+- `packages/core/tests/state-migration.test.ts` (yeni, 9 test), `docs/state-versioning.md`
+  (yeni), `PROJECT-SUMMARY.md`, `README.md` (testler bölümü)
+- `examples/corpus/version-{2,3}.json` → `examples/corpus/legacy-versionless.json`;
+  `packages/packager/tests/__snapshots__/corpus.json` yenilendi
+
+**Uygulama notları**
+
+- `SUPPORTED_STATE_VERSIONS = [1]`, `CURRENT_STATE_VERSION = 1`. `version` yoksa
+  `migrateState` alanı 1 yapar ve `warnings` içinde gerekçeyi döndürür; girdi mutasyona
+  uğramaz. `version: 99`, `0`, `-1`, `"1"` → `UnsupportedStateVersionError`
+  (`code: "unsupported_state_version"`).
+- `parseState` tipli hatayı fırlatır; `safeParseState` aynı hatayı `version` yolunda zod
+  issue'ya çevirdiği için `/api/*` ve MCP `invalid_state` yanıtını korur. Giriş noktalarının
+  hepsi bu iki fonksiyondan geçtiği için ayrı çağrı gerekmedi.
+- `ARCH_STATE_JSON_SCHEMA` elle yazıldı (draft 2020-12, `$id` `arch-state-v1.json`, `$defs`
+  node/edge/decision/entity/field/relation); `stateJsonSchema(version)` bilinmeyen sürümü
+  reddeder. Yeni paket yok.
+- 7. adımın `version: 2/3` fixture'ları sözleşmeyle çeliştiği için kaldırıldı; migrasyonu
+  paketleme yolunda da kanıtlayan `legacy-versionless` eklendi.
 
 **Kabul kriteri:** `version` alanı olmayan eski bir state uyarıyla 1'e yükseltilir;
-`version: 99` net hata verir; mevcut 151 test değişmeden geçer.
+`version: 99` net hata verir; mevcut testler değişmeden geçer. ✔ (core 41, suite 265/265)
 
 ---
 
