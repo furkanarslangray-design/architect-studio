@@ -411,7 +411,7 @@ bunu hem düz hem sıkıştırılmış profilde doğrular.
 - Süre: `packager:test` 12 yeni test ile ~29 sn (cache'siz, 11 tam paket üretimi dahil).
 
 **Kabul kriteri:** Generator'larda yapılan bir değişiklik snapshot'ı değiştirirse test
-kırmızıya döner ve PR'da gerekçe ister. ✔ (12 yeni test, packager 28, suite 265/265) **Bağımlılık:** 6 (deterministik ZIP) ile çok daha
+kırmızıya döner ve PR'da gerekçe ister. ✔ (12 yeni test, packager 53, suite 294/294) **Bağımlılık:** 6 (deterministik ZIP) ile çok daha
 stabil.
 
 ---
@@ -454,7 +454,7 @@ stabil.
   paketleme yolunda da kanıtlayan `legacy-versionless` eklendi.
 
 **Kabul kriteri:** `version` alanı olmayan eski bir state uyarıyla 1'e yükseltilir;
-`version: 99` net hata verir; mevcut testler değişmeden geçer. ✔ (core 41, suite 265/265)
+`version: 99` net hata verir; mevcut testler değişmeden geçer. ✔ (core 44, suite 294/294)
 
 ---
 

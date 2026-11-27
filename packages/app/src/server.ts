@@ -1,7 +1,7 @@
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { safeParseState, type ArchState } from "../../core/src/state";
+import { safeParseStateReport, type ArchState } from "../../core/src/state";
 import {
   PACKAGE_MANAGERS,
   TEST_RUNNERS,
@@ -51,9 +51,16 @@ export const APP_VERSION = "2.1.0";
 
 type BuiltPackage = PackageResult & {
   state: ArchState;
+  /** Migration notes for a `state` body (e.g. a versionless legacy file). */
+  stateWarnings?: string[];
   research?: WebSearchResult;
   searchNote?: string;
 };
+
+/** Adds `stateWarnings` to a JSON body only when a migration produced notes. */
+function withStateWarnings(warnings: string[] | undefined) {
+  return warnings && warnings.length > 0 ? { stateWarnings: warnings } : {};
+}
 
 function researchOf(result: BuiltPackage | PipelineResult) {
   return {
@@ -366,7 +373,7 @@ export function createServer(options: ServerOptions = {}) {
             sandbox: requested,
             fallback: body.fallback !== false,
           });
-          sendJson(response, 200, { ...run, validation: result.validation });
+          sendJson(response, 200, { ...run, ...withStateWarnings(result.stateWarnings), validation: result.validation });
         } catch (error) {
           if (error instanceof SandboxUnavailableError) throw error;
           throw new HttpError(400, {
@@ -385,7 +392,7 @@ export function createServer(options: ServerOptions = {}) {
           typeof body.locale === "string" ? body.locale : request.headers["accept-language"],
           locale,
         );
-        const parsed = safeParseState(body.state);
+        const parsed = safeParseStateReport(body.state);
         if (!parsed.success) {
           const issue = parsed.error.issues[0];
           const detail = issue ? `${issue.path.join(".") || "root"}: ${issue.message}` : "schema error";
@@ -406,6 +413,7 @@ export function createServer(options: ServerOptions = {}) {
         const built = await buildFromBody({ state: chat.state }, { ...taskOptions, locale });
         sendJson(response, 200, {
           ...previewPayload(built, locale),
+          ...withStateWarnings(parsed.warnings),
           chat: {
             reply: chat.reply,
             changes: chat.changes,
@@ -448,6 +456,7 @@ export function createServer(options: ServerOptions = {}) {
           "X-Task-Count": String(taskCount),
           "X-Validation": result.validation.ok ? "ok" : "failed",
           "X-Entities": String(result.state.entities.length),
+          "X-State-Warnings": String(result.stateWarnings?.length ?? 0),
           "X-Tokenizer": TOKENIZER_ID,
           "X-Locale": locale,
         });
@@ -530,14 +539,14 @@ async function buildFromBody(
   taskOptions: TaskBuildOptions,
 ): Promise<BuiltPackage> {
   if (body.state !== undefined) {
-    const parsed = safeParseState(body.state);
+    const parsed = safeParseStateReport(body.state);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const detail = issue ? `${issue.path.join(".") || "root"}: ${issue.message}` : "schema error";
       throw new HttpError(400, { key: "error.invalidState", vars: { detail }, code: "invalid_state" });
     }
     const result = await buildPackage(parsed.data, { taskOptions, locale: taskOptions.locale });
-    return { state: parsed.data, ...result };
+    return { state: parsed.data, ...result, ...withStateWarnings(parsed.warnings) };
   }
 
   const idea = typeof body.idea === "string" ? body.idea.trim() : "";
@@ -655,6 +664,7 @@ function previewPayload(result: BuiltPackage, locale: Locale) {
   return {
     locale,
     ...researchOf(result),
+    ...withStateWarnings(result.stateWarnings),
     state: result.state,
     diagram: generateMermaid(result.state),
     files: result.files,

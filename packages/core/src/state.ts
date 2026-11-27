@@ -98,21 +98,47 @@ export const ArchStateSchema = z.object({
 });
 export type ArchState = z.infer<typeof ArchStateSchema>;
 
-/** Every entry point (HTTP bodies, CLI files, MCP tools) goes through here. */
-export function parseState(input: unknown): ArchState {
-  return ArchStateSchema.parse(migrateState(input).value);
+export type StateParseReport =
+  | { success: true; data: ArchState; warnings: string[] }
+  | { success: false; error: z.ZodError; warnings: string[] };
+
+/**
+ * Every entry point (HTTP bodies, CLI files, MCP tools) goes through here.
+ * The report variant keeps `migrateState` warnings, which the plain helpers
+ * drop; callers that render output (HTTP response, CLI stderr) should use it.
+ */
+export function parseStateReport(input: unknown): StateParseReport {
+  const migration = migrateState(input);
+  const parsed = ArchStateSchema.safeParse(migration.value);
+  return parsed.success
+    ? { success: true, data: parsed.data, warnings: migration.warnings }
+    : { success: false, error: parsed.error, warnings: migration.warnings };
 }
 
-export function safeParseState(input: unknown) {
+export function safeParseStateReport(input: unknown): StateParseReport {
   try {
-    return ArchStateSchema.safeParse(migrateState(input).value);
+    return parseStateReport(input);
   } catch (error) {
     if (!(error instanceof UnsupportedStateVersionError)) throw error;
     return {
-      success: false as const,
+      success: false,
       error: new z.ZodError([{ code: z.ZodIssueCode.custom, path: ["version"], message: error.message }]),
+      warnings: [],
     };
   }
+}
+
+export function parseState(input: unknown): ArchState {
+  const report = parseStateReport(input);
+  if (!report.success) throw report.error;
+  return report.data;
+}
+
+export function safeParseState(input: unknown) {
+  const report = safeParseStateReport(input);
+  return report.success
+    ? { success: true as const, data: report.data }
+    : { success: false as const, error: report.error };
 }
 
 export function emptyState(): ArchState {

@@ -21,6 +21,19 @@ araçları) `parseState` / `safeParseState` üzerinden geçtiği için migrasyon
 `parseState` tipli hatayı fırlatır. Bilinmeyen bir sürümü sessizce 1'e indirmek yasaktır:
 yeni yazıcının ürettiği alanlar kaybolur.
 
+### Uyarıların görünürlüğü
+
+Uyarılar sessizce yutulmaz:
+
+- `parseStateReport` / `safeParseStateReport` migrasyon uyarılarını `warnings`
+  alanında döndürür; `parseState` / `safeParseState` bunları düşürür, böylece
+  mevcut çağıranların imzası değişmez.
+- `/api/preview`, `/api/chat` ve `/api/sandbox` yanıtları, gövdede `state`
+  verildiğinde ve migrasyon gerektiğinde `stateWarnings: string[]` döndürür;
+  `/api/generate` aynı sayıyı `X-State-Warnings` başlığında verir.
+- CLI (`--json`) uyarıları stderr'e `State migration: …` olarak yazar, böylece
+  `--preview` çıktısı makine tarafından okunabilir kalır.
+
 ## Alan ekleme kuralları
 
 1. **Geriye uyumlu (varsayılanı olan) alan** — ör. yeni bir opsiyonel `props` anahtarı:

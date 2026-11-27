@@ -239,6 +239,8 @@ export const previewResponseSchema = z
   .object({
     locale: z.string().min(2),
     state: archStateSchema,
+    /** Present when the request state was migrated (e.g. a versionless legacy state). */
+    stateWarnings: z.array(z.string().min(1)).min(1).optional(),
     diagram: z.string().min(1),
     files: z.record(z.string()),
     summary: previewSummarySchema,

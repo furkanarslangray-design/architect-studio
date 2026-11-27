@@ -137,6 +137,33 @@ describe("POST contract", () => {
     expect(preview.tasks).toHaveLength(preview.summary.nodes);
   });
 
+  it("surfaces state migration warnings on preview, chat and generate", async () => {
+    const legacyState = { nodes: [{ id: "svc-1", kind: "service", name: "API" }] };
+
+    const preview = await expectSchema(
+      await post("/api/preview", { state: legacyState }),
+      previewResponseSchema,
+    );
+    expect(preview.stateWarnings?.[0]).toContain("state.version is missing");
+    expect(preview.state.version).toBe(1);
+
+    const chat = await expectSchema(
+      await post("/api/chat", { state: legacyState, message: "Redis cache ekle", demo: true }),
+      chatResponseSchema,
+    );
+    expect(chat.stateWarnings?.[0]).toContain("state.version is missing");
+
+    const generated = await post("/api/generate", { state: legacyState });
+    expect(generated.status).toBe(200);
+    expect(generated.headers.get("x-state-warnings")).toBe("1");
+
+    const current = await expectSchema(
+      await post("/api/preview", { state: { version: 1, ...legacyState } }),
+      previewResponseSchema,
+    );
+    expect(current.stateWarnings).toBeUndefined();
+  });
+
   it("chat returns the preview envelope plus a chat block", async () => {
     const preview = await expectSchema(
       await post("/api/preview", { idea: "postgres orders api", demo: true }),

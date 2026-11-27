@@ -1,7 +1,7 @@
 import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { parseState, type ArchState } from "../../core/src/state";
+import { parseStateReport, type ArchState } from "../../core/src/state";
 import type { PackageManager, TaskBuildOptions, TestRunner } from "../../core/src/task-packet";
 import { isLocale, LOCALES, normalizeLocale } from "../../core/src/i18n";
 import type { PackageResult } from "../../packager/src";
@@ -66,7 +66,11 @@ async function main(): Promise<void> {
       console.log(`  warnings: ${reversed.warnings.join("; ")}`);
     }
   } else if (args.json) {
-    state = parseState(JSON.parse(readFileSync(args.json, "utf8")));
+    const parsed = parseStateReport(JSON.parse(readFileSync(args.json, "utf8")));
+    if (!parsed.success) throw parsed.error;
+    state = parsed.data;
+    // Migration notes go to stderr so `--preview` JSON on stdout stays machine-readable.
+    for (const warning of parsed.warnings) console.error(`State migration: ${warning}`);
     result = await buildPackage(state, { taskOptions, locale });
   } else {
     if (!args.idea) throw new Error("Provide --idea <text>, --json <path> or --reverse <dir>");

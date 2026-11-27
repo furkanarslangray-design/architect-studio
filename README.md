@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-265%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-294%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) 
 [![M8ven Verified](https://m8ven.ai/badge/mcp/furkanarslangray-design-architect-studio-hx6k8f?variant=verified)](https://m8ven.ai/mcp/furkanarslangray-design-architect-studio-hx6k8f?s=readme)
@@ -117,7 +117,9 @@ The Studio UI is not part of this repository; its contract is
   `ChatPanel`, `TaskBoard`, `MetricsGrid`, `ValidationPanel`, `ArtifactExplorer`,
   `ReverseForm`, `SandboxPanel`, `SettingsDrawer`.
 - **Endpoints it binds to:** `GET /api/health|version|i18n|sandboxes|rea`,
-  `POST /api/preview|chat|generate|reverse|sandbox`.
+  `POST /api/preview|chat|generate|reverse|sandbox`, plus the reverse progress
+  stream: `POST /api/reverse/jobs`, `GET /api/reverse/jobs/{id}` and
+  `GET /api/reverse/jobs/{id}/events` (SSE).
 - The UI needs no new endpoint; the contract matches the existing backend one-to-one.
 
 The architecture chat (`POST /api/chat`) applies natural-language commands (`add Redis cache`,
@@ -354,6 +356,9 @@ characters. CLI `--web-search --search-provider <auto|tavily|brave|duckduckgo>`,
 | GET | `/api/rea` | `rea` / `rea-agents` detection (version, mode) |
 | POST | `/api/chat` | `{ state, message }` → updated state, diagram, files, change list |
 | POST | `/api/reverse` | `{ path, useRea? }` → `ArchState`, findings, summary, REA report |
+| POST | `/api/reverse/jobs` | Same body as `/api/reverse`; `202 { jobId, status, events }` |
+| GET | `/api/reverse/jobs/{id}` | Job state plus the full event history |
+| GET | `/api/reverse/jobs/{id}/events` | `text/event-stream`: `scan → rea → merge → validate → done\|error` |
 | POST | `/api/sandbox` | Verifies the package in the selected sandbox |
 
 Shared body fields: `idea` **or** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
@@ -472,7 +477,7 @@ Token counts use a real BPE tokenizer (`gpt-tokenizer`).
 ## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 265 tests, 27 files, 8 packages
+pnpm test        # nx run-many -t test — 294 tests, 28 files, 8 packages
 pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```

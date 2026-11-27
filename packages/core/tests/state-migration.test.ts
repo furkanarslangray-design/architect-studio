@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseState, safeParseState } from "../src/state";
+import { parseState, parseStateReport, safeParseState, safeParseStateReport } from "../src/state";
 import {
   ARCH_STATE_JSON_SCHEMA,
   CURRENT_STATE_VERSION,
@@ -87,6 +87,35 @@ describe("parseState migration", () => {
     const result = safeParseState({ ...legacy, edges: [] });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.version).toBe(1);
+  });
+
+  it("keeps the migration warning in parseStateReport", () => {
+    const report = parseStateReport(legacy);
+
+    expect(report.success).toBe(true);
+    expect(report.warnings).toHaveLength(1);
+    expect(report.warnings[0]).toContain("state.version is missing");
+    if (report.success) expect(report.data.edges[0].protocol).toBe("http");
+  });
+
+  it("keeps the migration warning in safeParseStateReport without changing safeParseState", () => {
+    const report = safeParseStateReport({ ...legacy, edges: [] });
+    expect(report.success).toBe(true);
+    expect(report.warnings).toHaveLength(1);
+
+    const current = safeParseStateReport({ version: CURRENT_STATE_VERSION, ...legacy });
+    expect(current.success).toBe(true);
+    expect(current.warnings).toEqual([]);
+
+    // The plain helper keeps its zod result shape; only the report carries warnings.
+    expect(safeParseState({ ...legacy, edges: [] })).not.toHaveProperty("warnings");
+  });
+
+  it("reports no warnings alongside a field-level failure", () => {
+    const report = safeParseStateReport({ version: 99, ...legacy });
+    expect(report.success).toBe(false);
+    expect(report.warnings).toEqual([]);
+    if (!report.success) expect(report.error.issues[0].path).toEqual(["version"]);
   });
 
   it("turns an unsupported version into a field-level safeParse issue", () => {

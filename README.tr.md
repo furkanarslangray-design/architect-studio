@@ -94,7 +94,9 @@ Studio arayüzü bu depoda kod olarak bulunmaz; sözleşmesi kök dizindeki
   `ChatPanel`, `TaskBoard`, `MetricsGrid`, `ValidationPanel`, `ArtifactExplorer`,
   `ReverseForm`, `SandboxPanel`, `SettingsDrawer`.
 - **Bağlandığı uçlar:** `GET /api/health|version|i18n|sandboxes|rea`,
-  `POST /api/preview|chat|generate|reverse|sandbox`.
+  `POST /api/preview|chat|generate|reverse|sandbox` ve reverse ilerleme akışı:
+  `POST /api/reverse/jobs`, `GET /api/reverse/jobs/{id}`,
+  `GET /api/reverse/jobs/{id}/events` (SSE).
 - Arayüz yeni bir uç nokta gerektirmez; sözleşme mevcut backend ile birebir eşleşir.
 
 Mimari sohbeti (`POST /api/chat`) doğal dil komutlarını (`Redis cache ekle`,
@@ -326,6 +328,9 @@ API gövdesinde `webSearch: true`, arayüzde `SettingsDrawer`/`IdeaComposer` ana
 | GET | `/api/rea` | `rea` / `rea-agents` algılama sonucu (sürüm, mod) |
 | POST | `/api/chat` | `{ state, message }` → güncel state, diyagram, dosyalar, değişiklik listesi |
 | POST | `/api/reverse` | `{ path, useRea? }` → `ArchState`, bulgular, özet, REA raporu |
+| POST | `/api/reverse/jobs` | `/api/reverse` ile aynı gövde; `202 { jobId, status, events }` |
+| GET | `/api/reverse/jobs/{id}` | İş durumu ve tüm olay geçmişi |
+| GET | `/api/reverse/jobs/{id}/events` | `text/event-stream`: `scan → rea → merge → validate → done\|error` |
 | POST | `/api/sandbox` | Paketi seçilen sandbox'ta doğrular |
 
 Ortak gövde alanları: `idea` **veya** `state`, `demo`, `apiKey`, `baseUrl`, `model`,
@@ -443,7 +448,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 265 test, 27 dosya, 8 paket
+pnpm test        # nx run-many -t test — 294 test, 28 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```

@@ -100,7 +100,7 @@ bölümler sekmeler/paneller olarak açılır ve URL hash'i (`#preview`, `#tasks
 | `MetricsGrid` | Her metrik için ad, değer, hedef, geçti/kaldı durumu | `metrics[]` |
 | `ValidationPanel` | `ok`, `passRate`, `checksRun`, `unresolvedRefs`, `deterministicCoverage`, sorun listesi (dosya + mesaj) | `validation` |
 | `ArtifactExplorer` | Dosya ağacı + seçili dosyanın içeriği (monospace, kopyala). İndirme yalnızca ZIP ile | `files`, `artifacts[]` |
-| `ReverseForm` | Yerel yol, `useRea` anahtarı, `maxFiles`, `maxDepth`; sonuçta özet, bulgular, uyarılar, REA motoru | `POST /api/reverse`, `GET /api/rea` |
+| `ReverseForm` | Yerel yol, `useRea` anahtarı, `maxFiles`, `maxDepth`; sonuçta özet, bulgular, uyarılar, REA motoru. Canlı ilerleme için iş akışına bağlanır (`scan → rea → merge → validate`) | `POST /api/reverse`, `GET /api/rea`, `POST /api/reverse/jobs`, `GET /api/reverse/jobs/{id}/events` |
 | `SandboxPanel` | Sürücü listesi (available/version/isolation), "Doğrula" butonu, stdout/stderr konsolu, çıkış kodu | `GET /api/sandboxes`, `POST /api/sandbox` |
 | `SettingsDrawer` | `apiKey` (yalnızca bellekte), `baseUrl`, `model`, `packageManager` (pnpm/npm/yarn/bun), `testRunner` (vitest/jest/node) | — |
 | `ToastHost` | `aria-live="polite"` bölgesi; başarı/hata/uyarı bildirimleri, 5 sn sonra kapanır | — |
@@ -426,7 +426,12 @@ Arayüz dosyaları yokken (`web/index.html` bulunmuyorken) dönen karşılama ya
   }
 }
 ```
-> `sandbox` yalnızca istekte `sandbox` alanı verildiyse döner.
+> `sandbox` yalnızca istekte `sandbox` alanı verildiyse döner. `stateWarnings`,
+> istekte `state` verildiğinde ve gövde migrasyon gerektirdiğinde (ör. `version`
+> alanı olmayan eski bir kayıt) döner: `["state.version is missing; assuming 1. …"]`.
+> Arayüz bunu kalıcı olmayan bir uyarı bandında göstermeli; state yine geçerlidir
+> ve `version: 1` olarak normalleştirilmiştir. `/api/generate` aynı bilgiyi
+> `X-State-Warnings: <sayı>` başlığıyla verir.
 
 **`/api/generate` yanıtı — `200`** (gövde ikili ZIP):
 ```

@@ -315,14 +315,15 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 27 dosya, 265/265 test geçti |
+| `pnpm test` | 8 proje, 28 dosya, 294/294 test geçti |
 | Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
 | `doctor --write` | 5 test: state oluşturma, tazeleme, bozuk JSON/şema onarımı, özel `--state` yolu |
 | `architect doctor` | 15 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
 | CPU/RAM optimizasyonu | cold 110,5 → 52,9 ms, warm 18,7 → 5,8 ms, sıcak yolda okuma 12 → 0, heap düz |
 | Reverse yol güvenliği | allowlist + realpath (symlink/`..` reddedilir); loopback dışı HOST + boş `REVERSE_ROOTS` → `403 reverse_disabled`; kuyruk 2 eşzamanlı, `reverse_busy`/`reverse_timeout` testli |
-| Şema sürümleme | 9 test: `version` eksik → 1 + uyarı, `version: 99` → `UnsupportedStateVersionError`, `safeParseState` alan hatası, `archState@1` JSON Schema sabitleri, sayı-olmayan sürüm reddi |
-| Sözleşme testleri | 17 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
+| Şema sürümleme | 12 test: `version` eksik → 1 + uyarı (`parseStateReport` / `safeParseStateReport` uyarıyı taşır), `version: 99` → `UnsupportedStateVersionError`, `safeParseState` alan hatası, `archState@1` JSON Schema sabitleri, sayı-olmayan sürüm reddi |
+| Korpus şema uyumu | 25 test: 11 korpus dosyası zod `ArchStateSchema` ile parse edilir, zorunlu alanlar (node/edge/decision/entity/field) açıkça kontrol edilir, `ARCH_STATE_JSON_SCHEMA` required listeleri zod davranışıyla karşılaştırılır |
+| Sözleşme testleri | 19 test: 10 ucun şeması, 8 hata kodu, ZIP başlıkları, migrasyon uyarısının `stateWarnings` / `X-State-Warnings` olarak görünmesi, `FRONTEND_SPEC.md` ↔ `ENDPOINTS` iki yönlü |
 | `architect init` | 13 test: config + 3 istemci dosyası + AGENTS.md bloğu; ikinci koşu hiçbir şey yazmıyor |
 | Artımlı reverse | 391 dosyalık fixture cold 104,9 ms → warm medyan 16,3 ms (**6,4x**); depo 60,3 → 9,5 ms (6,3x); manifest düzenlenince `cacheHit: false` |
 | SSE iş akışı | `POST /api/reverse/jobs` → `scan/rea/merge/validate/done`; `GET .../events` `text/event-stream`; geç bağlanma geçmişi alır |
