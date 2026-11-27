@@ -162,31 +162,39 @@ Tüm çalışma ve geliştirme bağımlılıkları **tek kök** `package.json` i
 git clone https://github.com/furkanarslangray-design/architect-studio.git
 cd architect-studio
 npm install                       # kökte tek bağımlılık ağacı
-npm run typecheck                 # nx run-many -t typecheck
-npm run test                      # nx run-many -t test
-npm run dev                       # nx run app:dev → http://127.0.0.1:3000
-npm run architect -- projects list
+npm run --force typecheck         # nx run-many -t typecheck
+npm run --force test              # nx run-many -t test
+npm run --force dev               # nx run app:dev → http://127.0.0.1:3000
+npm run --force architect -- projects list
 ```
+
+`--force` süs değil, zorunlu: npm 11 `devEngines.runtime` alanını doğrular ve sabitleme
+pnpm'e özgü `onFail: "download"` kullanır, bu yüzden düz `npm run <script>` çağrısı
+`EBADDEVENGINES` ile durur. `--force` ile script `PATH`'teki `node` altında çalışır — npm
+sabitlenen runtime'ı indirmez, REA köprüsü gerekiyorsa önce `nvm use` / `fnm use` çalıştır.
+Yukarıdaki komutlar npm 10.9.8 üzerinde `npm install` + `npm run --force typecheck` çıkış
+kodu 0 ile doğrulandı.
 
 | pnpm komutu | npm karşılığı |
 |---|---|
 | `pnpm install` | `npm install` |
-| `pnpm dev` / `pnpm start` | `npm run dev` / `npm run start` |
-| `pnpm test` / `pnpm typecheck` | `npm test` / `npm run typecheck` |
-| `pnpm architect <argüman>` | `npm run architect -- <argüman>` |
-| `pnpm generate -- <argüman>` | `npm run generate -- <argüman>` |
-| `pnpm mcp` | `npm run mcp` |
+| `pnpm dev` / `pnpm start` | `npm run --force dev` / `npm run --force start` |
+| `pnpm test` / `pnpm typecheck` | `npm run --force test` / `npm run --force typecheck` |
+| `pnpm architect <argüman>` | `npm run --force architect -- <argüman>` |
+| `pnpm generate -- <argüman>` | `npm run --force generate -- <argüman>` |
+| `pnpm mcp` | `npm run --force mcp` |
 | `pnpm nx <hedef>` | `npx nx <hedef>` |
 
 npm yoluyla ilgili notlar:
 
 - Kilit dosyası `pnpm-lock.yaml` olarak kalır. `npm install` bir `package-lock.json`
   yazar; bunu commit etme — depo bir pnpm workspace'idir ve CI pnpm kilidinden kurar.
-- `devEngines.runtime` bir pnpm özelliğidir; npm script'i `PATH`'teki `node` ile çalışır.
-  Sürüm desteklenen aralığın dışındaysa önce `nvm use` / `fnm use` çalıştır; aksi hâlde
-  REA köprüsü statik analizöre düşer.
-- Yarn ve Bun aynı kök script'leri çalıştırır (`yarn install && yarn dev`,
-  `bun install && bun run dev`); devrede olan tek giriş noktaları `tsx` ve `nx`'tir.
+- npm `devEngines.runtime` alanını zorunlu tutar ama indiremez; bu yüzden yukarıda
+  `--force` var. `--force` altında geçerli `node` kullanılır, yani
+  `^22.23.4 || ^24.22.1 || >=26.12.1` dışındaki bir sürüm REA köprüsünü sessizce kapatır
+  (`rea.engine: "static"`). pnpm'in kullanacağı runtime'ı `pnpm exec node -v` gösterir.
+- Yarn ve Bun aynı kök script'leri okur ve `devEngines` indirmesini onlar da uygulamaz;
+  devrede olan tek giriş noktaları `tsx` ve `nx` olduğu için davranış npm satırıyla aynıdır.
 
 ### Kurulumdan sonra
 
@@ -841,6 +849,7 @@ yaratırdı. Test sayıları, Node ve bağımlılık sürümleri de aynı politi
 | `504 reverse_timeout` | Büyük ağaç `REVERSE_TIMEOUT_MS`'i aştı | `maxFiles`/`maxDepth` küçült ya da bütçeyi artır |
 | Koşular arası ZIP hash'i farklı | Süre metriği hash'e giriyor | `--reproducible` / `REPRODUCIBLE=1` ekle |
 | `pnpm mcp` hemen çıkıyor | stdio istemcisi akışı kapattı veya eski build çağrıldı | `pnpm mcp`'yi doğrudan çalıştır; build gerekmez |
+| `npm run <script>` `EBADDEVENGINES` ile düşüyor | npm `devEngines.runtime` alanını doğrular; `onFail: "download"` pnpm'e özgüdür | `npm run --force <script>` kullan ya da sabitlenen runtime için pnpm'e geç |
 | `npm install` `package-lock.json` oluşturdu | npm kendi kilit dosyasını her zaman yazar | Commit etme; CI ve sürümler `pnpm-lock.yaml` kullanır |
 | Sandbox sürücüsü "not installed" | `bwrap`/`podman`/`docker`/`firejail` yok | `--sandbox temp-dir` kullan veya `fallback` etkinleştir |
 | `ExperimentalWarning: SQLite is an experimental feature` | `node:sqlite` çalışma zamanında basar | Beklenen; native bağımlılık gerekmemesinin nedeni bu |

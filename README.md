@@ -166,31 +166,39 @@ npm usable for a checkout:
 git clone https://github.com/furkanarslangray-design/architect-studio.git
 cd architect-studio
 npm install                       # one dependency tree at the root
-npm run typecheck                 # nx run-many -t typecheck
-npm run test                      # nx run-many -t test
-npm run dev                       # nx run app:dev → http://127.0.0.1:3000
-npm run architect -- projects list
+npm run --force typecheck         # nx run-many -t typecheck
+npm run --force test              # nx run-many -t test
+npm run --force dev               # nx run app:dev → http://127.0.0.1:3000
+npm run --force architect -- projects list
 ```
+
+`--force` is required, not cosmetic: npm 11 validates `devEngines.runtime` and the pin uses
+`onFail: "download"`, a pnpm-only value, so a plain `npm run <script>` stops with
+`EBADDEVENGINES`. With `--force` the script runs under the `node` on your `PATH` — npm does
+not download the pinned runtime, so `nvm use` / `fnm use` first if you need the REA bridge.
+The commands above were verified on npm 10.9.8 with `npm install` + `npm run --force
+typecheck` exiting 0.
 
 | pnpm script | npm equivalent |
 |---|---|
 | `pnpm install` | `npm install` |
-| `pnpm dev` / `pnpm start` | `npm run dev` / `npm run start` |
-| `pnpm test` / `pnpm typecheck` | `npm test` / `npm run typecheck` |
-| `pnpm architect <args>` | `npm run architect -- <args>` |
-| `pnpm generate -- <args>` | `npm run generate -- <args>` |
-| `pnpm mcp` | `npm run mcp` |
+| `pnpm dev` / `pnpm start` | `npm run --force dev` / `npm run --force start` |
+| `pnpm test` / `pnpm typecheck` | `npm run --force test` / `npm run --force typecheck` |
+| `pnpm architect <args>` | `npm run --force architect -- <args>` |
+| `pnpm generate -- <args>` | `npm run --force generate -- <args>` |
+| `pnpm mcp` | `npm run --force mcp` |
 | `pnpm nx <target>` | `npx nx <target>` |
 
 Notes on the npm path:
 
 - Keep `pnpm-lock.yaml` as the lockfile. `npm install` writes `package-lock.json`; do not
   commit it — the repo is a pnpm workspace and CI installs from the pnpm lockfile.
-- `devEngines.runtime` is a pnpm feature, so an npm script runs under the `node` on your
-  `PATH`. If that is outside the supported range, use `nvm use` / `fnm use` first — the
-  REA bridge otherwise falls back to the static analyzer.
-- Yarn and Bun run the same root scripts (`yarn install && yarn dev`,
-  `bun install && bun run dev`); `tsx` and `nx` are the only entry points involved.
+- npm enforces `devEngines.runtime` but cannot download it, hence `--force` above. Under
+  `--force` the active `node` is used, so a version outside
+  `^22.23.4 || ^24.22.1 || >=26.12.1` silently disables the REA bridge
+  (`rea.engine: "static"`). `pnpm exec node -v` reports the runtime pnpm would use.
+- Yarn and Bun read the same root scripts and do not implement `devEngines` download either;
+  `tsx` and `nx` are the only entry points involved, so behaviour matches the npm row.
 
 ### After installing
 
@@ -933,6 +941,7 @@ the code, the README is wrong — fix the README in the same change.
 | `504 reverse_timeout` | A large tree exceeded `REVERSE_TIMEOUT_MS` | Lower `maxFiles`/`maxDepth`, or raise the budget |
 | ZIP hash differs between runs | The duration metric is included | Add `--reproducible` / `REPRODUCIBLE=1` |
 | `pnpm mcp` exits immediately | stdio client closed the stream, or a stale build was invoked | Run `pnpm mcp` directly; the server needs no build |
+| `npm run <script>` fails with `EBADDEVENGINES` | npm validates `devEngines.runtime`, whose `onFail: "download"` is pnpm-only | Use `npm run --force <script>`, or switch to pnpm for the pinned runtime |
 | `npm install` created `package-lock.json` | npm always writes its own lockfile | Do not commit it; CI and releases use `pnpm-lock.yaml` |
 | Sandbox driver "not installed" | `bwrap`/`podman`/`docker`/`firejail` missing | Use `--sandbox temp-dir`, or enable `fallback` |
 | `ExperimentalWarning: SQLite is an experimental feature` | `node:sqlite` prints it at runtime | Expected; it is the reason no native dependency is needed |
