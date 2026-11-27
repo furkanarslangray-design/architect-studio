@@ -91,29 +91,6 @@ type Database = {
 
 const DEFAULT_MAX_REVISIONS = 50;
 const DEFAULT_BUSY_TIMEOUT_MS = 5000;
-const WRITE_RETRIES = 5;
-
-/** SQLite reports contention through the message; node:sqlite has no typed busy error yet. */
-function isBusy(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /SQLITE_BUSY|database is locked|database table is locked/i.test(message);
-}
-
-/** Retries a write while another process holds the lock, then gives up loudly. */
-function withWriteRetry<T>(operation: () => T): T {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < WRITE_RETRIES; attempt += 1) {
-    try {
-      return operation();
-    } catch (error) {
-      if (!isBusy(error)) throw error;
-      lastError = error;
-      // Block the current thread briefly: SQLite has already waited busy_timeout.
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20 * (attempt + 1));
-    }
-  }
-  throw lastError;
-}
 
 function openDatabase(path: string | undefined): {
   db: Database;
@@ -157,8 +134,10 @@ export function createProjectStore(options: ProjectStoreOptions = {}): ProjectSt
   const now = options.now ?? (() => new Date());
 
   // WAL lets a reader (a second process, the CLI, a test worker) keep working
-  // while another connection writes; busy_timeout makes concurrent writers wait
-  // instead of failing with SQLITE_BUSY. Both are no-ops for `:memory:`.
+  // while another connection writes, and busy_timeout makes a concurrent writer
+  // wait inside SQLite instead of failing with SQLITE_BUSY — a single lock
+  // mechanism, no retry loop in JavaScript. Both pragmas are no-ops for
+  // `:memory:`.
   db.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
@@ -198,13 +177,11 @@ export function createProjectStore(options: ProjectStoreOptions = {}): ProjectSt
       .get(id);
 
   const prune = (projectId: string) => {
-    withWriteRetry(() =>
-      db.prepare(
+    db.prepare(
       `DELETE FROM revisions WHERE project_id = ? AND id NOT IN (
          SELECT id FROM revisions WHERE project_id = ? ORDER BY created_at DESC, rowid DESC LIMIT ?
          )`,
-      ).run(projectId, projectId, maxRevisions),
-    );
+    ).run(projectId, projectId, maxRevisions);
   };
 
   const store: ProjectStore = {
@@ -219,10 +196,10 @@ export function createProjectStore(options: ProjectStoreOptions = {}): ProjectSt
         createdAt: now().toISOString(),
         revisionCount: 0,
       };
-      withWriteRetry(() =>
-        db
-          .prepare("INSERT INTO projects (id, name, created_at) VALUES (?, ?, ?)")
-          .run(project.id, project.name, project.createdAt),
+      db.prepare("INSERT INTO projects (id, name, created_at) VALUES (?, ?, ?)").run(
+        project.id,
+        project.name,
+        project.createdAt,
       );
       return project;
     },
@@ -271,19 +248,15 @@ export function createProjectStore(options: ProjectStoreOptions = {}): ProjectSt
         createdAt: now().toISOString(),
         state: input.state,
       };
-      withWriteRetry(() =>
-        db
-          .prepare(
-            "INSERT INTO revisions (id, project_id, state_json, message, source, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-          )
-          .run(
-            revision.id,
-            revision.projectId,
-            JSON.stringify(revision.state),
-            revision.message,
-            revision.source,
-            revision.createdAt,
-          ),
+      db.prepare(
+        "INSERT INTO revisions (id, project_id, state_json, message, source, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      ).run(
+        revision.id,
+        revision.projectId,
+        JSON.stringify(revision.state),
+        revision.message,
+        revision.source,
+        revision.createdAt,
       );
       prune(projectId);
       return revision;
@@ -309,13 +282,9 @@ export function createProjectStore(options: ProjectStoreOptions = {}): ProjectSt
         bytes: input.bytes,
         createdAt: now().toISOString(),
       };
-      withWriteRetry(() =>
-        db
-          .prepare(
-            "INSERT INTO packages (id, project_id, revision_id, sha256, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-          )
-          .run(record.id, record.projectId, record.revisionId, record.sha256, record.bytes, record.createdAt),
-      );
+      db.prepare(
+        "INSERT INTO packages (id, project_id, revision_id, sha256, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      ).run(record.id, record.projectId, record.revisionId, record.sha256, record.bytes, record.createdAt);
       return record;
     },
 

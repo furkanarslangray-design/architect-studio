@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { parseStateReport } from "../../core/src/state";
+import { parseStateReport, type ArchState } from "../../core/src/state";
 import { createProjectStore } from "./store";
 
 /**
@@ -27,60 +27,64 @@ Usage:
 
 The store is a SQLite file; --db overrides ARCHITECT_DB (default .architect/architect.db).`;
 
+const usageError = 1;
+const inputError = 2;
+
 export function defaultDatabasePath(cwd: string = process.cwd()): string {
   return process.env.ARCHITECT_DB ?? join(cwd, ".architect", "architect.db");
 }
 
-const usageError = 1;
-const inputError = 2;
+/** Splits argv into positional words plus `--flag value` / `--flag=value` pairs. */
+function parseArgv(argv: string[]): { positional: string[]; flags: Record<string, string> } | string {
+  const positional: string[] = [];
+  const flags: Record<string, string> = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg.startsWith("--")) {
+      positional.push(arg);
+      continue;
+    }
+    const equals = arg.indexOf("=");
+    const name = equals === -1 ? arg.slice(2) : arg.slice(2, equals);
+    const value = equals === -1 ? argv[++index] : arg.slice(equals + 1);
+    if (value === undefined) return `--${name} needs a value`;
+    flags[name] = value;
+  }
+  return { positional, flags };
+}
 
 export function runProjectsCommand(argv: string[], deps: ProjectsCommandDeps = {}): number {
   const write = deps.stdout ?? ((line: string) => console.log(line));
   const warn = deps.stderr ?? ((line: string) => console.error(line));
 
-  let dbPath = defaultDatabasePath(deps.cwd);
-  let message = "";
-  const positional: string[] = [];
-  for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
-    if (arg === "--db") {
-      const value = argv[++index];
-      if (!value) {
-        warn("--db needs a path");
-        return usageError;
-      }
-      dbPath = resolve(value);
-      continue;
-    }
-    if (arg.startsWith("--db=")) {
-      dbPath = resolve(arg.slice("--db=".length));
-      continue;
-    }
-    if (arg === "--message") {
-      const value = argv[++index];
-      if (value === undefined) {
-        warn("--message needs a value");
-        return usageError;
-      }
-      message = value;
-      continue;
-    }
-    if (arg.startsWith("--message=")) {
-      message = arg.slice("--message=".length);
-      continue;
-    }
-    if (arg === "--help" || arg === "-h") {
-      write(HELP);
-      return 0;
-    }
-    positional.push(arg);
+  if (argv.includes("--help") || argv.includes("-h")) {
+    write(HELP);
+    return 0;
   }
 
+  const parsed = parseArgv(argv);
+  if (typeof parsed === "string") {
+    warn(parsed);
+    return usageError;
+  }
+  const { positional, flags } = parsed;
   const [command, ...args] = positional;
   if (!command) {
     write(HELP);
     return usageError;
   }
+
+  const dbPath = flags.db ? resolve(flags.db) : defaultDatabasePath(deps.cwd);
+  const message = flags.message ?? "";
+
+  const loadState = (statePath: string): ArchState => {
+    const report = parseStateReport(JSON.parse(readFileSync(resolve(statePath), "utf8")));
+    if (!report.success) {
+      throw new Error(`Invalid architecture state: ${report.error.issues[0]?.message ?? "schema error"}`);
+    }
+    for (const warning of report.warnings) warn(`State migration: ${warning}`);
+    return report.data;
+  };
 
   const store = createProjectStore({ path: dbPath });
   try {
@@ -132,19 +136,14 @@ export function runProjectsCommand(argv: string[], deps: ProjectsCommandDeps = {
         warn(`Project not found: ${projectId}`);
         return inputError;
       }
-      let parsed: ReturnType<typeof parseStateReport>;
+      let state: ArchState;
       try {
-        parsed = parseStateReport(JSON.parse(readFileSync(resolve(statePath), "utf8")));
+        state = loadState(statePath);
       } catch (error) {
-        warn(`Could not read ${statePath}: ${error instanceof Error ? error.message : "unknown error"}`);
+        warn(`Could not save ${statePath}: ${error instanceof Error ? error.message : "unknown error"}`);
         return inputError;
       }
-      if (!parsed.success) {
-        warn(`Invalid architecture state: ${parsed.error.issues[0]?.message ?? "schema error"}`);
-        return inputError;
-      }
-      for (const warning of parsed.warnings) warn(`State migration: ${warning}`);
-      const revision = store.addRevision(projectId, { state: parsed.data, message, source: "cli" });
+      const revision = store.addRevision(projectId, { state, message, source: "cli" });
       if (!revision) {
         warn(`Project not found: ${projectId}`);
         return inputError;
