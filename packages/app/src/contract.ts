@@ -66,7 +66,7 @@ export const archNodeSchema = z
     id: z.string().min(1),
     kind: z.string().min(1),
     name: z.string().min(1),
-    props: z.record(z.unknown()).default({}),
+    props: z.record(z.string(), z.unknown()).default({}),
   })
   .passthrough();
 
@@ -153,7 +153,7 @@ export const i18nSchema = z
     locale: z.string().min(2),
     defaultLocale: z.string().min(2),
     locales: z.array(localeSchema).min(1),
-    messages: z.record(z.string()),
+    messages: z.record(z.string(), z.string()),
   })
   .passthrough();
 
@@ -245,7 +245,7 @@ export const previewResponseSchema = z
     /** Present when the request state was migrated (e.g. a versionless legacy state). */
     stateWarnings: z.array(z.string().min(1)).min(1).optional(),
     diagram: z.string().min(1),
-    files: z.record(z.string()),
+    files: z.record(z.string(), z.string()),
     summary: previewSummarySchema,
     tasks: z.array(taskSchema),
     metrics: z.array(metricSchema).min(1),

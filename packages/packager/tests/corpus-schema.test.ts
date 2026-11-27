@@ -21,8 +21,10 @@ function readCorpus(name: string): unknown {
   return JSON.parse(readFileSync(join(corpusDir, name), "utf8"));
 }
 
-function issuesOf(error: { issues: Array<{ path: (string | number)[]; message: string }> }): string {
-  return error.issues.map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`).join("; ");
+function issuesOf(error: { issues: Array<{ path: readonly PropertyKey[]; message: string }> }): string {
+  return error.issues
+    .map((issue) => `${issue.path.map(String).join(".") || "root"}: ${issue.message}`)
+    .join("; ");
 }
 
 describe("corpus files conform to the ArchState schema", () => {

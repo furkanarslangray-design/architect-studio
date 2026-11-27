@@ -75,7 +75,7 @@ export function createMcpServer(): McpServer {
     server,
     "architect_validate",
     {
-      files: z.record(z.string()).optional().describe("Map of artifact path to content"),
+      files: z.record(z.string(), z.string()).optional().describe("Map of artifact path to content"),
       state: z.unknown().optional().describe("Existing ArchState JSON"),
       locale,
     },

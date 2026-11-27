@@ -167,6 +167,15 @@ function exec(
     cleanup?: () => Promise<void>;
   } = {},
 ): Promise<ExecResult> {
+  // argv execution only: no shell, so quarantine/quoting metacharacters stay
+  // literal. Every driver passes a resolved binary plus a string array.
+  if (typeof file !== "string" || file.length === 0) {
+    throw new TypeError("sandbox command must be a non-empty string");
+  }
+  for (const arg of args) {
+    if (typeof arg !== "string") throw new TypeError("sandbox command arguments must be strings");
+  }
+
   return new Promise((resolvePromise) => {
     const startedAt = Date.now();
     let stdout = "";
@@ -178,6 +187,8 @@ function exec(
       cwd: options.cwd,
       env: options.env,
       stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
+      windowsHide: true,
     });
 
     const append = (current: string, chunk: Buffer) => {

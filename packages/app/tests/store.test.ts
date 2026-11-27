@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -90,6 +91,34 @@ describe("project store", () => {
     expect(store.createProject("Fallback").name).toBe("Fallback");
     store.close();
   });
+
+  it("serializes writes from separate processes on the same file", async () => {
+    const path = join(dir, "shared.sqlite");
+    const store = createProjectStore({ path });
+    const project = store.createProject("Shared");
+    const worker = join(__dirname, "fixtures", "store-worker.ts");
+    const tsxCli = join(__dirname, "../../../node_modules/tsx/dist/cli.mjs");
+
+    const runWorker = (tag: string) =>
+      new Promise<string>((resolvePromise, rejectPromise) => {
+        const child = spawn(process.execPath, [tsxCli, worker, path, project.id, tag, "10"], {
+          stdio: ["ignore", "ignore", "pipe"],
+        });
+        let stderr = "";
+        child.stderr.on("data", (chunk: Buffer) => {
+          stderr += chunk.toString("utf8");
+        });
+        child.on("error", rejectPromise);
+        child.on("close", (code) => {
+          if (code === 0) resolvePromise(tag);
+          else rejectPromise(new Error(`worker ${tag} exited ${String(code)}: ${stderr}`));
+        });
+      });
+
+    await Promise.all([runWorker("a"), runWorker("b")]);
+    expect(store.getProject(project.id)?.revisionCount).toBe(20);
+    store.close();
+  }, 60_000);
 
   it("records packages against a known project only", () => {
     const store = createProjectStore();

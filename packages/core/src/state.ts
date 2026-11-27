@@ -19,7 +19,7 @@ export const ArchNodeSchema = z.object({
   id: z.string().min(1),
   kind: NodeKindSchema,
   name: z.string().min(1),
-  props: z.record(PropValueSchema).default({}),
+  props: z.record(z.string(), PropValueSchema).default({}),
 });
 export type ArchNode = z.infer<typeof ArchNodeSchema>;
 

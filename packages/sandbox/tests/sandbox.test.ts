@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -115,6 +115,22 @@ describe("sandbox drivers", () => {
       args: ["-e", ""],
     });
     expect(readFileSync(join(run.workspace, "keep.txt"), "utf8")).toBe("kept");
+    rmSync(run.workspace, { recursive: true, force: true });
+  });
+
+  it("never interprets the command through a shell", async () => {
+    const run = await runInSandbox({
+      sandbox: "temp-dir",
+      keepWorkspace: true,
+      command: "echo pwned; touch shell-ran.txt",
+      args: [],
+      timeoutMs: 5000,
+    });
+    // The whole string is a (missing) binary name, not a shell pipeline.
+    expect(run.exitCode).toBeNull();
+    expect(run.stdout).toBe("");
+    expect(run.stderr).toMatch(/ENOENT|not found/i);
+    expect(existsSync(join(run.workspace, "shell-ran.txt"))).toBe(false);
     rmSync(run.workspace, { recursive: true, force: true });
   });
 

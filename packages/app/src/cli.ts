@@ -18,6 +18,7 @@ import { isSearchProvider, WEB_SEARCH_PROVIDERS, type SearchProvider } from "./w
 import { runPipeline } from "./pipeline";
 import { runInitCommand } from "./init";
 import { runDoctorCommand } from "./doctor";
+import { runProjectsCommand } from "./projects-cli";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -28,6 +29,10 @@ async function main(): Promise<void> {
   }
   if (argv[0] === "doctor") {
     process.exitCode = runDoctorCommand(argv.slice(1));
+    return;
+  }
+  if (argv[0] === "projects") {
+    process.exitCode = runProjectsCommand(argv.slice(1));
     return;
   }
   const args = parseArgs(argv);
@@ -275,6 +280,7 @@ function printHelp(): void {
 Usage:
   pnpm architect init [dir] [--client cursor|claude|opencode|freebuff|all] [--force]
   pnpm architect doctor [dir] [--state <path>] [--json] [--fail-on-drift] [--write]
+  pnpm architect projects list|show|save|restore [--db <path>]
   pnpm generate -- --idea "Postgres, Redis events, React storefront" --demo
   pnpm generate -- --json architecture.json --out out/package.zip
   pnpm generate -- --reverse ../my-project --use-rea --sandbox auto
