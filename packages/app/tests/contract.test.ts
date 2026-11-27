@@ -120,7 +120,9 @@ describe("GET contract", () => {
 
     const rea = await expectSchema(await fetch(`${baseUrl}/api/rea`), reaSchema);
     expect(["rea", "rea-agents", "static"]).toContain(rea.detection.engine);
-  });
+    // `/api/sandboxes` and `/api/rea` probe installed binaries in child
+    // processes, so this needs more than the default 5 s on a loaded machine.
+  }, 30_000);
 });
 
 describe("POST contract", () => {
