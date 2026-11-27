@@ -1,0 +1,27 @@
+{
+  "version": 3,
+  "nodes": [
+    { "id": "svc-1", "kind": "service", "name": "Ledger API", "props": { "runtime": "node" } },
+    { "id": "svc-2", "kind": "service", "name": "Reconciler", "props": { "runtime": "node" } },
+    { "id": "db-1", "kind": "database", "name": "Ledger DB", "props": { "engine": "postgres" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "svc-1", "to": "db-1", "protocol": "sql" },
+    { "id": "e2", "from": "svc-2", "to": "db-1", "protocol": "sql" }
+  ],
+  "decisions": [],
+  "entities": [
+    {
+      "id": "ent-entry",
+      "name": "LedgerEntry",
+      "description": "A double-entry row",
+      "serviceId": "svc-1",
+      "databaseId": "db-1",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "primary": true },
+        { "name": "amount", "type": "decimal", "required": true },
+        { "name": "bookedAt", "type": "datetime", "required": true }
+      ]
+    }
+  ]
+}

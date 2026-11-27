@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "svc-1", "kind": "service", "name": "Ingest API", "props": { "runtime": "python" } },
+    { "id": "db-1", "kind": "database", "name": "Metrics DB", "props": { "engine": "clickhouse" } },
+    { "id": "q-1", "kind": "queue", "name": "Raw Events", "props": { "engine": "kafka" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "svc-1", "to": "q-1", "protocol": "event" },
+    { "id": "e2", "from": "svc-1", "to": "db-1", "protocol": "sql" }
+  ],
+  "decisions": [
+    { "id": "adr-1", "title": "Kafka over SQS", "context": "Replay is required", "decision": "Use Kafka topics", "alternatives": ["SQS"] },
+    { "id": "adr-2", "title": "ClickHouse for analytics", "context": "Column scans dominate", "decision": "Store metrics in ClickHouse", "alternatives": ["PostgreSQL"] },
+    { "id": "adr-3", "title": "At-least-once delivery", "context": "Dropping events is worse than duplicates", "decision": "Deduplicate downstream", "alternatives": ["Exactly-once"] },
+    { "id": "adr-4", "title": "Schema registry", "context": "Producers ship independently", "decision": "Version event schemas centrally", "alternatives": ["Free-form JSON"] },
+    { "id": "adr-5", "title": "Retention window", "context": "Cost grows with history", "decision": "Keep raw events for 30 days", "alternatives": ["7 days", "Indefinite"] },
+    { "id": "adr-6", "title": "Batch ingestion", "context": "Per-request writes are too chatty", "decision": "Buffer and flush every 500 ms", "alternatives": ["Per-event writes"] }
+  ]
+}

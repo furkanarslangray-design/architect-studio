@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "svc-1", "kind": "service", "name": "Search API", "props": { "runtime": "node" } },
+    { "id": "db-1", "kind": "database", "name": "Search DB", "props": { "engine": "postgres" } }
+  ],
+  "edges": [{ "id": "e1", "from": "svc-1", "to": "db-1", "protocol": "sql" }],
+  "decisions": [],
+  "entities": [
+    {
+      "id": "ent-document",
+      "name": "Document",
+      "description": "Indexed content without a declared owner",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "primary": true },
+        { "name": "body", "type": "text", "required": true }
+      ]
+    }
+  ]
+}

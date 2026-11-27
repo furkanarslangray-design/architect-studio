@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "ui-1", "kind": "ui", "name": "客户门户", "props": { "framework": "react" } },
+    { "id": "svc-1", "kind": "service", "name": "订单服务", "props": { "runtime": "node" } },
+    { "id": "db-1", "kind": "database", "name": "订单数据库", "props": { "engine": "postgres" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "ui-1", "to": "svc-1", "protocol": "http" },
+    { "id": "e2", "from": "svc-1", "to": "db-1", "protocol": "sql" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-1",
+      "title": "订单数据使用 PostgreSQL",
+      "context": "订单流程需要强一致性",
+      "decision": "事务数据存放在 PostgreSQL",
+      "alternatives": ["MongoDB"]
+    }
+  ],
+  "entities": [
+    {
+      "id": "ent-order",
+      "name": "订单",
+      "description": "客户提交的订单",
+      "serviceId": "svc-1",
+      "databaseId": "db-1",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "primary": true },
+        { "name": "总额", "type": "decimal", "required": true }
+      ]
+    }
+  ]
+}

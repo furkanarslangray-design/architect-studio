@@ -371,7 +371,7 @@ bunu hem düz hem sıkıştırılmış profilde doğrular.
 
 ---
 
-## 7. Altın korpus regresyon paketi — M
+## 7. Altın korpus regresyon paketi — M · **UYGULANDI**
 
 **Amaç:** Ürün çıktısının (paket içeriği) sessizce bozulmasını yakalamak.
 
@@ -385,14 +385,31 @@ bunu hem düz hem sıkıştırılmış profilde doğrular.
 - 8 dil için yalnızca iki temsili dilde (tr, ja) tam paket; diğerlerinde yalnızca başlık
   ve `MANIFEST` doğrulanır (süre bütçesi).
 
-**Dokunulacak dosyalar**
+**Dokunulan dosyalar**
 
-- `examples/corpus/` (yeni), `packages/packager/tests/corpus.test.ts`,
-  `packages/packager/tests/__snapshots__/` (yeni)
-- `README.md` (testler bölümü)
+- `examples/corpus/*.json` (12 state), `packages/packager/tests/corpus.test.ts`,
+  `packages/packager/tests/__snapshots__/corpus.json`
+- `README.md` (testler bölümü + sayılar), `README.tr.md`, `CONTRIBUTING.md`,
+  `PROJECT-SUMMARY.md` (test dağılımı)
+
+**Uygulama notları**
+
+- State'ler: `single-node`, `no-entities`, `entities`, `entities-unowned`,
+  `edge-protocols` (http/grpc/sql/event + `contractRef`), `decision-heavy`, `version-2`,
+  `version-3`, `wide-54` (54 düğüm / 72 kenar), `multilingual-tr`, `multilingual-ja`,
+  `multilingual-zh`.
+- Snapshot tek dosyada (`corpus.json`): her state için dosya listesi, her dosyanın
+  SHA-256'sı ve `metrics.json` metriklerinin sayısal değerleri. Üretim `reproducible: true`
+  ile yapılır; `state_to_package_ms` 0 kaldığından snapshot saatten etkilenmez.
+- `UPDATE_CORPUS=1 pnpm nx run packager:test` snapshot'ı yeniler; aksi halde fark testi
+  `toEqual` ile kırar. `__snapshots__` varyantı vitest'in kendi snapshot'ı değil, gözden
+  geçirilebilir JSON olduğu için PR diff'inde gerekçe görünür.
+- Dil bütçesi: 8 dilin tamamı için `ARCHITECTURE.md` başlığı + `MANIFEST.md` başlığı
+  doğrulanır; tam paket yalnızca `multilingual-tr` ve `multilingual-ja` state'lerinde üretilir.
+- Süre: `packager:test` 13 yeni test ile ~29 sn (cache'siz, 12 tam paket üretimi dahil).
 
 **Kabul kriteri:** Generator'larda yapılan bir değişiklik snapshot'ı değiştirirse test
-kırmızıya döner ve PR'da gerekçe ister. **Bağımlılık:** 6 (deterministik ZIP) ile çok daha
+kırmızıya döner ve PR'da gerekçe ister. ✔ (13 yeni test, suite 257/257) **Bağımlılık:** 6 (deterministik ZIP) ile çok daha
 stabil.
 
 ---

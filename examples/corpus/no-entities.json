@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "ui-1", "kind": "ui", "name": "Storefront", "props": { "framework": "react" } },
+    { "id": "svc-1", "kind": "service", "name": "Order API", "props": { "runtime": "node" } },
+    { "id": "db-1", "kind": "database", "name": "Orders DB", "props": { "engine": "postgres" } },
+    { "id": "q-1", "kind": "queue", "name": "Domain Events", "props": { "engine": "redis" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "ui-1", "to": "svc-1", "protocol": "http" },
+    { "id": "e2", "from": "svc-1", "to": "db-1", "protocol": "sql" },
+    { "id": "e3", "from": "svc-1", "to": "q-1", "protocol": "event" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-1",
+      "title": "Use PostgreSQL",
+      "context": "Orders need ACID transactions",
+      "decision": "Use PostgreSQL for transactional data",
+      "alternatives": ["MongoDB", "DynamoDB"]
+    }
+  ]
+}

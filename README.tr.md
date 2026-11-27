@@ -443,7 +443,7 @@ Token sayımı gerçek BPE tokenizer (`gpt-tokenizer`) ile yapılır.
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 244 test, 25 dosya, 8 paket
+pnpm test        # nx run-many -t test — 257 test, 26 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```

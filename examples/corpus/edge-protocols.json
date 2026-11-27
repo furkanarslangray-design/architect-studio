@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "ui-1", "kind": "ui", "name": "Portal", "props": { "framework": "vue" } },
+    { "id": "svc-1", "kind": "service", "name": "Gateway", "props": { "runtime": "go" } },
+    { "id": "svc-2", "kind": "service", "name": "Pricing", "props": { "runtime": "java" } },
+    { "id": "db-1", "kind": "database", "name": "Pricing DB", "props": { "engine": "postgres" } },
+    { "id": "q-1", "kind": "queue", "name": "Price Changes", "props": { "engine": "kafka" } },
+    { "id": "ext-1", "kind": "external", "name": "Tax Service", "props": { "vendor": "acme" } }
+  ],
+  "edges": [
+    { "id": "e1", "from": "ui-1", "to": "svc-1", "protocol": "http", "contractRef": "openapi.yaml#/paths" },
+    { "id": "e2", "from": "svc-1", "to": "svc-2", "protocol": "grpc", "contractRef": "proto/pricing.proto" },
+    { "id": "e3", "from": "svc-2", "to": "db-1", "protocol": "sql" },
+    { "id": "e4", "from": "svc-2", "to": "q-1", "protocol": "event", "contractRef": "asyncapi.yaml#/channels" },
+    { "id": "e5", "from": "svc-2", "to": "ext-1", "protocol": "http" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-1",
+      "title": "Contract-first edges",
+      "context": "Cross-team calls drift without a shared contract",
+      "decision": "Every cross-service edge names a contract reference",
+      "alternatives": ["Code-first schemas"]
+    }
+  ]
+}

@@ -1,0 +1,882 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "svc-1",
+      "kind": "service",
+      "name": "Service 01",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-2",
+      "kind": "service",
+      "name": "Service 02",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-3",
+      "kind": "service",
+      "name": "Service 03",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-4",
+      "kind": "service",
+      "name": "Service 04",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-5",
+      "kind": "service",
+      "name": "Service 05",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-6",
+      "kind": "service",
+      "name": "Service 06",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-7",
+      "kind": "service",
+      "name": "Service 07",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-8",
+      "kind": "service",
+      "name": "Service 08",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-9",
+      "kind": "service",
+      "name": "Service 09",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-10",
+      "kind": "service",
+      "name": "Service 10",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-11",
+      "kind": "service",
+      "name": "Service 11",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-12",
+      "kind": "service",
+      "name": "Service 12",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-13",
+      "kind": "service",
+      "name": "Service 13",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-14",
+      "kind": "service",
+      "name": "Service 14",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-15",
+      "kind": "service",
+      "name": "Service 15",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-16",
+      "kind": "service",
+      "name": "Service 16",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "svc-17",
+      "kind": "service",
+      "name": "Service 17",
+      "props": {
+        "runtime": "node"
+      }
+    },
+    {
+      "id": "svc-18",
+      "kind": "service",
+      "name": "Service 18",
+      "props": {
+        "runtime": "go"
+      }
+    },
+    {
+      "id": "db-1",
+      "kind": "database",
+      "name": "Database 01",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-2",
+      "kind": "database",
+      "name": "Database 02",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-3",
+      "kind": "database",
+      "name": "Database 03",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-4",
+      "kind": "database",
+      "name": "Database 04",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-5",
+      "kind": "database",
+      "name": "Database 05",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-6",
+      "kind": "database",
+      "name": "Database 06",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-7",
+      "kind": "database",
+      "name": "Database 07",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-8",
+      "kind": "database",
+      "name": "Database 08",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-9",
+      "kind": "database",
+      "name": "Database 09",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-10",
+      "kind": "database",
+      "name": "Database 10",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-11",
+      "kind": "database",
+      "name": "Database 11",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-12",
+      "kind": "database",
+      "name": "Database 12",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-13",
+      "kind": "database",
+      "name": "Database 13",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-14",
+      "kind": "database",
+      "name": "Database 14",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-15",
+      "kind": "database",
+      "name": "Database 15",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-16",
+      "kind": "database",
+      "name": "Database 16",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-17",
+      "kind": "database",
+      "name": "Database 17",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "db-18",
+      "kind": "database",
+      "name": "Database 18",
+      "props": {
+        "engine": "postgres"
+      }
+    },
+    {
+      "id": "q-1",
+      "kind": "queue",
+      "name": "Queue 01",
+      "props": {
+        "engine": "redis"
+      }
+    },
+    {
+      "id": "q-2",
+      "kind": "queue",
+      "name": "Queue 02",
+      "props": {
+        "engine": "redis"
+      }
+    },
+    {
+      "id": "q-3",
+      "kind": "queue",
+      "name": "Queue 03",
+      "props": {
+        "engine": "redis"
+      }
+    },
+    {
+      "id": "q-4",
+      "kind": "queue",
+      "name": "Queue 04",
+      "props": {
+        "engine": "redis"
+      }
+    },
+    {
+      "id": "q-5",
+      "kind": "queue",
+      "name": "Queue 05",
+      "props": {
+        "engine": "redis"
+      }
+    },
+    {
+      "id": "q-6",
+      "kind": "queue",
+      "name": "Queue 06",
+      "props": {
+        "engine": "redis"
+      }
+    },
+    {
+      "id": "ui-1",
+      "kind": "ui",
+      "name": "Surface 01",
+      "props": {
+        "framework": "react"
+      }
+    },
+    {
+      "id": "ui-2",
+      "kind": "ui",
+      "name": "Surface 02",
+      "props": {
+        "framework": "react"
+      }
+    },
+    {
+      "id": "ui-3",
+      "kind": "ui",
+      "name": "Surface 03",
+      "props": {
+        "framework": "react"
+      }
+    },
+    {
+      "id": "ui-4",
+      "kind": "ui",
+      "name": "Surface 04",
+      "props": {
+        "framework": "react"
+      }
+    },
+    {
+      "id": "ui-5",
+      "kind": "ui",
+      "name": "Surface 05",
+      "props": {
+        "framework": "react"
+      }
+    },
+    {
+      "id": "ui-6",
+      "kind": "ui",
+      "name": "Surface 06",
+      "props": {
+        "framework": "react"
+      }
+    },
+    {
+      "id": "ext-1",
+      "kind": "external",
+      "name": "Vendor 01",
+      "props": {
+        "vendor": "acme"
+      }
+    },
+    {
+      "id": "ext-2",
+      "kind": "external",
+      "name": "Vendor 02",
+      "props": {
+        "vendor": "acme"
+      }
+    },
+    {
+      "id": "ext-3",
+      "kind": "external",
+      "name": "Vendor 03",
+      "props": {
+        "vendor": "acme"
+      }
+    },
+    {
+      "id": "ext-4",
+      "kind": "external",
+      "name": "Vendor 04",
+      "props": {
+        "vendor": "acme"
+      }
+    },
+    {
+      "id": "ext-5",
+      "kind": "external",
+      "name": "Vendor 05",
+      "props": {
+        "vendor": "acme"
+      }
+    },
+    {
+      "id": "ext-6",
+      "kind": "external",
+      "name": "Vendor 06",
+      "props": {
+        "vendor": "acme"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "svc-1",
+      "to": "db-1",
+      "protocol": "sql"
+    },
+    {
+      "id": "e2",
+      "from": "svc-1",
+      "to": "q-1",
+      "protocol": "event"
+    },
+    {
+      "id": "e3",
+      "from": "ui-1",
+      "to": "svc-1",
+      "protocol": "http"
+    },
+    {
+      "id": "e4",
+      "from": "svc-1",
+      "to": "ext-1",
+      "protocol": "http"
+    },
+    {
+      "id": "e5",
+      "from": "svc-2",
+      "to": "db-2",
+      "protocol": "sql"
+    },
+    {
+      "id": "e6",
+      "from": "svc-2",
+      "to": "q-2",
+      "protocol": "event"
+    },
+    {
+      "id": "e7",
+      "from": "ui-2",
+      "to": "svc-2",
+      "protocol": "http"
+    },
+    {
+      "id": "e8",
+      "from": "svc-2",
+      "to": "ext-2",
+      "protocol": "http"
+    },
+    {
+      "id": "e9",
+      "from": "svc-3",
+      "to": "db-3",
+      "protocol": "sql"
+    },
+    {
+      "id": "e10",
+      "from": "svc-3",
+      "to": "q-3",
+      "protocol": "event"
+    },
+    {
+      "id": "e11",
+      "from": "ui-3",
+      "to": "svc-3",
+      "protocol": "http"
+    },
+    {
+      "id": "e12",
+      "from": "svc-3",
+      "to": "ext-3",
+      "protocol": "http"
+    },
+    {
+      "id": "e13",
+      "from": "svc-4",
+      "to": "db-4",
+      "protocol": "sql"
+    },
+    {
+      "id": "e14",
+      "from": "svc-4",
+      "to": "q-4",
+      "protocol": "event"
+    },
+    {
+      "id": "e15",
+      "from": "ui-4",
+      "to": "svc-4",
+      "protocol": "http"
+    },
+    {
+      "id": "e16",
+      "from": "svc-4",
+      "to": "ext-4",
+      "protocol": "http"
+    },
+    {
+      "id": "e17",
+      "from": "svc-5",
+      "to": "db-5",
+      "protocol": "sql"
+    },
+    {
+      "id": "e18",
+      "from": "svc-5",
+      "to": "q-5",
+      "protocol": "event"
+    },
+    {
+      "id": "e19",
+      "from": "ui-5",
+      "to": "svc-5",
+      "protocol": "http"
+    },
+    {
+      "id": "e20",
+      "from": "svc-5",
+      "to": "ext-5",
+      "protocol": "http"
+    },
+    {
+      "id": "e21",
+      "from": "svc-6",
+      "to": "db-6",
+      "protocol": "sql"
+    },
+    {
+      "id": "e22",
+      "from": "svc-6",
+      "to": "q-6",
+      "protocol": "event"
+    },
+    {
+      "id": "e23",
+      "from": "ui-6",
+      "to": "svc-6",
+      "protocol": "http"
+    },
+    {
+      "id": "e24",
+      "from": "svc-6",
+      "to": "ext-6",
+      "protocol": "http"
+    },
+    {
+      "id": "e25",
+      "from": "svc-7",
+      "to": "db-7",
+      "protocol": "sql"
+    },
+    {
+      "id": "e26",
+      "from": "svc-7",
+      "to": "q-1",
+      "protocol": "event"
+    },
+    {
+      "id": "e27",
+      "from": "ui-1",
+      "to": "svc-7",
+      "protocol": "http"
+    },
+    {
+      "id": "e28",
+      "from": "svc-7",
+      "to": "ext-1",
+      "protocol": "http"
+    },
+    {
+      "id": "e29",
+      "from": "svc-8",
+      "to": "db-8",
+      "protocol": "sql"
+    },
+    {
+      "id": "e30",
+      "from": "svc-8",
+      "to": "q-2",
+      "protocol": "event"
+    },
+    {
+      "id": "e31",
+      "from": "ui-2",
+      "to": "svc-8",
+      "protocol": "http"
+    },
+    {
+      "id": "e32",
+      "from": "svc-8",
+      "to": "ext-2",
+      "protocol": "http"
+    },
+    {
+      "id": "e33",
+      "from": "svc-9",
+      "to": "db-9",
+      "protocol": "sql"
+    },
+    {
+      "id": "e34",
+      "from": "svc-9",
+      "to": "q-3",
+      "protocol": "event"
+    },
+    {
+      "id": "e35",
+      "from": "ui-3",
+      "to": "svc-9",
+      "protocol": "http"
+    },
+    {
+      "id": "e36",
+      "from": "svc-9",
+      "to": "ext-3",
+      "protocol": "http"
+    },
+    {
+      "id": "e37",
+      "from": "svc-10",
+      "to": "db-10",
+      "protocol": "sql"
+    },
+    {
+      "id": "e38",
+      "from": "svc-10",
+      "to": "q-4",
+      "protocol": "event"
+    },
+    {
+      "id": "e39",
+      "from": "ui-4",
+      "to": "svc-10",
+      "protocol": "http"
+    },
+    {
+      "id": "e40",
+      "from": "svc-10",
+      "to": "ext-4",
+      "protocol": "http"
+    },
+    {
+      "id": "e41",
+      "from": "svc-11",
+      "to": "db-11",
+      "protocol": "sql"
+    },
+    {
+      "id": "e42",
+      "from": "svc-11",
+      "to": "q-5",
+      "protocol": "event"
+    },
+    {
+      "id": "e43",
+      "from": "ui-5",
+      "to": "svc-11",
+      "protocol": "http"
+    },
+    {
+      "id": "e44",
+      "from": "svc-11",
+      "to": "ext-5",
+      "protocol": "http"
+    },
+    {
+      "id": "e45",
+      "from": "svc-12",
+      "to": "db-12",
+      "protocol": "sql"
+    },
+    {
+      "id": "e46",
+      "from": "svc-12",
+      "to": "q-6",
+      "protocol": "event"
+    },
+    {
+      "id": "e47",
+      "from": "ui-6",
+      "to": "svc-12",
+      "protocol": "http"
+    },
+    {
+      "id": "e48",
+      "from": "svc-12",
+      "to": "ext-6",
+      "protocol": "http"
+    },
+    {
+      "id": "e49",
+      "from": "svc-13",
+      "to": "db-13",
+      "protocol": "sql"
+    },
+    {
+      "id": "e50",
+      "from": "svc-13",
+      "to": "q-1",
+      "protocol": "event"
+    },
+    {
+      "id": "e51",
+      "from": "ui-1",
+      "to": "svc-13",
+      "protocol": "http"
+    },
+    {
+      "id": "e52",
+      "from": "svc-13",
+      "to": "ext-1",
+      "protocol": "http"
+    },
+    {
+      "id": "e53",
+      "from": "svc-14",
+      "to": "db-14",
+      "protocol": "sql"
+    },
+    {
+      "id": "e54",
+      "from": "svc-14",
+      "to": "q-2",
+      "protocol": "event"
+    },
+    {
+      "id": "e55",
+      "from": "ui-2",
+      "to": "svc-14",
+      "protocol": "http"
+    },
+    {
+      "id": "e56",
+      "from": "svc-14",
+      "to": "ext-2",
+      "protocol": "http"
+    },
+    {
+      "id": "e57",
+      "from": "svc-15",
+      "to": "db-15",
+      "protocol": "sql"
+    },
+    {
+      "id": "e58",
+      "from": "svc-15",
+      "to": "q-3",
+      "protocol": "event"
+    },
+    {
+      "id": "e59",
+      "from": "ui-3",
+      "to": "svc-15",
+      "protocol": "http"
+    },
+    {
+      "id": "e60",
+      "from": "svc-15",
+      "to": "ext-3",
+      "protocol": "http"
+    },
+    {
+      "id": "e61",
+      "from": "svc-16",
+      "to": "db-16",
+      "protocol": "sql"
+    },
+    {
+      "id": "e62",
+      "from": "svc-16",
+      "to": "q-4",
+      "protocol": "event"
+    },
+    {
+      "id": "e63",
+      "from": "ui-4",
+      "to": "svc-16",
+      "protocol": "http"
+    },
+    {
+      "id": "e64",
+      "from": "svc-16",
+      "to": "ext-4",
+      "protocol": "http"
+    },
+    {
+      "id": "e65",
+      "from": "svc-17",
+      "to": "db-17",
+      "protocol": "sql"
+    },
+    {
+      "id": "e66",
+      "from": "svc-17",
+      "to": "q-5",
+      "protocol": "event"
+    },
+    {
+      "id": "e67",
+      "from": "ui-5",
+      "to": "svc-17",
+      "protocol": "http"
+    },
+    {
+      "id": "e68",
+      "from": "svc-17",
+      "to": "ext-5",
+      "protocol": "http"
+    },
+    {
+      "id": "e69",
+      "from": "svc-18",
+      "to": "db-18",
+      "protocol": "sql"
+    },
+    {
+      "id": "e70",
+      "from": "svc-18",
+      "to": "q-6",
+      "protocol": "event"
+    },
+    {
+      "id": "e71",
+      "from": "ui-6",
+      "to": "svc-18",
+      "protocol": "http"
+    },
+    {
+      "id": "e72",
+      "from": "svc-18",
+      "to": "ext-6",
+      "protocol": "http"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "adr-1",
+      "title": "Split by bounded context",
+      "context": "Fifty-four components do not fit one team",
+      "decision": "Own one service and its database per team",
+      "alternatives": [
+        "One monolith"
+      ]
+    }
+  ]
+}

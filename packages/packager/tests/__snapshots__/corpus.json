@@ -1,0 +1,2238 @@
+{
+  "decision-heavy": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "ee147d78e37f301f401862f261da5f6aad073bb7bca61e2348c90d4701d31cbb"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "1020890621433a0f14cc4a49a91fcc53d2089f4c0918b4d663dce78731851faf"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "48292b83463ce2a7dd3b85600ab5537dda8616a840c7df179b12ccd2dbba41ba"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "8f0553deeb837e06b1fa2b969d06687654867a6a15e51e8e35620bd4b0f4fb3d"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "47e1f25002683c9d2bae652af10a26626073fc642760ac79573e2aafd5cb4cdc"
+      },
+      {
+        "path": "adr/ADR-001-kafka-over-sqs.md",
+        "sha256": "fd9317033011101da2868390d6a9aa3d51cb80e8059e6b4efc7977555241d3b0"
+      },
+      {
+        "path": "adr/ADR-002-clickhouse-for-analytics.md",
+        "sha256": "34a832eb48d6acb3ef244a1f70d4508642b2fba4a950de76638d91ac0be2b6e7"
+      },
+      {
+        "path": "adr/ADR-003-at-least-once-delivery.md",
+        "sha256": "f0a07e4ff1e2e0692c7008f3c7f49b127f96951a85f760b6ef2b6f67e782c042"
+      },
+      {
+        "path": "adr/ADR-004-schema-registry.md",
+        "sha256": "9cc05daa0fd9a5e029e52160f8f80c3301530a0c35e8eef4ee2c78d0067810b7"
+      },
+      {
+        "path": "adr/ADR-005-retention-window.md",
+        "sha256": "fef0dfcf90af1b619c62a2bf42fbe7d9a214ce2b8b16ae2f1e31430db463a76f"
+      },
+      {
+        "path": "adr/ADR-006-batch-ingestion.md",
+        "sha256": "691d029c926956713eda3a4fadce19e3616effc3ae08a3563ff019c3fb678d4b"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "8a84e7bfdefe80c70cc6cadf4e936ba139ee530c3dba4b40b0721f99ef5cce80"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "b2c2ff7ff0ef36f127e32e53b5bf93b86a84e1c103f4690a45354921aa7609cd"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "b437e77ab80562f39eba2aeb4b6a1809c7b3264217bac76149f7644c52a1e552"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "4baf5a217d75f2c03fca20fae6d11e2ccd29cb5d35be2921b1077607d27e5b68"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "3c90cfc5ca327f330ab09942cc901cace91b95ac7169d3a2644e420aa52d6cb1"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "1771be1c8abe2edcf137fe55d3249736ef68106d9c593e4ab7f89ca94f747342"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "b369399cf4a43377e2595883a4d095af42b0b15284a80c9db4efa19ca2988f4b"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "89a67f3581f7c8c210b36c0daa3eabf40e13964fb5800d6b84dcb6f8daf11dbc"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 265,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 265,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.01,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 148,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 12.011,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "edge-protocols": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "330ab0c9357b294cf2569d6bfff9a7e64a7632ebcc90ac6c86a4a633a260b5c0"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "d78e07bb32789dd415732e654c4113991e1e509ea3d58f1320bdeda43c535739"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "f7ceabc0593cf56d9fa8125d33d8fd90a1c62dadc3b0feb7c73ecb8e1925b59f"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "6436f4d720640350425210cf47e9572ec509a9e5eeec000d5558549f77e55a8f"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "eec7098404acd22abc703cdd0e1b41f312c4168d9a356565596620d23a436c80"
+      },
+      {
+        "path": "adr/ADR-001-contract-first-edges.md",
+        "sha256": "2acb172a4e7f4ca8f628271924852f1dc3689f42e56aa972a39358f953d94d55"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "2d4ec7f1711d03d5335f0dc4d87752aa8787eb40ff30bda10eccdb0e2778d24b"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "ae87d187981f43087d60d2624261bbe3da04db1e531b6fc99d7c4c503e603da5"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "710c24012e510e1f34e5a5fb5848b9d7d59e73d7b7b9ea670a0e33c57e6e2250"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "6848cfb7c3d5906bbd168e5ab442b3b9ccd37137a4b8191af07367586418fcb8"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "64d231945bf70b0478db2589944caf6749286ede7882459ee3372ecf9365d7b4"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "d006e0d96fdaebb5f2b865118804eb00569472051ea19581f95e037c632e74af"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "fad34997d39f1ca813b182443408d8beb13700b89d60732308c0f35644e2e12f"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "d2aa31bbf94c9914382b7e2e8a6108db5dcf0c8b0bf2512e5b0486ba02711428"
+      },
+      {
+        "path": "tasks/T-004.md",
+        "sha256": "13a1847cad1da43cbc75a8f1df014c809f4c344d9987ebb55b4bee0c9e1240cc"
+      },
+      {
+        "path": "tasks/T-005.md",
+        "sha256": "7dc960dd551aec97ad1525c717d45126237c28d36817085110b30d9443f2c89b"
+      },
+      {
+        "path": "tasks/T-006.md",
+        "sha256": "51852f28b48a0e32b65828666af3abca6421f812b64afec6bf0e4310fe116268"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 309,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 309,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.009,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 4,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 218,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 12.625,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "entities-unowned": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "e69d37511722d3fb519370ec3f415cc1d992f8650cfde7b60827da9d72f48bce"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "ea84ebe6777efe502923ee8e8a3aeb2d655b9a3eef7180c8fd50e39c168a1d3e"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "fb48620f4ff4cc6ce9da92bbe7b135c26dd6de321f3ad037269aa0f2936b55c5"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "4d866f8e5d5fa8744ec8b377e90dfd2d8b44d6aa8dd37b4ddd0e31f21ab0e2aa"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "4aa30b126197a93acea44123eba1496c038cf01561e29393ac10bd19a4400279"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "e84ace2f4b838a16b105bce3d80371177d11cd67acc64739c089ba7b72fe7f31"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "36ff6fdb9bb25c16e70095078b0d50044695919f11667ae3c724be8c764e26f4"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "1634adebee1e4bea6e57394abc98aa4c77e81a61e00a3dbe77574edad472809d"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "b01e6cd59449cc0a3c800ef72870075d15d42e28e89990c6d8384993a4f83afe"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "1a47e141a2afb452e8d2acb7d0b6c085b3f62d2d663897e0ec57d416a632b465"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "19c8a7f3a956ac4a6299f7aeacd4fb6d60c6f78b837cbc046063230f68cfb3e1"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 227,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 227,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.012,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 121,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 8.873,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "entities": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "487beedae87469cbc78a59940c419680173eb81ecbdefa6938d601b06d59fb49"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "0858c8a527349b114f7ff42d5bca348f9226afa81764669d1f8a44a8fa3011a4"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "f16c790696d12d98cc573398901319fe2d1078a65699da9f69747539bd846235"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "32010c14e79685755af6900e48f5ff749ee80e87832dcb4a95488f3560e48754"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "31ab2277c499c7812deb0a7e123ceb5a582c127726829bdd896a0668c5b63cb2"
+      },
+      {
+        "path": "adr/ADR-001-keep-invoices-immutable.md",
+        "sha256": "21ec3c322702b48323e0a64b4f3af14288a767328fa07bbe157e0b650589ea73"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "982cb2d37d80b1534cf6894b18f03a9f4978c0163ca6ff3406346a1d0517d6ea"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "9f8186a10b8cc321864d5bf4e585c79b5cbf9c9e358073b5710654d2183289bc"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "fcd9ea77e637f7669d143e7afd660ba273ba427d84bc5d292efe60197f1407f7"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "dceb4fdd2d3787ba24c6fbe02a3806a672a139c1110bed416cf7e11f7ac3bc5c"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "dc8d521b5afbeb9cafe645a37c0cd25c48d9670596bc8846029a3dfe12a41faa"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "2e86e267763d4c560bb6a58ff1fcf131b1db23005b04bc1b447f91a261cef558"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "09dcfb2920138d0a64421d74cd149a43765f4f88333d390a32febab81fa86634"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "3a1d1ef72dd265c3678734440efba5d7eba15456df96171ae9f4ea060bbf1b95"
+      },
+      {
+        "path": "tasks/T-004.md",
+        "sha256": "58859e9b8e54c5b6277c57d7564d95c6f70a34dbf6ef99332a04579a89ec6825"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 474,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 474,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.018,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 171,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 11.768,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "multilingual-ja": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "a4e570c230d36172664223fcc1b29f627a8043408b3275fb769af7df52afc254"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "3223694823c171bc1faf0ce0f9dc156d4656c237f9a90750897564a30ad62bab"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "26799baf3ffd6d94e3edf0235e0e3cbd65d75236de205d1c46bb1c32da9832c5"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "96d77ccb971a2444e7b839b5dbce544c29b7968a2756c5f563bc436e755aad30"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "4530c1e3a447d0297cc33c1a789ad77da04b07018e734f709aa3618e8e591db0"
+      },
+      {
+        "path": "adr/ADR-001-postgresql.md",
+        "sha256": "f7a7e7df92a3e1db8fea23c82c8e3fa9bb4b0dfcb3ed5f6f68b71f4c2bb9d8c6"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "8d387ff2b74202629003e3e12af3d38cc767ba6ffdf347afd5c580c998b39ccb"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "c7c0248bfe9530c3137721bb053685a4076af951aaab35c62fe3e8e21b305a56"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "e009f87971bc7c5f18aa5233ec910dd00fe835b7620c3da5a0be73ab1d78d93c"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "a4265544e6dd79eade9da75b4026b912daa81ba143efde36665e29166735e528"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "90d6877a30ad6200ec4c1cbb3ebc89babed7b8f1f65c0757d0ffa8e5f69af038"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "d383dbbd6a3e267fbc81324a5c813d8939b60d58070b22d76a3a56b7a585c5fc"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "41e3c40b55badc04f1d786f846051ed68c65608e27956a37b2285fd5da2e030b"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "1014ebbf7dff9e70a0da2759015944e69723cef172fc29209867be0ebde64752"
+      },
+      {
+        "path": "tasks/T-004.md",
+        "sha256": "4bda7f144bb934f04ad435eaf3df6fb749e72c5425635b9769e4e692cb4a20f8"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 361,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 361,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.015,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 182,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 11.8,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "multilingual-tr": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "a4e570c230d36172664223fcc1b29f627a8043408b3275fb769af7df52afc254"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "52a3358dc7d7780d1bb7a669c6b2f22fc0dac5e71e37867eac55517fb637f52b"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "5a29b8a7a817715ae605920d3c9372a29a79d24b1ee6e19c11a86c9eb66683c1"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "645984dfa33043263efdf8c4628b40e2701f96cfd058ee981aed43ffbc8f3670"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "4e2eb329476bea7c7813081b130c209269c9971d973bf70a34e7545b2c03c28f"
+      },
+      {
+        "path": "adr/ADR-001-siparis-verisi-postgresql-de-tutulur.md",
+        "sha256": "5f79017b56444a3785c669c3805fadd4e498a3cbe9866aeea15b3e50884dd101"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "93f38fc80fab4b266a30adec4bb1c4b9c0a0ccc8c89e5567849e5649f5df26d8"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "61cfb2aca7e3b996a54750aaac0fcb2d9c222e07e6e317d9eba175058fc1915b"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "8f47d91c5a5e5f142cd395c2969966ee78656b49f119269b261d16948fba9e35"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "fbbf2b4557d7ae564f2d7b07a30eba4933c087692cff1ee8500937e46f27a4ee"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "78a7602b33c9dda7f0c2d31a8b17a916bb0b9cf5d0c07a4d815a9aaaea62ca59"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "f6ae4b1dc02de22f81af9bd8c0a4c2c0ce306f03a46fe5dd9dfb43dbe24e3255"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "35e5f9dc10f53fe4cb5a97687695c399af1642f7ebe857a6208695bde50f6cc0"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "52737ccddfa3c6b6e54794f1951362ae3c5cd0289bb7a7024767fcf5771fa77d"
+      },
+      {
+        "path": "tasks/T-004.md",
+        "sha256": "ee76d88fef30cf28576e26423690468f2f703f85b99c06098d5c583e9f94328f"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 394,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 394,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.014,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 183,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 11.554,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "multilingual-zh": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "b821bc58b565b94ba66e42df3713d49fbb464af2c031df13cdc60682052bd0aa"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "600342ff407d98481f32bf54cab7d61fe137b79584a78f16d83954a822fc0aac"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "6f508c60980198d37c1aada65e55712d114e4eae2f433efbcd122361e1c8c463"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "6d7608dc05c4ae622c25a817872d7f53971dd6c69c8fe815f23c6373b00a0158"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "3d48e69f4620131ff31477ce7676771d449b638aa692fa4936bb92b1d53ec209"
+      },
+      {
+        "path": "adr/ADR-001-postgresql.md",
+        "sha256": "1b96ac4ab8bcb4c2880c7d9cf1c50542accf18136b270cf76286c40f048f886a"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "38010a498f03576f4059826630a694a2d565c471dedeb59ede7e43feb4bddfdc"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "50bb497952ef4941e0c20aa2123c9001b69cf2e68e910243608118a33ffa5079"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "7133c9de06b2c5f58b7e3c6b73b55e416a20e637fb0b834d1f6532ef0e4aede9"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "9370959ac9105e3b050e46468fba47273d7c2d4fe61ee99fa8f8f2cd86361ae2"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "2757bdd4da1614ec6506640b28732f52d03a78cee8dd08d2db6d84ceaa4c50da"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "0f7567721c7f5c388e5e15c35c6866d2a962ae90ce1e34e36a8be604dbf84c67"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "08e9ffb91ad7f611b67738b2a194adaa5061292da6a79faba93975bdc7f33fe0"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 320,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 320,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.017,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 148,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 10.513,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "no-entities": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "7791d4303d124e764ab2bda8e38c157e6325a5fdc9f6a6970499ab6ae22e4761"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "1e75c6970d44ea8370f59b3ce79870fb7067529a0b32792615caf17f7d8584d1"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "6b4e575300abe278a7f0830aed0c626f955914de31229e7cb8243e12d88459ae"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "9e099a74e462d407f5ee189759dc812eddd32ce5a1af5e46891e8ef2f5e95a46"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "b4f4c89ffe7e4c7192c2f5d972d0a5a50c5189f592b8f56a95cab75ab8d83ffb"
+      },
+      {
+        "path": "adr/ADR-001-use-postgresql.md",
+        "sha256": "f98934aa5fe9fdcc8726baf8507f0bb92ab5635a1792630764452a0d07113c82"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "7e254b8ea2ae9af52b5be9c4eca557add502b790a525f26526bed81820fc1028"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "b69965710154e773405c8c03cf71769bf15b293002190f619056bb9b30be018f"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "e1b79d4b8f96916de3f416b3e8657a3a18f5477dba2d1051ca6838cac46d9e89"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "7e380b323b4572605fb753f31397e796e20e56715d8622c92be27ed8fa19861b"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "6198cd2b328987bc0d6ae4ff8029e308911f2b924844fcd7777e59328e76b910"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "ecfa0f01f5a2ac8df9229fae1be634ace2ffa3b0c13ba414be7b00fd93061b53"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "475746e7d62923a0d615d85ad7cadcbc25eafc28b66dce52f2d8c084d149caa5"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "5353327284d69c623b4180239e50f59313a570855e353f7959c5ebbb96caa8f3"
+      },
+      {
+        "path": "tasks/T-004.md",
+        "sha256": "6b764b0eba9f792df7be1a7cb4fc94c8c9a2f704ec6acd1333c28aeba8ba0a0c"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 273,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 273,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.01,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 171,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 10.813,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "single-node": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "320d06ab796d1e427585b67c32572199250acdffbf795473ae5f7edd8027c9da"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "f354dfda08efc4e75ef649fa9c79579acb3e30b1e38c31fd6228e9fe5c3fabb4"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "2295d3178a53947dd37b0e2373b6dc6f9b490219a0dc2b802d6b1556da251343"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "c21f692483f840817532c92ad986c0ebf1475a5047ade515a46963258f8024b0"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "18cbd515a50fe1d3a437fcad4fc9e3bd7775e73447cedc12197ef2a0a0419a89"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "41a8b3d11ec4a1b5e9720e7c1489615bba14d48a3da17057fe3256db7824a72e"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "0c86347be59719925e5ec3f7084719f4123b6b942e39cdec21f0e7042023cca0"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "ec1acbc0a856e4b4587e4dcc12e4cfe3143ee211aa7b3d5f0899758c986fa4a1"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "9819ad1c416fea5c861f778ffea9f65c15665131e074add2f7e0e11ccb28156b"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "fbaacda15ff2d4fdc9cb77ffdd22ba8dd57556437c31cd629120c4dc4e38f34c"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 207,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 207,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.009,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 97,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 7.925,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "version-2": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "9ad9913c3d60432573f177d9986ed239df6bdff32c99727bec6188ce214bfdcd"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "6cc5008b4babc0c5694e9725851fd673d9686a679558577b2eae844813aec46d"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "fac820c48449358736a44e923816b8c6e261bfb1ae9925c6304a5eefa1d2cc95"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "6a8e61fe17fadae30d64fadee4c2a06388d4b356672d0f975238a243da873781"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "7cbfd617d739646706b4fe8be64ce5169c063fc83da6e4ea0249536bce70ca6b"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "4e87c23ce28c899bdb5edb7271e3fdc4b28250a7b5ac383d7dffff925a8034c5"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "8c87597188877220616769e50889db8e8a1c9b7724c54b233d14213ac95c7140"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "3cc56b2e0818b4c698c5298f86de510fd8e22ee0fc32a6068602ed441701d701"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "90b8baa4665ea9dcd7241cf9376281142599ef6398095c9172155898769342f5"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "7d576911ce83ceb14af2ff1ca176fc187a886983174964462c4ae320ca9fb69c"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "dbb2d0b934dd33f1eb4b262948d037624aa4053927b0cc7cfb202fa127eda29b"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 231,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 231,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.012,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 121,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 8.731,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "version-3": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "b821bc58b565b94ba66e42df3713d49fbb464af2c031df13cdc60682052bd0aa"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "a344b445cf1c4a1bc93c6a5d01b344bc1bdd37d33e77f43d8335d471d0647f75"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "b04f4bd1a059425b37ceb2b63be92a45705f82faceb8a1d2a83845eacd629683"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "f3bf84c3cd0e4bcb229525e5824efdf3ef88db88d8817668bd14fecc988430be"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "4edee40055adaeb897004ebedeac84d5d8bffd7c08c4a7a7fcbbea1e758edea3"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "9906871e70aa92729bd5f1805db43905085b3f711e274eb8856ccf91035f446a"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "1a7f15ffb79e2a0b67be4e327c65775e30b888f0eda0185ecfca27d6229b2b2e"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "1c80b73ddea9dfef0e61ebe07bacbb404b98e353260bdbbdad5ac827f55176cb"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "e1a52f88064ff218e6bad071e935ae80536956e556dfbf59626b249e72d15013"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "1598b8b0cfbfa00ecfc63c369f5e669ac985ac88feb0bab385e51b3ca0738a69"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "4716301840f4fc9719535ca047f4675929bb431f9c53a9a8e90037bce2a67056"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "f16a674bd16a25927a6ead7078e7b87b85a667edeeb09aecd0ce082a9874f787"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "f362026fa588c4afe678184d1a5dbb1f95b0a359dc87bc12971766a6bf4ddf10"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 320,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 320,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.016,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 146,
+        "pass": true
+      },
+      {
+        "name": "package_size_kb",
+        "value": 10.017,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  },
+  "wide-54": {
+    "files": [
+      {
+        "path": ".cursorrules",
+        "sha256": "16c8b288aa7cb8f27746aefb1d98bd1e2ac1d811fa14c5d7aa2d6070e07bd61e"
+      },
+      {
+        "path": ".opencode/agents/implementer.md",
+        "sha256": "fe3e1a52ed1bb679d935b596554b6835c689ab1d6a447388788ba979f748ac7d"
+      },
+      {
+        "path": ".opencode/agents/reviewer.md",
+        "sha256": "dd844cad7d80616e722abad11ad35b02c933a99ffd83c4b70d37376d94169ac2"
+      },
+      {
+        "path": ".opencode/agents/validator.md",
+        "sha256": "d4c1f298856df87163d3f1594244f8bae20c097205ca0d7020d46662310dd1d4"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "6b99cbb158bc1233081faac4c632429d7e3f2b45f2847b8d4e85e6fd455baabe"
+      },
+      {
+        "path": "ARCHITECTURE.md",
+        "sha256": "be23644fc63b1e5a4aa8bb39b87cbaa369f08252a6c6ee50b366c5ffdc6cca71"
+      },
+      {
+        "path": "MANIFEST.md",
+        "sha256": "d28cab5eb551ac7bc78fc763d8e76289714811ceae2f49af527dfa1d1584a409"
+      },
+      {
+        "path": "TASKS.md",
+        "sha256": "954352b8425f7545e68ce68c8d4b2dc7a50ba6967f56a96f724720833dfbf3d1"
+      },
+      {
+        "path": "WHITEPAPER.md",
+        "sha256": "a05129d178fb4e4a28f96393051dba34aeae08b19662aca7acbe41514717424b"
+      },
+      {
+        "path": "adr/ADR-001-split-by-bounded-context.md",
+        "sha256": "6b526d1f58e1b6478f7c14d855ebe46193896cfabef524e41c99339c2d49dd19"
+      },
+      {
+        "path": "asyncapi.yaml",
+        "sha256": "9c1fac1b8ff419e6df50c734e1ae01c8d86e422444d6b346f59f36c2e557093d"
+      },
+      {
+        "path": "diagram.mmd",
+        "sha256": "e093583b4625992c37bb916feb6a27a39309dc0e5c220a00508e4ab2c2df86b0"
+      },
+      {
+        "path": "metrics.json",
+        "sha256": "4560236d8edbeadf69d0bac1d0d52f81962c4c81289d28cf30c93354c8ad0e43"
+      },
+      {
+        "path": "openapi.yaml",
+        "sha256": "2ad82ebe8fdd28b0a0ead10f8aa04021aa57d2ff07496bbad88884dfcc3cc28b"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "2aa7980de8b377d5bea56915445e75d2ad2d5480c41996e5893112dd3e2e3f20"
+      },
+      {
+        "path": "tasks/T-001.md",
+        "sha256": "060e5079c98af6b7fe705f74dc2f222232b825da98c8f0c6920545b918a6571a"
+      },
+      {
+        "path": "tasks/T-002.md",
+        "sha256": "608ea6c4e69acfb0e55a3f061be6ede9f3d7ff2e357c481a9142248ea35193d2"
+      },
+      {
+        "path": "tasks/T-003.md",
+        "sha256": "2accf9871e4da53a2ce46186de5ccb75b4469a1ba80ecad081a58f68e194ea3c"
+      },
+      {
+        "path": "tasks/T-004.md",
+        "sha256": "d5380e1cea884b2e5ffe965fded392dd3c8ad3690643e2638f44c9651548426f"
+      },
+      {
+        "path": "tasks/T-005.md",
+        "sha256": "07b5b67e324bc83ad0754ad265bd55200d5a104badfa4171ad6553677c61d2e8"
+      },
+      {
+        "path": "tasks/T-006.md",
+        "sha256": "ac37479ec7f9daa87cc4e86ef5bf728e2edc8df54bfe0125dc6586b7880ec581"
+      },
+      {
+        "path": "tasks/T-007.md",
+        "sha256": "0e3644e3c325bdd003666a9c8b0fb3178e43760b66023a1e3611d0e81a83dac0"
+      },
+      {
+        "path": "tasks/T-008.md",
+        "sha256": "65cb65dce674cd9b1cfd9cc50a27a557308d6f2f5a5a32f576f8b9e756a3a0e7"
+      },
+      {
+        "path": "tasks/T-009.md",
+        "sha256": "28e314b972516aa63e2c27538422b6492c4dbbab7b76bb057c96ed0b5153f11e"
+      },
+      {
+        "path": "tasks/T-010.md",
+        "sha256": "ec2d813c53da3fb2d099930d7c00fb36c62f6f016789f8a47e50a3ce7d84b385"
+      },
+      {
+        "path": "tasks/T-011.md",
+        "sha256": "122411cdaf210dae13fd760e88deac55c1521f4c4920635f9176b8f241c76b7c"
+      },
+      {
+        "path": "tasks/T-012.md",
+        "sha256": "48270a37c35494bc0c4aa6da2214e5532dd9e1864ae123c6dde9a6477f075b84"
+      },
+      {
+        "path": "tasks/T-013.md",
+        "sha256": "a4403e8c3f979a8eb3851cfc390261ce63e478a48137b4c5a1ad4f48735efb31"
+      },
+      {
+        "path": "tasks/T-014.md",
+        "sha256": "0bbd6f0841bb0ff0b51ae4acdff20fbaadc36d8c5a250a3bd267767167d7bbb0"
+      },
+      {
+        "path": "tasks/T-015.md",
+        "sha256": "e9376b82bd0b0a2897868c5d4625f84b582c915033e5548464450160a77d5e97"
+      },
+      {
+        "path": "tasks/T-016.md",
+        "sha256": "08e76d3b2b4161485e3259e9bbed02dc673b88bac5e1eba1386dd18c88936e5d"
+      },
+      {
+        "path": "tasks/T-017.md",
+        "sha256": "d595a7cc650d9967beb6f06351a088e5b24d9b5f9c257cbdc6ed1eb2a4f6ccd8"
+      },
+      {
+        "path": "tasks/T-018.md",
+        "sha256": "d095a2fb90217ec5c75bcdb44c0325002166576fe89be40ef702faeb48e914f0"
+      },
+      {
+        "path": "tasks/T-019.md",
+        "sha256": "cbcb24de93ac3495463033b4088729b208c55a489f8dbb240f77c6fb64662ce3"
+      },
+      {
+        "path": "tasks/T-020.md",
+        "sha256": "14a71370892e06104b7320ce52db048ee88cf31570b899edbdf251fadc5b05b6"
+      },
+      {
+        "path": "tasks/T-021.md",
+        "sha256": "f1349c05efe37225a3ee97cd64d4906ed15ce248297f528d38bd2741e50646ea"
+      },
+      {
+        "path": "tasks/T-022.md",
+        "sha256": "9e9cc1e9b90e07b291a0cee441a3820ddb10c97f548c4b3ca8f262037739c53c"
+      },
+      {
+        "path": "tasks/T-023.md",
+        "sha256": "45a4b4a1106de002ce3848b8f7c277292ccb0332292862b44709335f10de7791"
+      },
+      {
+        "path": "tasks/T-024.md",
+        "sha256": "6d17877c524a2ea001829985e3f21d76dbdbf73f52a170d490e5127ad64683a6"
+      },
+      {
+        "path": "tasks/T-025.md",
+        "sha256": "7af697d2046236c48aa41af553aaa936276711888dd1d0bcbca184bfad2de2f6"
+      },
+      {
+        "path": "tasks/T-026.md",
+        "sha256": "1789c14c2608b896a57b3e42b7a67c55f926687bccae562607c3728fc8d40f6c"
+      },
+      {
+        "path": "tasks/T-027.md",
+        "sha256": "7f754543ef745c65efcc6c0eca73c065cf728ead6cf7c28c8bb4f7800bfe36f7"
+      },
+      {
+        "path": "tasks/T-028.md",
+        "sha256": "f3db37e7186eedf7434b4758cffe1bfdf7f611a953504ac72793d35fc0dd682e"
+      },
+      {
+        "path": "tasks/T-029.md",
+        "sha256": "d20cc9a43af1871fd88d6e1d347da3a91fd17745e28facd0a7a802e881672951"
+      },
+      {
+        "path": "tasks/T-030.md",
+        "sha256": "b51e52131f778b8236532e3337d082e8d86e71bf22f84993572fa2636a160f94"
+      },
+      {
+        "path": "tasks/T-031.md",
+        "sha256": "bec3409de4513741e04e267f90c6ad1dc6e94506eeaa63bd8fca180863492ed8"
+      },
+      {
+        "path": "tasks/T-032.md",
+        "sha256": "f4364bb88ee6a85e41a351a8b544e2dacd3a76ae13bd98b9eb0ce60b34f780f6"
+      },
+      {
+        "path": "tasks/T-033.md",
+        "sha256": "701aad4bbcaa3a1d3ce692f0afd57439fa217b5b69bd73e27ec619388794d964"
+      },
+      {
+        "path": "tasks/T-034.md",
+        "sha256": "82ecd294bea1801c8235cc04fd5aa53e388d9a487a7aa8c5f6700fb85a3a4bf1"
+      },
+      {
+        "path": "tasks/T-035.md",
+        "sha256": "653541634f5a0fa29f5d0dd00648134add3a78e1e59b9f917c6e2e3b5a8ede4f"
+      },
+      {
+        "path": "tasks/T-036.md",
+        "sha256": "f9a8589fdd8a9fdd619906c034caa10cc409e2522be3508f19584f81e6d6a16b"
+      },
+      {
+        "path": "tasks/T-037.md",
+        "sha256": "87d6fff6b8c2df883124ac96efb4e26177e3130c84cb85aa06ce81f2c15023b0"
+      },
+      {
+        "path": "tasks/T-038.md",
+        "sha256": "335e71aeb190454d791a960d0ba0ff08e0e6a44ae520e7c8850cf52cc6409c62"
+      },
+      {
+        "path": "tasks/T-039.md",
+        "sha256": "bc1bae580b4642c087992480dd7a7f4ab07a5e1007cc08420b6e3afca0454521"
+      },
+      {
+        "path": "tasks/T-040.md",
+        "sha256": "81620a11430ce4e9b61776614ded2975c3777f6eb4147c58cb14f6cfe8a1290a"
+      },
+      {
+        "path": "tasks/T-041.md",
+        "sha256": "61f6f4049a363c580eefce2fbed3c346e67b58d404183ac6788a4e587145a4e2"
+      },
+      {
+        "path": "tasks/T-042.md",
+        "sha256": "561524a8531474b3e2fbee6fb55373aa07061ab53156203e138745eab830c918"
+      },
+      {
+        "path": "tasks/T-043.md",
+        "sha256": "609d956ed8ddb0f98a71eb815681f81b1f476e7cbcac3ae5c4cd5fc9b4de8129"
+      },
+      {
+        "path": "tasks/T-044.md",
+        "sha256": "d3db743b622250d706f04563a4dad2475ab0f71bdeafedf467e3a26f815d7dd0"
+      },
+      {
+        "path": "tasks/T-045.md",
+        "sha256": "29e5c074e65b0ef02639f0ceb941139570fc616f82035a47cacf9abb21e08e32"
+      },
+      {
+        "path": "tasks/T-046.md",
+        "sha256": "b041dcaa0a73aa4680b9cd31bb398b585cb1abe4a6e832d9767555a32f353fe6"
+      },
+      {
+        "path": "tasks/T-047.md",
+        "sha256": "f1d6821611aba077318c0b3b7d206d7caa826c4ad253fec8596562be39bd6f34"
+      },
+      {
+        "path": "tasks/T-048.md",
+        "sha256": "a26b04f449b9ba53390db7ea3644bfe7ce41fb54ecf5700d588bbcbbff7f4114"
+      },
+      {
+        "path": "tasks/T-049.md",
+        "sha256": "ee205848003b8bf504191cab1bb144b98134fce9e4830567fe1606ee047f7925"
+      },
+      {
+        "path": "tasks/T-050.md",
+        "sha256": "95f5d25a05fcb6d2d88b295f973083222b1dc27f18aaf821b1eba7f66d11e69f"
+      },
+      {
+        "path": "tasks/T-051.md",
+        "sha256": "a3aa4b6bb77db1908b0eae5f4bd20e627407f5f25b6770b59f411005c66cf650"
+      },
+      {
+        "path": "tasks/T-052.md",
+        "sha256": "659a1b8de03c1686eee1a4eeff3da31647a8e9d2a9859a0b10819c1d952bfd47"
+      },
+      {
+        "path": "tasks/T-053.md",
+        "sha256": "44b2022333a1d3d271421efe517b4751058b567611fe407cf89a1dd5d15087ae"
+      },
+      {
+        "path": "tasks/T-054.md",
+        "sha256": "65e7197a3a1d85969b32630c1a6103873a12df58d7a3f5e558979f8ecd898af5"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "packet_prompt_tokens_p95",
+        "value": 308,
+        "pass": true
+      },
+      {
+        "name": "packet_prompt_tokens_max",
+        "value": 308,
+        "pass": true
+      },
+      {
+        "name": "context_slice_ratio",
+        "value": 0.001,
+        "pass": true
+      },
+      {
+        "name": "duplicate_context_ratio",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "files_per_task",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "dependency_depth",
+        "value": 2,
+        "pass": true
+      },
+      {
+        "name": "parallel_groups",
+        "value": 3,
+        "pass": true
+      },
+      {
+        "name": "subagent_steps",
+        "value": 8,
+        "pass": true
+      },
+      {
+        "name": "contract_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "acceptance_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "validator_pass_rate",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "deterministic_checks",
+        "value": 14,
+        "pass": true
+      },
+      {
+        "name": "self_heal_rounds",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "unresolved_refs",
+        "value": 0,
+        "pass": true
+      },
+      {
+        "name": "deterministic_coverage",
+        "value": 1,
+        "pass": true
+      },
+      {
+        "name": "index_tokens",
+        "value": 1557,
+        "pass": false
+      },
+      {
+        "name": "package_size_kb",
+        "value": 47.463,
+        "pass": true
+      },
+      {
+        "name": "state_to_package_ms",
+        "value": 0,
+        "pass": true
+      }
+    ]
+  }
+}

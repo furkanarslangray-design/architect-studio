@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-244%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-257%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) 
 [![M8ven Verified](https://m8ven.ai/badge/mcp/furkanarslangray-design-architect-studio-hx6k8f?variant=verified)](https://m8ven.ai/mcp/furkanarslangray-design-architect-studio-hx6k8f?s=readme)
@@ -472,7 +472,7 @@ Token counts use a real BPE tokenizer (`gpt-tokenizer`).
 ## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 244 tests, 25 files, 8 packages
+pnpm test        # nx run-many -t test — 257 tests, 26 files, 8 packages
 pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```
@@ -485,6 +485,14 @@ generation, `tsc` and Vitest. Contract tests (`packages/app/tests/contract.test.
 every endpoint against `packages/app/src/contract.ts`, bind the ZIP headers and compare the
 endpoint list in `FRONTEND_SPEC.md` §4 with `ENDPOINTS` in both directions; adding or removing
 an endpoint breaks the test.
+
+Golden corpus: `examples/corpus/*.json` holds twelve architecture states (single node, 54
+nodes, with and without entities, every edge protocol, schema versions 1–3, tr/ja/zh titles).
+`packages/packager/tests/corpus.test.ts` packages each one reproducibly and compares the file
+list, every file's SHA-256 and the numeric metrics against
+`packages/packager/tests/__snapshots__/corpus.json`; a generator change that moves output
+fails the test. Refresh intentionally with `UPDATE_CORPUS=1 pnpm nx run packager:test`, and
+commit the new snapshot next to the change that caused it.
 
 ## Docker
 

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "svc-1", "kind": "service", "name": "Solo API", "props": { "runtime": "node" } }
+  ],
+  "edges": [],
+  "decisions": []
+}
