@@ -19,9 +19,18 @@ import { runPipeline } from "./pipeline";
 import { runInitCommand } from "./init";
 import { runDoctorCommand } from "./doctor";
 import { runProjectsCommand } from "./projects-cli";
+import { APP_VERSION } from "./server";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
+  if (argv.includes("--help") || argv.includes("-h")) {
+    printHelp(argv[0] === "--help" || argv[0] === "-h" ? undefined : argv[0]);
+    return;
+  }
+  if (argv[0] === "--version" || argv[0] === "-v") {
+    console.log(APP_VERSION);
+    return;
+  }
   // `architect init` is a subcommand; everything else keeps the historical flags.
   if (argv[0] === "init") {
     process.exitCode = runInitCommand(argv.slice(1));
@@ -274,8 +283,44 @@ function parseArgs(argv: string[]) {
   return result;
 }
 
-function printHelp(): void {
-  console.log(`AI Principal Architect
+const SUBCOMMAND_HELP: Record<string, string> = {
+  init: `architect init [dir] [options]
+
+Writes .architect/config.json, the selected client configs and an AGENTS.md block.
+
+Options:
+  --client <name>   cursor | claude | opencode | freebuff | all (default: cursor)
+  --force           Overwrite files this command does not own
+  --scan            Also write .architect/state.json from the target repository`,
+  doctor: `architect doctor [dir] [options]
+
+Compares the stored .architect/state.json with the repository and reports drift.
+
+Options:
+  --state <path>    Use a different state file
+  --json            Machine-readable report
+  --fail-on-drift   Exit 1 when the repository drifted
+  --write           Refresh .architect/state.json instead of only reporting`,
+  projects: `architect projects list|show|save|restore [options]
+
+Options:
+  --db <path>       SQLite file (default: $ARCHITECT_DB or .architect/architect.db)
+  --name <name>     Project name for save/show
+  --message <text>  Revision message for save
+  --state <path>    State JSON file for save`,
+  eval: `pnpm eval [options]
+
+Replays committed model recordings, or records fresh ones with BYOK.
+
+Options:
+  --replay          Use recordings (default)
+  --record          Call the configured model and rewrite the recordings
+  --dir <path>      Case directory (default: examples/evals)`,
+};
+
+export function helpText(topic?: string): string {
+  if (topic && SUBCOMMAND_HELP[topic]) return SUBCOMMAND_HELP[topic];
+  return `AI Principal Architect
 
 Usage:
   pnpm architect init [dir] [--client cursor|claude|opencode|freebuff|all] [--force]
@@ -305,10 +350,18 @@ Options:
   --sandbox-command <cmd>    Run a custom command instead of the built-in package check
   --web-search               Look up current references before generating
   --search-provider <name>   ${WEB_SEARCH_PROVIDERS.join(" | ")} (default: auto)
-`);
+
+Subcommands: init, doctor, projects — run \`pnpm architect <subcommand> --help\`.
+`;
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : "Unexpected error");
-  process.exit(1);
-});
+function printHelp(topic?: string): void {
+  console.log(helpText(topic));
+}
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : "Unexpected error");
+    process.exit(1);
+  });
+}
