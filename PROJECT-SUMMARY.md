@@ -338,7 +338,7 @@ architect-studio/
 
 | Kontrol | Sonuç |
 |---|---|
-| `pnpm test` | 8 proje, 35 dosya, 325/325 test geçti |
+| `pnpm test` | 8 proje, 41 dosya, 338/338 test geçti |
 | Deterministik ZIP | 5 test: iki koşu aynı hash/bayt, sabit tarih+mod, store/deflate, `REPRODUCIBLE=1` |
 | `doctor --write` | 5 test: state oluşturma, tazeleme, bozuk JSON/şema onarımı, özel `--state` yolu |
 | `architect doctor` | 15 test: temiz repo, eklenen düğüm/alan, silinen entity/alan, bozuk state, çıkış 0/1/2, `--json` |
@@ -368,12 +368,19 @@ architect-studio/
 | Nx generator | `--dry-run` + gerçek üretim; üretilen paket `tsc` temiz, Vitest 1/1 geçti |
 | Paket alias'ları + sınır | Tüm paketler `@architect-studio/*` adıyla ve `src/index.ts` genel girişiyle import edilir; derin/göreli çapraz import ve uygulama→tooling bağımlılığı testle yasak; `implicitDependencies` kaldırıldı |
 | Prompt-injection sınırı | Web sonuçları tek `<untrusted web results>` bloğunda, her satır `source_url` + `retrieved_at` taşır; talimat benzeri satırlar `[flagged]` ile işaretlenir ama atılmaz; kaynaksız dış düğümler nota yazılır (4 test) |
-| Eval koşum takımı | `pnpm eval` kayıtlardan anahtarsız 2/2 vaka geçti (ort. 294 token); eksik kayıt açık hata, `--record` yeni kayıt yazar (4 test) |
+| Eval koşum takımı | `pnpm eval` kayıtlardan anahtarsız 2/2 vaka geçti (ort. 294 token); eksik kayıt açık hata, `--record` yerel OpenAI-uyumlu stub'a karşı HTTP üzerinden doğrulandı (6 test) |
+| Web arayüzü | `web/index.html|styles.css|app.js`: 10 görünüm, Mermaid, SSE reverse, sandbox konsolu, 8 dil, koyu/açık tema; `GET /` HTML + CSP, `app.js`/`styles.css` 200; tarayıcıda preview → diyagram SVG, 3 entity, 18 metrik, sohbetle alan ekleme ve TR'ye canlı dil geçişi doğrulandı (4 test) |
+| OpenAPI reverse | `components.schemas`/Swagger `definitions` entity'lere dönüşür; tip eşlemesi (uuid/int/float/decimal/datetime/json) ve `$ref` ilişkileri (2 test) |
+| Şema migrasyonu | `PRAGMA user_version` + sıralı migrasyon çerçevesi; `schemaVersion` 1 olarak damgalanır, dosya yeniden açıldığında veri korunur (1 test) |
+| CLI yardımı | `--help`/`-h` her alt komutta çalışır (`doctor --help` artık çıkış 0), `--version` kök sürümü yazar (3 test) |
+| README diyagramları | README.md ve README.tr.md'deki 22 Mermaid bloğu jsdom + mermaid.parse ile doğrulandı (2 test) |
+| Canlı arama | DuckDuckGo anahtarsız yolu gerçek ağa karşı denendi (`kubernetes` → 3 sonuç, URL döndü) |
 
 Test dağılımı: core 44 (5 dosya), generators 10, validators 10, packager 53 (5 dosya),
-app 165 (17 dosya: app, server, chat, web-search, pipeline, eval, module-boundaries, stress,
-contract, reverse-guard, reverse-queue, reverse-jobs, init, doctor, store, projects,
-projects-cli), reverse 24 (3 dosya: index, rea, cache), sandbox 12, mcp 7.
+app 176 (22 dosya: app, server, chat, web-search, pipeline, eval, eval-record,
+module-boundaries, web-ui, readme-diagrams, cli-help, store-schema, stress, contract,
+reverse-guard, reverse-queue, reverse-jobs, init, doctor, store, projects, projects-cli),
+reverse 26 (4 dosya: index, rea, cache, openapi), sandbox 12, mcp 7.
 
 ## 8. Kalan sınırlar (bilinçli)
 

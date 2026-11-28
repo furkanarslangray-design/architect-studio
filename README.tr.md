@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-325%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-338%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![pnpm](https://img.shields.io/badge/pnpm-10-F69220?logo=pnpm&logoColor=white)](pnpm-lock.yaml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -758,7 +758,7 @@ flowchart LR
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 325 test, 35 dosya, 8 paket
+pnpm test        # nx run-many -t test — 338 test, 41 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```
@@ -769,8 +769,8 @@ pnpm build       # typecheck + test
 | generators | 10 |
 | validators | 10 |
 | packager | 53 |
-| app | 165 |
-| reverse | 24 |
+| app | 176 |
+| reverse | 26 |
 | sandbox | 12 |
 | mcp | 7 |
 
@@ -815,6 +815,20 @@ tr/ja/zh başlıklar). `packages/packager/tests/corpus.test.ts` her birini tekra
 şekilde paketler ve dosya listesini, her dosyanın SHA-256'sını ve sayısal metrikleri
 `packages/packager/tests/__snapshots__/corpus.json` ile karşılaştırır. Bilinçli tazeleme:
 `UPDATE_CORPUS=1 pnpm nx run packager:test`; yeni anlık görüntüyü nedeniyle birlikte commit et.
+
+## Web arayüzü
+
+Studio kabuğu üç statik dosya olarak gelir (`web/index.html`, `web/styles.css`,
+`web/app.js`); derleme adımı yoktur, `GET /` doğrudan bu dosyayı sunar ve CSP
+`default-src 'self'` kalır. On hash yönlendirmeli görünüm composer, mimari (Mermaid),
+sohbet, görevler, kalite, artifact'lar, reverse (SSE ilerleme), sandbox, ayarlar ve
+durum ekranlarını kapsar; sekiz dilli katalog `GET /api/i18n`'den gelir, tema
+`prefers-color-scheme` ve `architect.theme` ile yönetilir, BYOK anahtarı yalnızca
+bellekteki bir değişkende tutulur — storage, çerez veya URL'e yazılmaz.
+`packages/app/tests/web-ui.test.ts` servis sözleşmesini, palet token'larını ve kabuğun
+kullandığı her API yolunun var olduğunu doğrular;
+`packages/app/tests/readme-diagrams.test.ts` README'lerdeki her Mermaid bloğunu jsdom
+altında gerçek renderer ile parse eder.
 
 ## Docker
 

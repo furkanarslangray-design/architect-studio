@@ -847,7 +847,7 @@ flowchart LR
 ## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 325 tests, 35 files, 8 packages
+pnpm test        # nx run-many -t test — 338 tests, 41 files, 8 packages
 pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```
@@ -858,8 +858,8 @@ pnpm build       # typecheck + test
 | generators | 10 |
 | validators | 10 |
 | packager | 53 |
-| app | 165 |
-| reverse | 24 |
+| app | 176 |
+| reverse | 26 |
 | sandbox | 12 |
 | mcp | 7 |
 
@@ -906,6 +906,19 @@ packages each one reproducibly and compares the file list, every file's SHA-256 
 numeric metrics against `packages/packager/tests/__snapshots__/corpus.json`. Refresh
 intentionally with `UPDATE_CORPUS=1 pnpm nx run packager:test` and commit the snapshot next
 to the change that caused it.
+
+## Web UI
+
+The studio shell ships as three static files (`web/index.html`, `web/styles.css`,
+`web/app.js`) with no build step, so `GET /` serves it directly and the CSP stays
+`default-src 'self'`. Ten hash-routed views cover composer, architecture (Mermaid),
+chat, tasks, quality, artifacts, reverse (SSE progress), sandbox, settings and status;
+the eight-language catalogue is loaded from `GET /api/i18n`, the theme follows
+`prefers-color-scheme` and `architect.theme`, and the BYOK key lives in a memory-only
+variable — never in storage, cookies or the URL. `packages/app/tests/web-ui.test.ts`
+asserts the serving contract, the palette tokens and that all API paths the shell uses
+exist, while `packages/app/tests/readme-diagrams.test.ts` parses every README Mermaid
+block through the real renderer under jsdom.
 
 ## Docker
 

@@ -610,8 +610,9 @@ atlanmaz, açık hata verir.
 
 ## Önceden konuşulmuş, hâlâ açık olanlar
 
-- `FRONTEND_SPEC.md`'nin kodlanması (`web/index.html|app.js|styles.css`) — ürünün eksik
-  yarısı; **1 ve 2 bittikten sonra** başlanmalı.
+- ~~`FRONTEND_SPEC.md`'nin kodlanması (`web/index.html|app.js|styles.css`)~~ — **uygulandı**
+  (2026-11-28): on görünümlü SPA, Mermaid tuvali, SSE reverse, sandbox konsolu, 8 dil,
+  koyu/açık tema; `web-ui.test.ts` + tarayıcı doğrulaması.
 - Playwright E2E, OpenAPI/AsyncAPI meta-şema doğrulaması (ajv + spec şemaları), sandbox
   içinde `install + test` profilleri, REA'dan OpenAPI/SQL entity çıkarımı, `nx-plugin`'e
   ek şablonlar (`artifact`, `executor`) — `PROJECT-SUMMARY.md` §9.

@@ -1,63 +1,46 @@
-# Açık konular — 2026-11-28 oturumu
+# Açık konular — 2026-11-28 oturumu (güncellendi)
 
-Bu dosya oturum boyunca kapatılamayan veya bilinçli olarak ertelenen hataları ve
-eksikleri listeler. Yalnızca çalışma ağacında (worktree) commit edilir, `main`'e
-gönderilmez.
+Bu dosya oturum boyunca kapatılan ve kapatılamayan hataları/eksikleri listeler.
 
-## Bu oturumda kapatıldı (referans)
+## Bu turda kapatıldı
 
-| Konu | Durum |
+| Konu | Kanıt |
 |---|---|
-| CI test zaman aşımı (sandbox sürücü yoklaması) | Kapandı: yoklama 2 sn + süreç ağacı öldürme (`e94438a`) |
-| MIT → Apache 2.0 geçişi | Kapandı: kanonik `LICENSE`, `package.json`, iki README (`485b03a`); depoda kalan MIT referansı yok |
-| Node 20 uyarısı (GitHub Actions) | Kapandı: `actions/checkout@v6`, `actions/setup-node@v7`, `pnpm/action-setup@v6`; CI run `46137330642` verify + docker yeşil, loglarda Node 20/deprecation satırı yok |
-| m10 paket alias'ları + modül sınırı | Kapandı: 9 düğüm/9 kenar `nx graph --print`, sınır testi 3/3 |
-| m11 prompt-injection sınırı | Kapandı: untrusted blok + `[flagged]` + kanıt denetimi, 4 yeni test |
-| m12 eval harness | Kapandı: replay 2/2 (ort. 294 token), 4 test |
+| Mermaid şemaları render edilemiyordu | `readme-diagrams.test.ts`: README.md + README.tr.md'deki **22 blok** jsdom altında `mermaid.parse` ile geçti; arayüzde de gerçek SVG render edildi |
+| `pnpm eval --record` gerçek modelle denenmemişti | `eval-record.test.ts`: yerel OpenAI-uyumlu HTTP sunucusuna karşı `--record` çalıştı, kayıt yazıldı, replay endpoint'siz geçti |
+| Canlı web arama sağlayıcıları denenmemişti | DuckDuckGo anahtarsız yolu gerçek ağa karşı denendi: `kubernetes` → 3 sonuç + URL |
+| `architect doctor --help` hata veriyordu | Ortak yardım: `--help`/`-h` her alt komutta çıkış 0; `cli-help.test.ts` 3 test |
+| CLI bayraklarında ortak yardım yoktu | `helpText(topic)` tek kaynak; init/doctor/projects/eval başlıkları + `--version` |
+| Arayüz (`FRONTEND_SPEC.md`) kodlanmamıştı | `web/index.html`, `web/styles.css`, `web/app.js`: 10 görünüm, Mermaid, SSE reverse, sandbox konsolu, 8 dil, koyu/açık tema; `web-ui.test.ts` 4 test; tarayıcıda preview → diyagram + 3 entity + 18 metrik, sohbetle `Order.priorityCount`, TR'ye canlı geçiş |
+| OpenAPI/SQL entity çıkarımı yoktu | `components.schemas`/Swagger `definitions` entity'ye dönüşür; tip eşlemesi + `$ref` ilişkileri; `openapi.test.ts` 2 test (SQL çıkarımı hâlâ yok) |
+| `node:sqlite` deneysel uyarısı | Uyarı yalnızca modül yüklenirken susturulur, dinleyiciler geri konur; çalıştırmada uyarı yok |
+| Şema migrasyon çerçevesi yoktu | `PRAGMA user_version` + sıralı `MIGRATIONS`; `schemaVersion` 1, dosya yeniden açılışta korunur; `store-schema.test.ts` |
 
-## Giderilemeyen / doğrulanamayan hatalar
+## Kapatılamayan / bilinçli kalanlar
 
-1. **Mermaid şemaları yerelde render edilemedi.** 11 diyagramlı README'ler
-   (`README.md`, `README.tr.md`) yalnızca sözdizimi düzeyinde gözden geçirildi;
-   `DOMPurify.addHook is not a function` ve DOM olmaması nedeniyle gerçek render
-   doğrulanamadı. GitHub üzerinde görsel kontrol gerekli.
-2. **`pnpm eval --record` gerçek modelle denenmedi.** Oturumda API anahtarı yoktu;
-   yalnızca `--replay` ve enjekte edilmiş üretici ile `--record` yolu test edildi.
-   Gerçek sağlayıcı yanıtı, token/gecikme davranışı ve hata yolları doğrulanmadı.
-3. **Canlı web arama sağlayıcıları denenmedi.** Tavily, Brave ve DuckDuckGo yolları
-   yalnızca sahte `fetch` ile test edildi; gerçek ağ yanıtları, kota/hız limiti
-   davranışı ve snippet biçimleri doğrulanmadı.
-4. **`architect doctor --help` hata veriyor.** `pnpm architect doctor --help`
-   "Unknown option for doctor: --help" ile çıkış 1 döndürüyor; diğer alt komutlarda
-   yardım çıktısı tutarlı değil. Kullanılabilirlik hatası, oturum kapsamı dışı bırakıldı.
-5. **CLI bayraklarında ortak yardım yok.** `architect` kök komutu ve alt komutlar
-   için `--help`/`--version` çıktısı ayrı ayrı elle yazılmış; tek kaynak yok.
+1. **Gerçek sağlayıcı anahtarıyla `--record` denenmedi.** Uçtan uca HTTP yolu stub ile
+   doğrulandı; OpenAI/Anthropic faturalı anahtarı oturumda yoktu.
+2. **Tavily/Brave canlı yolları denenmedi.** Anahtar yok; yalnızca sahte `fetch` testleri
+   ve DuckDuckGo canlı testi var.
+3. **Docker imajı yerelde build edilmedi.** Makinede `docker` yok; CI `docker` işi imajı
+   başarıyla derliyor (run `46137330642`).
+4. **Playwright E2E ve ajv meta-şema doğrulaması yok.** Tarayıcı akışı bu turda elle
+   (preview araçlarıyla) doğrulandı ve jsdom testleri eklendi; otomatik tarayıcı suite'i
+   ve OpenAPI/AsyncAPI şema doğrulaması eklenmedi.
+5. **Sandbox `install + test` profilleri yok.** Yalnızca sürücü algılama + tek komut
+   yürütme var; ağ üzerinden bağımlılık kurulumu bilinçli olarak eklenmedi.
+6. **Modül sınırı kuralı lint değil test.** `@nx/enforce-module-boundaries` yerine
+   `module-boundaries.test.ts`; editörde anlık uyarı vermez.
+7. **Kümeleme / uzak veritabanı yok.** SQLite dosyası WAL + `busy_timeout` ile çok
+   süreçli yazmaya dayanıklı; şema sürümü artık izleniyor ama kümeleme yok.
+8. **Arayüz metinlerinin bir kısmı yalnızca İngilizce.** Katalogda anahtarı olan metinler
+   (`ui.preview`, `ui.chatTitle`, …) çevriliyor; gezinme/başlık gibi yeni metinler şimdilik
+   İngilizce sabit — katalog anahtarları eklenmeli.
 
-## Bilinçli eksikler (plan/proje notlarında zaten açık)
+## Doğrulama özeti
 
-6. **Modül sınırı kuralı lint değil test.** Plan `@nx/enforce-module-boundaries`
-   (eslint) öngörüyordu; bağımlılık eklememek için kural
-   `packages/app/tests/module-boundaries.test.ts` içinde Vitest ile uygulanıyor.
-   Kural ancak test koşulduğunda devreye girer, editörde anlık uyarı vermez.
-7. **Arayüz (`FRONTEND_SPEC.md`) hâlâ kodlanmadı.** Ürünün eksik yarısı; sözleşme
-   testleri hazır ama `web/index.html|app.js|styles.css` yok.
-8. **Playwright E2E ve meta-şema doğrulaması yok.** OpenAPI/AsyncAPI çıktıları
-   şema ile (ajv) doğrulanmıyor, tarayıcı E2E testi yok.
-9. **Sandbox `install + test` profilleri yok.** Yalnızca sürücü algılama ve tek
-   komut yürütme var; bağımlılık kurulumu + test profili çalıştırılmıyor.
-10. **REA'dan OpenAPI/SQL entity çıkarımı yok.** Prisma ve Compose destekli;
-    OpenAPI dosyalarından entity/edge üretimi eklenmedi.
-11. **`node:sqlite` deneysel uyarısı sürüyor.** Depo yerleşik modülü kullandığı için
-    Node çalıştırmalarında deneysel API uyarısı basılıyor; API kararlı ama uyarı
-    filtrelenmiyor.
-12. **Kümeleme / migrasyon çerçevesi yok.** SQLite dosyası çok süreçli yazmaya
-    dayanıklı (WAL + `busy_timeout`), ancak şema migrasyon aracı veya uzak veritabanı
-    desteği yok.
-
-## Notlar
-
-- Bu oturumdaki doğrulamalar: `pnpm typecheck` 9/9, `pnpm test` 325/325 (35 dosya,
-  8 paket, `--skip-nx-cache`), `pnpm install --frozen-lockfile` temiz,
-  `pnpm eval` replay 2/2, CI run `46137330642` başarılı.
-- Docker imajı bu makinede yerel olarak build edilmedi; CI `docker` işi imajı
-  başarıyla derledi.
+- `pnpm typecheck` 9/9, `pnpm test` **338/338** (41 dosya, 8 paket, `--skip-nx-cache`),
+  `pnpm install --frozen-lockfile` temiz.
+- Tarayıcı: 10 görünüm yüklendi, konsol hatası yok; preview → SVG diyagram, 3 entity,
+  18 metrik, 2 görev, 17 artifact; sohbet `Order.priorityCount` ekledi; dil TR'ye geçti.
+- Canlı DuckDuckGo: `kubernetes` → 3 sonuç.
