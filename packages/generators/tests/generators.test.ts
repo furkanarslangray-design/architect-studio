@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
-import { parseState, type ArchState } from "../../core/src/state";
-import { buildTaskPackets } from "../../core/src/task-packet";
+import { parseState, type ArchState } from "@architect-studio/core";
+import { buildTaskPackets } from "@architect-studio/core";
 import {
   generateAsyncAPI,
   generateDocs,

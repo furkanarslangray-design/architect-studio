@@ -1,11 +1,18 @@
-import type { ArchState } from "../../core/src/state";
-import type { MetricReport } from "../../core/src/metrics";
-import type { TaskBuildOptions, TaskPacket } from "../../core/src/task-packet";
-import type { Locale } from "../../core/src/i18n";
-import type { ValidationReport } from "../../validators/src";
-import { buildPackage, type ZipStream } from "../../packager/src";
+import type { ArchState } from "@architect-studio/core";
+import type { MetricReport } from "@architect-studio/core";
+import type { TaskBuildOptions, TaskPacket } from "@architect-studio/core";
+import type { Locale } from "@architect-studio/core";
+import type { ValidationReport } from "@architect-studio/validators";
+import { buildPackage, type ZipStream } from "@architect-studio/packager";
 import { ideaToState, type LlmOptions } from "./llm";
-import { formatSearchContext, webSearch, type SearchProvider, type WebSearchResult } from "./web-search";
+import {
+  countFlaggedResults,
+  externalNodesWithoutWebEvidence,
+  formatSearchContext,
+  webSearch,
+  type SearchProvider,
+  type WebSearchResult,
+} from "./web-search";
 
 export interface PipelineOptions extends LlmOptions {
   taskOptions?: TaskBuildOptions;
@@ -31,7 +38,7 @@ export interface PipelineResult {
 export async function runPipeline(idea: string, options: PipelineOptions = {}): Promise<PipelineResult> {
   let prompt = idea;
   let research: WebSearchResult | undefined;
-  let searchNote: string | undefined;
+  const notes: string[] = [];
 
   if (options.webSearch) {
     try {
@@ -42,13 +49,24 @@ export async function runPipeline(idea: string, options: PipelineOptions = {}): 
       });
       const context = formatSearchContext(research);
       if (context) prompt = `${idea}\n\n${context}`;
-      if (research.results.length === 0) searchNote = "Web search returned no results; continuing with the idea only.";
+      const flagged = countFlaggedResults(research);
+      if (flagged > 0) {
+        notes.push(`Web search: ${flagged} result(s) contained instruction-like text; kept as untrusted data.`);
+      }
+      if (research.results.length === 0) notes.push("Web search returned no results; continuing with the idea only.");
     } catch (error) {
-      searchNote = `Web search unavailable: ${error instanceof Error ? error.message : "unknown error"}`;
+      notes.push(`Web search unavailable: ${error instanceof Error ? error.message : "unknown error"}`);
     }
   }
 
   const state = await ideaToState(prompt, options);
+  if (research) {
+    const unsourced = externalNodesWithoutWebEvidence(state);
+    if (unsourced.length > 0) {
+      notes.push(`Web search was on but these external nodes carry no web evidence: ${unsourced.join(", ")}.`);
+    }
+  }
+  const searchNote = notes.length > 0 ? notes.join(" ") : undefined;
   const pkg = await buildPackage(state, {
     secrets: options.apiKey ? [options.apiKey] : [],
     taskOptions: options.taskOptions,

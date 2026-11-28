@@ -7,7 +7,7 @@ import {
   projectsResponseSchema,
   revisionResponseSchema,
 } from "../src/contract";
-import { parseState } from "../../core/src/state";
+import { parseState } from "@architect-studio/core";
 import { createServer } from "../src/server";
 
 let server: Server;

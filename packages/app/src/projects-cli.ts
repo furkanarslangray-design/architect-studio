@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { parseStateReport, type ArchState } from "../../core/src/state";
+import { parseStateReport, type ArchState } from "@architect-studio/core";
 import { createProjectStore } from "./store";
 
 /**

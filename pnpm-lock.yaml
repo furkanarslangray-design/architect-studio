@@ -49,17 +49,80 @@ importers:
         specifier: ^5.1.2
         version: 5.1.2(@types/node@24.19.4)(vite@7.3.8(@types/node@24.19.4)(tsx@4.23.15)(yaml@2.9.1))
 
-  packages/app: {}
+  packages/app:
+    dependencies:
+      '@architect-studio/core':
+        specifier: workspace:*
+        version: link:../core
+      '@architect-studio/generators':
+        specifier: workspace:*
+        version: link:../generators
+      '@architect-studio/packager':
+        specifier: workspace:*
+        version: link:../packager
+      '@architect-studio/reverse':
+        specifier: workspace:*
+        version: link:../reverse
+      '@architect-studio/sandbox':
+        specifier: workspace:*
+        version: link:../sandbox
+      '@architect-studio/validators':
+        specifier: workspace:*
+        version: link:../validators
 
   packages/core: {}
 
-  packages/generators: {}
+  packages/generators:
+    dependencies:
+      '@architect-studio/core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/mcp:
+    dependencies:
+      '@architect-studio/core':
+        specifier: workspace:*
+        version: link:../core
+      '@architect-studio/generators':
+        specifier: workspace:*
+        version: link:../generators
+      '@architect-studio/packager':
+        specifier: workspace:*
+        version: link:../packager
+      '@architect-studio/reverse':
+        specifier: workspace:*
+        version: link:../reverse
+      '@architect-studio/validators':
+        specifier: workspace:*
+        version: link:../validators
 
   packages/nx-plugin: {}
 
-  packages/packager: {}
+  packages/packager:
+    dependencies:
+      '@architect-studio/core':
+        specifier: workspace:*
+        version: link:../core
+      '@architect-studio/generators':
+        specifier: workspace:*
+        version: link:../generators
+      '@architect-studio/validators':
+        specifier: workspace:*
+        version: link:../validators
 
-  packages/validators: {}
+  packages/reverse:
+    dependencies:
+      '@architect-studio/core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/sandbox: {}
+
+  packages/validators:
+    dependencies:
+      '@architect-studio/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 

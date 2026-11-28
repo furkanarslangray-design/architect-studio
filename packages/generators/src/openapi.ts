@@ -1,5 +1,5 @@
 import YAML from "yaml";
-import type { ArchState, Entity } from "../../core/src/state";
+import type { ArchState, Entity } from "@architect-studio/core";
 import {
   entitiesForService,
   openapiFieldSchema,

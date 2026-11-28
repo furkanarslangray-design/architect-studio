@@ -11,8 +11,8 @@ import {
   staticReaAnalysis,
 } from "../src/rea";
 import { mergeReaFindings, repoToStateWithRea, summarizeReverse } from "../src";
-import { validateState } from "../../core/src/diff";
-import type { ArchState } from "../../core/src/state";
+import { validateState } from "@architect-studio/core";
+import type { ArchState } from "@architect-studio/core";
 
 const scratch = mkdtempSync(join(tmpdir(), "rea-test-"));
 const originalPath = process.env.PATH;

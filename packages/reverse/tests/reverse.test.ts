@@ -2,8 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { validateState } from "../../core/src/diff";
-import { buildPackage } from "../../packager/src";
+import { validateState } from "@architect-studio/core";
+import { buildPackage } from "@architect-studio/packager";
 import { repoToState, summarizeReverse } from "../src";
 
 const scratch = mkdtempSync(join(tmpdir(), "reverse-test-"));

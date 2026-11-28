@@ -1,8 +1,8 @@
-import type { ArchState } from "../../core/src/state";
-import type { TaskBuildOptions, TaskPacket } from "../../core/src/task-packet";
-import { renderTaskIndexMarkdown, resolveTaskOptions } from "../../core/src/task-packet";
-import { padNumber, slugify } from "../../core/src/ids";
-import { t } from "../../core/src/i18n";
+import type { ArchState } from "@architect-studio/core";
+import type { TaskBuildOptions, TaskPacket } from "@architect-studio/core";
+import { renderTaskIndexMarkdown, resolveTaskOptions } from "@architect-studio/core";
+import { padNumber, slugify } from "@architect-studio/core";
+import { t } from "@architect-studio/core";
 import { generateMermaid } from "./mermaid";
 import { nodeLabel } from "./util";
 

@@ -1,4 +1,4 @@
-import type { ArchState } from "../../core/src/state";
+import type { ArchState } from "@architect-studio/core";
 
 export function generateMermaid(state: ArchState): string {
   const ids = new Map(state.nodes.map((node) => [node.id, mermaidId(node.id)]));

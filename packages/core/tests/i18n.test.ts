@@ -9,7 +9,7 @@ import {
   t,
 } from "../src/i18n";
 import { buildTaskPackets } from "../src/task-packet";
-import { buildPackage } from "../../packager/src/build-package";
+import { buildPackage } from "@architect-studio/packager";
 import { parseState } from "../src/state";
 
 const state = parseState({

@@ -2,8 +2,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { architectChat } from "../src/chat";
 import { demoState } from "../src/demo";
 import { createServer } from "../src/server";
-import { validateState } from "../../core/src/diff";
-import type { ArchState } from "../../core/src/state";
+import { validateState } from "@architect-studio/core";
+import type { ArchState } from "@architect-studio/core";
 
 function baseState(): ArchState {
   return demoState("orders api on postgres with redis events, a react storefront and user accounts");

@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { validateState } from "../../core/src/diff";
-import { parseState, type ArchState } from "../../core/src/state";
-import { repoToState } from "../../reverse/src";
+import { validateState } from "@architect-studio/core";
+import { parseState, type ArchState } from "@architect-studio/core";
+import { repoToState } from "@architect-studio/reverse";
 
 /**
  * `architect doctor` — compares the architecture state saved in a repository

@@ -4,14 +4,6 @@
   "sourceRoot": "packages/app/src",
   "projectType": "application",
   "tags": ["type:app"],
-  "implicitDependencies": [
-    "core",
-    "generators",
-    "packager",
-    "reverse",
-    "sandbox",
-    "validators"
-  ],
   "targets": {
     "dev": {
       "executor": "nx:run-commands",
@@ -28,6 +20,10 @@
     "test": {
       "executor": "nx:run-commands",
       "options": { "command": "vitest run packages/app" }
+    },
+    "eval": {
+      "executor": "nx:run-commands",
+      "options": { "command": "tsx packages/app/src/eval-cli.ts" }
     }
   }
 }

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { repoToState } from "../../reverse/src";
+import { repoToState } from "@architect-studio/reverse";
 import {
   compareStates,
   doctorProject,

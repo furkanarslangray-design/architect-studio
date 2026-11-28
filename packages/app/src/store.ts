@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { ArchState } from "../../core/src/state";
+import type { ArchState } from "@architect-studio/core";
 
 /**
  * Project and revision history for "reopen where you left off".

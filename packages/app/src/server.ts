@@ -1,15 +1,15 @@
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { safeParseStateReport, type ArchState } from "../../core/src/state";
+import { safeParseStateReport, type ArchState } from "@architect-studio/core";
 import {
   PACKAGE_MANAGERS,
   TEST_RUNNERS,
   type PackageManager,
   type TaskBuildOptions,
   type TestRunner,
-} from "../../core/src/task-packet";
-import { TOKENIZER_ID } from "../../core/src/tokenizer";
+} from "@architect-studio/core";
+import { TOKENIZER_ID } from "@architect-studio/core";
 import {
   DEFAULT_LOCALE,
   localeNames,
@@ -18,19 +18,19 @@ import {
   t,
   type Locale,
   type MessageKey,
-} from "../../core/src/i18n";
-import { buildPackage, type PackageResult } from "../../packager/src";
-import { generateMermaid } from "../../generators/src";
+} from "@architect-studio/core";
+import { buildPackage, type PackageResult } from "@architect-studio/packager";
+import { generateMermaid } from "@architect-studio/generators";
 import {
   detectRea,
   repoToStateCached,
   summarizeReverse,
   type CachedReverseResult,
   type ReverseOptions,
-} from "../../reverse/src";
+} from "@architect-studio/reverse";
 import { createJobStore, type ReverseJob, type ReverseJobEvent } from "./jobs";
 import { createProjectStore } from "./store";
-import type { ReversePhase } from "../../reverse/src";
+import type { ReversePhase } from "@architect-studio/reverse";
 import {
   detectSandboxes,
   isSandboxType,
@@ -38,7 +38,7 @@ import {
   SandboxUnavailableError,
   verifyPackage,
   type SandboxType,
-} from "../../sandbox/src";
+} from "@architect-studio/sandbox";
 import { architectChat } from "./chat";
 import { runPipeline, type PipelineOptions, type PipelineResult } from "./pipeline";
 import { isSearchProvider, type WebSearchResult } from "./web-search";

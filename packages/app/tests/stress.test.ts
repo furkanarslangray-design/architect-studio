@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import JSZip from "jszip";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { parseState, type ArchState } from "../../core/src/state";
-import { buildPackage } from "../../packager/src";
+import { parseState, type ArchState } from "@architect-studio/core";
+import { buildPackage } from "@architect-studio/packager";
 import { createServer } from "../src/server";
 
 function largeArchitecture(): ArchState {

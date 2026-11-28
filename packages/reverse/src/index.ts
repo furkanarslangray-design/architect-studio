@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { validateState } from "../../core/src/diff";
-import { sanitizeState, type ArchEdge, type ArchNode, type ArchState, type Decision, type Entity, type NodeKind } from "../../core/src/state";
+import { validateState } from "@architect-studio/core";
+import { sanitizeState, type ArchEdge, type ArchNode, type ArchState, type Decision, type Entity, type NodeKind } from "@architect-studio/core";
 import { analyzeWithRea, type ReaAnalysis, type ReaFinding, type ReaOptions } from "./rea";
 import { digestContents, fingerprintKey, isReverseCacheEnabled, readCache, reverseCacheDir, writeCache } from "./cache";
 

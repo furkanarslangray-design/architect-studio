@@ -1,5 +1,5 @@
-import type { ArchNode, ArchState, Entity, EntityField, NodeKind } from "../../core/src/state";
-import { slugify } from "../../core/src/ids";
+import type { ArchNode, ArchState, Entity, EntityField, NodeKind } from "@architect-studio/core";
+import { slugify } from "@architect-studio/core";
 
 export function nodesOfKind(state: ArchState, kind: NodeKind): ArchNode[] {
   return state.nodes.filter((node) => node.kind === kind);

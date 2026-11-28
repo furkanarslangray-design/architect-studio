@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import JSZip from "jszip";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseState } from "../../core/src/state";
+import { parseState } from "@architect-studio/core";
 import { buildPackage, createZipStream } from "../src";
 
 function fixture() {

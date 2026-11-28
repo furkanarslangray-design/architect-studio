@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import { parseState, type ArchState } from "../../core/src/state";
+import { parseState, type ArchState } from "@architect-studio/core";
 import { buildPackage } from "../src";
 
 function fixture(name: "ecommerce" | "domain" = "ecommerce") {

@@ -11,6 +11,12 @@
     "noEmit": true,
     "types": ["node"],
     "paths": {
+      "@architect-studio/core": ["./packages/core/src/index.ts"],
+      "@architect-studio/generators": ["./packages/generators/src/index.ts"],
+      "@architect-studio/packager": ["./packages/packager/src/index.ts"],
+      "@architect-studio/validators": ["./packages/validators/src/index.ts"],
+      "@architect-studio/reverse": ["./packages/reverse/src/index.ts"],
+      "@architect-studio/sandbox": ["./packages/sandbox/src/index.ts"],
       "@architect-studio/workspace-plugin": ["./packages/nx-plugin/src/index.ts"]
     }
   }

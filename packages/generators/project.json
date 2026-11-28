@@ -6,9 +6,6 @@
   "tags": [
     "type:lib"
   ],
-  "implicitDependencies": [
-    "core"
-  ],
   "targets": {
     "typecheck": {
       "executor": "nx:run-commands",

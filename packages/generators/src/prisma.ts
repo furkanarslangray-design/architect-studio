@@ -1,5 +1,5 @@
-import type { ArchNode, ArchState, Entity, EntityField } from "../../core/src/state";
-import { slugify } from "../../core/src/ids";
+import type { ArchNode, ArchState, Entity, EntityField } from "@architect-studio/core";
+import { slugify } from "@architect-studio/core";
 import {
   camelCase,
   entitiesForDatabase,

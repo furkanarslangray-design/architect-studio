@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { generateDocs } from "../../generators/src";
-import { LOCALES, t } from "../../core/src/i18n";
-import { parseState, type ArchState } from "../../core/src/state";
+import { generateDocs } from "@architect-studio/generators";
+import { LOCALES, t } from "@architect-studio/core";
+import { parseState, type ArchState } from "@architect-studio/core";
 import { buildPackage, renderManifest } from "../src";
 
 const corpusDir = join(__dirname, "../../../examples/corpus");

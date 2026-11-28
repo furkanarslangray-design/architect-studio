@@ -1,6 +1,14 @@
 {
-  "name": "@architect/app",
+  "name": "@architect-studio/app",
   "version": "0.1.0",
   "private": true,
-  "main": "src/server.ts"
+  "main": "src/server.ts",
+  "dependencies": {
+    "@architect-studio/core": "workspace:*",
+    "@architect-studio/generators": "workspace:*",
+    "@architect-studio/packager": "workspace:*",
+    "@architect-studio/reverse": "workspace:*",
+    "@architect-studio/sandbox": "workspace:*",
+    "@architect-studio/validators": "workspace:*"
+  }
 }

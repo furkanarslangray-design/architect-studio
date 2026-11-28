@@ -1,5 +1,5 @@
 import YAML from "yaml";
-import type { ArchState } from "../../core/src/state";
+import type { ArchState } from "@architect-studio/core";
 import { nodesOfKind, pascalCase, uniqueName, uniqueSlugs } from "./util";
 
 export function generateAsyncAPI(state: ArchState): string {

@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { parseState } from "../../core/src/state";
+import { parseState } from "@architect-studio/core";
 import { createProjectStore } from "../src/store";
 
 const dir = mkdtempSync(join(tmpdir(), "architect-store-"));

@@ -1,4 +1,4 @@
-import { validateState } from "../../core/src/diff";
+import { validateState } from "@architect-studio/core";
 import {
   safeParseState,
   sanitizeState,
@@ -10,8 +10,8 @@ import {
   type FieldType,
   type NodeKind,
   type Protocol,
-} from "../../core/src/state";
-import type { Locale } from "../../core/src/i18n";
+} from "@architect-studio/core";
+import type { Locale } from "@architect-studio/core";
 import { extractJson } from "./llm";
 
 /**

@@ -2,15 +2,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
-import { parseState } from "../../core/src/state";
-import { buildTaskPackets } from "../../core/src/task-packet";
+import { parseState } from "@architect-studio/core";
+import { buildTaskPackets } from "@architect-studio/core";
 import {
   generateAsyncAPI,
   generateDocs,
   generateMermaid,
   generateOpenAPI31,
   generatePrisma,
-} from "../../generators/src";
+} from "@architect-studio/generators";
 import { repairArtifacts, validateArtifacts } from "../src";
 
 function validFiles() {

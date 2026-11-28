@@ -1,6 +1,6 @@
-import type { MetricReport } from "../../core/src/metrics";
-import { DEFAULT_LOCALE, t, type Locale } from "../../core/src/i18n";
-import type { ValidationReport } from "../../validators/src";
+import type { MetricReport } from "@architect-studio/core";
+import { DEFAULT_LOCALE, t, type Locale } from "@architect-studio/core";
+import type { ValidationReport } from "@architect-studio/validators";
 
 export interface ManifestSummary {
   components?: number;

@@ -1,22 +1,22 @@
-import type { ArchState } from "../../core/src/state";
-import { dependencyDepth, validateState } from "../../core/src/diff";
-import { eqMetric, estimateTokens, gteMetric, lteMetric, TOKENIZER_ID, type MetricReport } from "../../core/src/metrics";
-import { normalizeLocale, type Locale } from "../../core/src/i18n";
+import type { ArchState } from "@architect-studio/core";
+import { dependencyDepth, validateState } from "@architect-studio/core";
+import { eqMetric, estimateTokens, gteMetric, lteMetric, TOKENIZER_ID, type MetricReport } from "@architect-studio/core";
+import { normalizeLocale, type Locale } from "@architect-studio/core";
 import {
   buildTaskPackets,
   computeTaskMetrics,
   renderTaskMarkdown,
   type TaskBuildOptions,
   type TaskPacket,
-} from "../../core/src/task-packet";
+} from "@architect-studio/core";
 import {
   generateAsyncAPI,
   generateDocs,
   generateMermaid,
   generateOpenAPI31,
   generatePrisma,
-} from "../../generators/src";
-import { repairArtifacts, validateArtifacts, type ValidationReport } from "../../validators/src";
+} from "@architect-studio/generators";
+import { repairArtifacts, validateArtifacts, type ValidationReport } from "@architect-studio/validators";
 import { renderOpenCodeAgent } from "./opencode-agents";
 import { renderManifest } from "./report";
 import { createZipStream, type ZipStream } from "./zip";

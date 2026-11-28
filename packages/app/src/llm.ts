@@ -1,6 +1,6 @@
-import type { ArchState } from "../../core/src/state";
-import { safeParseState, sanitizeState } from "../../core/src/state";
-import { validateState } from "../../core/src/diff";
+import type { ArchState } from "@architect-studio/core";
+import { safeParseState, sanitizeState } from "@architect-studio/core";
+import { validateState } from "@architect-studio/core";
 import { demoState } from "./demo";
 
 export interface LlmOptions {

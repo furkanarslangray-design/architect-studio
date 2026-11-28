@@ -1,19 +1,19 @@
 import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { parseStateReport, type ArchState } from "../../core/src/state";
-import type { PackageManager, TaskBuildOptions, TestRunner } from "../../core/src/task-packet";
-import { isLocale, LOCALES, normalizeLocale } from "../../core/src/i18n";
-import type { PackageResult } from "../../packager/src";
-import { buildPackage } from "../../packager/src";
-import { repoToState, repoToStateWithRea, summarizeReverse, type ReverseResult } from "../../reverse/src";
+import { parseStateReport, type ArchState } from "@architect-studio/core";
+import type { PackageManager, TaskBuildOptions, TestRunner } from "@architect-studio/core";
+import { isLocale, LOCALES, normalizeLocale } from "@architect-studio/core";
+import type { PackageResult } from "@architect-studio/packager";
+import { buildPackage } from "@architect-studio/packager";
+import { repoToState, repoToStateWithRea, summarizeReverse, type ReverseResult } from "@architect-studio/reverse";
 import {
   isSandboxType,
   SANDBOX_TYPES,
   verifyPackage,
   type SandboxRun,
   type SandboxType,
-} from "../../sandbox/src";
+} from "@architect-studio/sandbox";
 import { isSearchProvider, WEB_SEARCH_PROVIDERS, type SearchProvider } from "./web-search";
 import { runPipeline } from "./pipeline";
 import { runInitCommand } from "./init";

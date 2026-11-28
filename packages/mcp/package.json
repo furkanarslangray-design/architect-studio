@@ -1,0 +1,13 @@
+{
+  "name": "@architect-studio/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "dependencies": {
+    "@architect-studio/core": "workspace:*",
+    "@architect-studio/generators": "workspace:*",
+    "@architect-studio/packager": "workspace:*",
+    "@architect-studio/reverse": "workspace:*",
+    "@architect-studio/validators": "workspace:*"
+  }
+}

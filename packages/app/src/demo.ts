@@ -1,4 +1,4 @@
-import type { ArchNode, ArchState, Entity } from "../../core/src/state";
+import type { ArchNode, ArchState, Entity } from "@architect-studio/core";
 
 export function demoState(idea: string): ArchState {
   const text = idea.toLowerCase();

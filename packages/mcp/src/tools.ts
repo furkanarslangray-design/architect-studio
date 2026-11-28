@@ -1,12 +1,12 @@
 import { createWriteStream, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { generateMermaid } from "../../generators/src";
-import { validateArtifacts } from "../../validators/src";
-import { buildPackage } from "../../packager/src";
-import { repoToState, repoToStateWithRea, summarizeReverse } from "../../reverse/src";
-import { safeParseState, type ArchState } from "../../core/src/state";
-import type { Locale } from "../../core/src/i18n";
+import { generateMermaid } from "@architect-studio/generators";
+import { validateArtifacts } from "@architect-studio/validators";
+import { buildPackage } from "@architect-studio/packager";
+import { repoToState, repoToStateWithRea, summarizeReverse } from "@architect-studio/reverse";
+import { safeParseState, type ArchState } from "@architect-studio/core";
+import type { Locale } from "@architect-studio/core";
 import { runPipeline } from "../../app/src/pipeline";
 
 export interface ToolContent {

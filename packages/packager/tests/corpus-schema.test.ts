@@ -9,8 +9,8 @@ import {
   EntityFieldSchema,
   EntityRelationSchema,
   EntitySchema,
-} from "../../core/src/state";
-import { ARCH_STATE_JSON_SCHEMA, CURRENT_STATE_VERSION } from "../../core/src/state-schema";
+} from "@architect-studio/core";
+import { ARCH_STATE_JSON_SCHEMA, CURRENT_STATE_VERSION } from "@architect-studio/core";
 
 const corpusDir = join(__dirname, "../../../examples/corpus");
 const files = readdirSync(corpusDir)

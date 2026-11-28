@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { safeParseState } from "../../core/src/state";
+import { safeParseState } from "@architect-studio/core";
 import {
   ENDPOINTS,
   archStateSchema,
