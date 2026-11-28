@@ -1,8 +1,29 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import type { ArchState } from "@architect-studio/core";
+
+type SqliteModule = typeof import("node:sqlite");
+
+let sqliteModule: SqliteModule | undefined;
+
+/**
+ * `node:sqlite` still labels itself experimental even though the API used here
+ * is stable, and Node prints that warning on first load. Mute warnings only for
+ * that import and restore every listener afterwards, so unrelated warnings are
+ * never swallowed.
+ */
+function loadSqlite(): SqliteModule {
+  if (sqliteModule) return sqliteModule;
+  const listeners = process.listeners("warning");
+  process.removeAllListeners("warning");
+  try {
+    sqliteModule = require("node:sqlite") as SqliteModule;
+    return sqliteModule;
+  } finally {
+    for (const listener of listeners) process.on("warning", listener);
+  }
+}
 
 /**
  * Project and revision history for "reopen where you left off".
@@ -57,6 +78,7 @@ export interface ProjectStore {
   readonly mode: "file" | "memory";
   readonly path: string | null;
   readonly maxRevisions: number;
+  readonly schemaVersion: number;
   createProject(name: string): Project;
   listProjects(): Project[];
   getProject(id: string): Project | undefined;
@@ -92,19 +114,36 @@ type Database = {
 const DEFAULT_MAX_REVISIONS = 50;
 const DEFAULT_BUSY_TIMEOUT_MS = 5000;
 
+/** Bumped whenever the schema below changes; migrations run before the store is used. */
+export const SCHEMA_VERSION = 1;
+
+type SchemaMigration = { version: number; apply: (db: Database) => void };
+
+/**
+ * Ordered, idempotent upgrades applied on open. Version 1 is the baseline
+ * created by the statements in `createProjectStore`; any future column or index
+ * belongs here so an existing database file keeps working.
+ */
+const MIGRATIONS: SchemaMigration[] = [];
+
+function readSchemaVersion(db: Database): number {
+  const row = db.prepare("PRAGMA user_version").get() as { user_version?: number } | undefined;
+  return Number(row?.user_version ?? 0);
+}
+
 function openDatabase(path: string | undefined): {
   db: Database;
   mode: ProjectStore["mode"];
   path: string | null;
 } {
   if (!path || path === ":memory:" || path === "memory") {
-    return { db: new DatabaseSync(":memory:") as unknown as Database, mode: "memory", path: null };
+    return { db: new (loadSqlite().DatabaseSync)(":memory:") as unknown as Database, mode: "memory", path: null };
   }
   try {
     mkdirSync(dirname(path), { recursive: true });
-    return { db: new DatabaseSync(path) as unknown as Database, mode: "file", path };
+    return { db: new (loadSqlite().DatabaseSync)(path) as unknown as Database, mode: "file", path };
   } catch {
-    return { db: new DatabaseSync(":memory:") as unknown as Database, mode: "memory", path: null };
+    return { db: new (loadSqlite().DatabaseSync)(":memory:") as unknown as Database, mode: "memory", path: null };
   }
 }
 
@@ -167,6 +206,17 @@ export function createProjectStore(options: ProjectStoreOptions = {}): ProjectSt
     );
   `);
 
+  let schemaVersion = readSchemaVersion(db);
+  for (const migration of MIGRATIONS) {
+    if (migration.version <= schemaVersion) continue;
+    migration.apply(db);
+    schemaVersion = migration.version;
+  }
+  if (schemaVersion < SCHEMA_VERSION) {
+    db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
+    schemaVersion = SCHEMA_VERSION;
+  }
+
   const projectRow = (id: string): Row | undefined =>
     db
       .prepare(
@@ -186,6 +236,7 @@ export function createProjectStore(options: ProjectStoreOptions = {}): ProjectSt
 
   const store: ProjectStore = {
     mode,
+    schemaVersion,
     path,
     maxRevisions,
 

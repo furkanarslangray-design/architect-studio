@@ -10,3 +10,6 @@ coverage/
 .nx/
 backups/
 .architect/cache/
+.architect/*.db
+.architect/*.db-wal
+.architect/*.db-shm
