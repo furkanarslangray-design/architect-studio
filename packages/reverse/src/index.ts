@@ -276,6 +276,66 @@ function mapPrismaType(type: string): Entity["fields"][number]["type"] {
   return PRISMA_TYPES[type] ?? "string";
 }
 
+interface OpenApiEntity {
+  name: string;
+  fields: Array<{ name: string; type: Entity["fields"][number]["type"]; required: boolean; unique: boolean; primary: boolean }>;
+  relations: Array<{ target: string; field?: string }>;
+}
+
+const OPENAPI_TYPES: Record<string, Entity["fields"][number]["type"]> = {
+  integer: "int",
+  number: "float",
+  boolean: "boolean",
+  array: "json",
+  object: "json",
+};
+
+function mapOpenApiType(property: any): Entity["fields"][number]["type"] {
+  const format = typeof property?.format === "string" ? property.format : "";
+  if (format === "uuid") return "uuid";
+  if (format === "date-time") return "datetime";
+  if (format === "date") return "date";
+  if (format === "decimal") return "decimal";
+  return OPENAPI_TYPES[property?.type] ?? "string";
+}
+
+/** OpenAPI `components.schemas` (or Swagger `definitions`) become domain entities. */
+function parseOpenApiEntities(source: string, isJson: boolean): OpenApiEntity[] {
+  let document: any;
+  try {
+    document = isJson ? JSON.parse(source) : parseYaml(source);
+  } catch {
+    return [];
+  }
+  const schemas = document?.components?.schemas ?? document?.definitions;
+  if (!schemas || typeof schemas !== "object") return [];
+  const entities: OpenApiEntity[] = [];
+  for (const [name, schema] of Object.entries<any>(schemas).slice(0, 40)) {
+    const required = new Set(Array.isArray(schema?.required) ? schema.required.map(String) : []);
+    const fields: OpenApiEntity["fields"] = [];
+    const relations: OpenApiEntity["relations"] = [];
+    for (const [fieldName, property] of Object.entries<any>(schema?.properties ?? {})) {
+      const ref = typeof property?.$ref === "string" ? property.$ref.split("/").pop() : undefined;
+      if (ref && schemas[ref]) {
+        relations.push({ target: ref, field: `${fieldName}Id` });
+        continue;
+      }
+      fields.push({
+        name: fieldName,
+        type: mapOpenApiType(property),
+        required: required.has(fieldName),
+        unique: property?.unique === true,
+        primary: fieldName === "id" || property?.["x-primary"] === true,
+      });
+    }
+    if (fields.length === 0) {
+      fields.push({ name: "id", type: "uuid", required: true, unique: false, primary: true });
+    }
+    entities.push({ name, fields, relations });
+  }
+  return entities;
+}
+
 interface ComposeService {
   name: string;
   image?: string;
@@ -439,6 +499,11 @@ export function repoToState(root: string, options: ReverseOptions = {}): Reverse
     entityIds.set(id, model.name);
     modelToEntityId.set(model.name, id);
   }
+  if (!databaseNode && parsedModels.length > 0) {
+    databaseNode = node("database", "Primary Database", { detected: "prisma" });
+    nodes.push(databaseNode);
+  }
+
   for (const model of parsedModels) {
     const fields = model.fields
       .filter((field) => !field.relationTarget)
@@ -470,6 +535,48 @@ export function repoToState(root: string, options: ReverseOptions = {}): Reverse
     findings.push({ kind: "entity", source: prismaFile?.relativePath ?? "prisma", detail: `${model.name} (${fields.length} fields)` });
   }
 
+  // OpenAPI/Swagger schemas become entities when the repository has no Prisma schema.
+  const openApiFile = prismaFile
+    ? undefined
+    : files.find((file) => /(^|\/)(openapi|swagger)\.(ya?ml|json)$/i.test(file.relativePath));
+  const openApiEntities = openApiFile
+    ? parseOpenApiEntities(readText(openApiFile.path), openApiFile.relativePath.endsWith(".json"))
+    : [];
+  if (openApiEntities.length > 0 && !databaseNode) {
+    databaseNode = node("database", "Primary Database", { detected: "openapi" });
+    nodes.push(databaseNode);
+  }
+  if (openApiEntities.length > 0) {
+    const openApiIds = new Map<string, string>();
+    for (const schema of openApiEntities) {
+      let id = `ent-${slug(schema.name)}`;
+      let counter = 2;
+      while (entityIds.has(id)) id = `ent-${slug(schema.name)}-${counter++}`;
+      entityIds.set(id, schema.name);
+      openApiIds.set(schema.name, id);
+    }
+    for (const schema of openApiEntities) {
+      const id = openApiIds.get(schema.name)!;
+      entities.push({
+        id,
+        name: schema.name,
+        description: `Detected from ${openApiFile!.relativePath}.`,
+        ...(serviceNode ? { serviceId: serviceNode.id } : {}),
+        ...(databaseNode ? { databaseId: databaseNode.id } : {}),
+        fields: schema.fields,
+        relations: schema.relations.flatMap((relation) => {
+          const target = openApiIds.get(relation.target);
+          return target ? [{ target, ...(relation.field ? { field: relation.field } : {}) }] : [];
+        }),
+      });
+      findings.push({
+        kind: "entity",
+        source: openApiFile!.relativePath,
+        detail: `${schema.name} (${schema.fields.length} fields)`,
+      });
+    }
+  }
+
   // ADR documents become decisions.
   const adrFiles = files.filter((file) => /(^|\/)(adr|decisions)\/[^/]+\.md$/i.test(file.relativePath)).slice(0, 10);
   for (const [index, file] of adrFiles.entries()) {
@@ -488,12 +595,6 @@ export function repoToState(root: string, options: ReverseOptions = {}): Reverse
       alternatives: [],
     });
     findings.push({ kind: "decision", source: file.relativePath, detail: title });
-  }
-
-  if (!databaseNode && parsedModels.length > 0) {
-    const created = node("database", "Primary Database", { detected: "prisma" });
-    nodes.push(created);
-    databaseNode = created;
   }
 
   if (!serviceNode) {
