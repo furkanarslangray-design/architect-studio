@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Architect Studio</title>
+    <meta name="description" content="Turn an idea or an existing repository into a verified agent package." />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/vendor/mermaid.min.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="app-header" id="app-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">◳</span>
+        <span class="brand-name">Architect Studio</span>
+        <span class="badge" id="version-badge">v—</span>
+      </div>
+      <div class="header-actions">
+        <label class="field-inline">
+          <span class="field-label" data-i18n="ui.locale">Language</span>
+          <select id="locale-select" aria-label="Language"></select>
+        </label>
+        <button type="button" class="icon-button" id="theme-toggle" aria-label="Toggle theme" data-i18n-title="ui.themeToggle" title="Toggle theme">
+          <span aria-hidden="true">◐</span>
+        </button>
+        <button type="button" class="button primary" id="download-btn">Download package</button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <nav class="rail" aria-label="Sections">
+        <p class="rail-title">Studio</p>
+        <button type="button" class="rail-link is-active" data-view="composer">Composer</button>
+        <button type="button" class="rail-link" data-view="architecture">Architecture</button>
+        <button type="button" class="rail-link" data-view="chat">Chat</button>
+        <button type="button" class="rail-link" data-view="tasks">Tasks</button>
+        <button type="button" class="rail-link" data-view="metrics">Quality</button>
+        <button type="button" class="rail-link" data-view="artifacts">Artifacts</button>
+        <button type="button" class="rail-link" data-view="reverse">Reverse</button>
+        <button type="button" class="rail-link" data-view="sandbox">Sandbox</button>
+        <button type="button" class="rail-link" data-view="settings">Settings</button>
+        <button type="button" class="rail-link" data-view="status">Status</button>
+        <p class="rail-hint">g p preview · g r reverse · ? shortcuts</p>
+      </nav>
+
+      <main id="main" class="content" tabindex="-1">
+        <div id="alert-host" class="alert-host" role="alert" aria-live="assertive"></div>
+
+        <section class="view is-active" id="view-composer" aria-labelledby="composer-title">
+          <div class="view-head">
+            <h1 id="composer-title">Turn your idea into an agent package</h1>
+            <p class="lede">
+              Describe the system you have in mind. Architect Studio builds the architecture, produces
+              domain models and contracts, validates them deterministically and packages task packets.
+            </p>
+          </div>
+
+          <div class="card">
+            <label class="field">
+              <span class="field-label" data-i18n="ui.ideaLabel">Your idea</span>
+              <textarea id="idea-input" rows="6" data-i18n-placeholder="ui.ideaPlaceholder"
+                placeholder="e.g. An order API on Postgres, Redis Streams for domain events and a React storefront. Add Stripe for payments."></textarea>
+            </label>
+            <p class="field-error" id="composer-error" role="status" aria-live="polite"></p>
+            <div class="chips" id="example-chips">
+              <button type="button" class="chip" data-idea="online store with orders, users and products">Online store</button>
+              <button type="button" class="chip" data-idea="order API on Postgres with Redis events and a React admin UI">Order API + Redis</button>
+              <button type="button" class="chip" data-idea="multi-tenant SaaS with billing, Stripe payments and Postgres">SaaS billing</button>
+            </div>
+            <div class="row">
+              <label class="toggle">
+                <input type="checkbox" id="demo-toggle" checked />
+                <span data-i18n="ui.demoTitle">Demo mode</span>
+              </label>
+              <div class="row-actions">
+                <button type="button" class="button" id="preview-btn" data-i18n="ui.preview">Preview first</button>
+                <button type="button" class="button primary" id="composer-generate-btn" data-i18n="ui.generate">
+                  Generate architecture and download ZIP
+                </button>
+              </div>
+            </div>
+            <p class="hint" data-i18n="ui.demoHint">
+              Demo mode runs without an API key and produces a deterministic architecture from keywords.
+            </p>
+          </div>
+        </section>
+
+        <section class="view" id="view-architecture" aria-labelledby="architecture-title">
+          <div class="view-head">
+            <h1 id="architecture-title">Architecture</h1>
+            <p class="lede">The diagram is rendered from the server's Mermaid output; nothing is inferred locally.</p>
+          </div>
+          <div class="split">
+            <div class="card diagram-card">
+              <div class="card-head">
+                <h2>Diagram</h2>
+                <div class="row-actions">
+                  <button type="button" class="button ghost" id="diagram-copy">Copy SVG</button>
+                  <button type="button" class="button ghost" id="diagram-zoom-out" aria-label="Zoom out">−</button>
+                  <button type="button" class="button ghost" id="diagram-zoom-in" aria-label="Zoom in">+</button>
+                </div>
+              </div>
+              <div class="diagram" id="diagram" aria-live="polite" role="img" aria-label="Architecture diagram"></div>
+              <pre class="diagram-fallback" id="diagram-fallback" hidden></pre>
+              <p class="empty" id="diagram-empty">Write an idea and preview it to see the diagram.</p>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <h2>Summary</h2>
+                <ul class="summary-chips" id="summary-chips"></ul>
+              </div>
+              <div class="card">
+                <h2>Components &amp; entities</h2>
+                <div id="entities-table" class="table-wrap"></div>
+              </div>
+              <div class="card">
+                <h2>Decisions</h2>
+                <ul class="decision-list" id="decisions-list"></ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-chat" aria-labelledby="chat-title">
+          <div class="view-head">
+            <h1 id="chat-title" data-i18n="ui.chatTitle">Architect chat</h1>
+            <p class="lede" data-i18n="ui.chatHint">
+              Describe the change in plain language. The diagram, entities and package update live.
+            </p>
+          </div>
+          <div class="card">
+            <ol class="chat-log" id="chat-log" aria-live="polite"></ol>
+            <ul class="change-list" id="chat-changes"></ul>
+            <label class="field">
+              <span class="field-label">Instruction</span>
+              <textarea id="chat-input" rows="3" data-i18n-placeholder="ui.chatPlaceholder"
+                placeholder="Add a Redis cache in front of the orders API"></textarea>
+            </label>
+            <div class="row">
+              <p class="field-error" id="chat-error" role="status"></p>
+              <button type="button" class="button primary" id="chat-send" data-i18n="ui.chatSend">Send</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-tasks" aria-labelledby="tasks-title">
+          <div class="view-head">
+            <h1 id="tasks-title">Task board</h1>
+            <p class="lede">Parallel waves; every card lists its dependencies, files and token budget.</p>
+          </div>
+          <label class="field-inline">
+            <span class="field-label">Filter</span>
+            <input type="search" id="task-filter" placeholder="entity or wave" />
+          </label>
+          <div id="task-board" class="task-board"></div>
+        </section>
+
+        <section class="view" id="view-metrics" aria-labelledby="metrics-title">
+          <div class="view-head">
+            <h1 id="metrics-title">Quality</h1>
+            <p class="lede">Deterministic metrics and validation results for the current architecture.</p>
+          </div>
+          <div class="card">
+            <h2>Metrics</h2>
+            <div id="metrics-grid" class="metrics-grid"></div>
+          </div>
+          <div class="card">
+            <h2>Validation</h2>
+            <div id="validation-panel" class="validation-panel"></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-artifacts" aria-labelledby="artifacts-title">
+          <div class="view-head">
+            <h1 id="artifacts-title">Artifacts</h1>
+            <p class="lede">Files in the current package. Downloads only happen through the ZIP.</p>
+          </div>
+          <div class="split">
+            <div class="card">
+              <h2>Files</h2>
+              <ul id="artifact-list" class="artifact-list"></ul>
+              <p class="empty" id="artifact-empty">No files yet.</p>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <h2 id="artifact-name">File</h2>
+                <button type="button" class="button ghost" id="artifact-copy">Copy</button>
+              </div>
+              <pre id="artifact-content" class="code-block">Select a file to view its contents.</pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-reverse" aria-labelledby="reverse-title">
+          <div class="view-head">
+            <h1 id="reverse-title">Reverse engineering</h1>
+            <p class="lede">Scan a local repository and fold the findings into an architecture state.</p>
+          </div>
+          <div class="card">
+            <label class="field">
+              <span class="field-label">Repository path</span>
+              <input type="text" id="reverse-path" placeholder="/home/you/projects/storefront" />
+            </label>
+            <div class="row">
+              <label class="toggle">
+                <input type="checkbox" id="reverse-rea" />
+                <span>Use REA when installed</span>
+              </label>
+              <label class="field-inline">
+                <span class="field-label">maxFiles</span>
+                <input type="number" id="reverse-max-files" min="1" max="2500" value="2500" />
+              </label>
+              <label class="field-inline">
+                <span class="field-label">maxDepth</span>
+                <input type="number" id="reverse-max-depth" min="1" max="32" value="8" />
+              </label>
+              <button type="button" class="button primary" id="reverse-run">Scan repository</button>
+            </div>
+            <p class="field-error" id="reverse-error" role="status"></p>
+            <p class="progress" id="reverse-progress" aria-live="polite"></p>
+          </div>
+          <div class="card">
+            <h2>Findings</h2>
+            <ul class="finding-list" id="reverse-findings"></ul>
+            <p class="empty" id="reverse-empty">No scan has run yet.</p>
+          </div>
+        </section>
+
+        <section class="view" id="view-sandbox" aria-labelledby="sandbox-title">
+          <div class="view-head">
+            <h1 id="sandbox-title">Sandbox</h1>
+            <p class="lede">Detected isolation drivers, and a verification run with its console output.</p>
+          </div>
+          <div class="split">
+            <div class="card">
+              <h2>Drivers</h2>
+              <table class="table" id="sandbox-list">
+                <thead><tr><th>Driver</th><th>Available</th><th>Isolation</th><th>Version</th></tr></thead>
+                <tbody></tbody>
+              </table>
+              <button type="button" class="button primary" id="sandbox-run">Verify package</button>
+              <p class="field-error" id="sandbox-error" role="status"></p>
+            </div>
+            <div class="card">
+              <h2>Console</h2>
+              <pre id="sandbox-console" class="console" aria-live="polite">No run yet.</pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-settings" aria-labelledby="settings-title">
+          <div class="view-head">
+            <h1 id="settings-title">Settings</h1>
+            <p class="lede">The API key lives in memory only: it is never written to storage and disappears on reload.</p>
+          </div>
+          <div class="card">
+            <label class="field">
+              <span class="field-label" data-i18n="ui.apiKey">API key (BYOK)</span>
+              <input type="password" id="api-key" autocomplete="off" spellcheck="false" />
+            </label>
+            <label class="field">
+              <span class="field-label" data-i18n="ui.baseUrl">Base URL</span>
+              <input type="url" id="base-url" value="https://api.openai.com/v1" />
+            </label>
+            <label class="field">
+              <span class="field-label" data-i18n="ui.model">Model</span>
+              <input type="text" id="model" value="gpt-4o-mini" />
+            </label>
+            <div class="row">
+              <label class="field-inline">
+                <span class="field-label" data-i18n="ui.packageManager">Package manager</span>
+                <select id="package-manager">
+                  <option value="pnpm">pnpm</option>
+                  <option value="npm">npm</option>
+                  <option value="yarn">yarn</option>
+                  <option value="bun">bun</option>
+                </select>
+              </label>
+              <label class="field-inline">
+                <span class="field-label" data-i18n="ui.testRunner">Test runner</span>
+                <select id="test-runner">
+                  <option value="vitest">vitest</option>
+                  <option value="jest">jest</option>
+                  <option value="node">node</option>
+                </select>
+              </label>
+              <button type="button" class="button ghost" id="clear-key">Clear key</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-status" aria-labelledby="status-title">
+          <div class="view-head">
+            <h1 id="status-title">System status</h1>
+            <p class="lede">Version, tokenizer, languages, REA detection and sandbox availability.</p>
+          </div>
+          <div class="card">
+            <dl id="status-grid" class="status-grid"></dl>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast-host" class="toast-host" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

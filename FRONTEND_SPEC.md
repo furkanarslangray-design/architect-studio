@@ -12,13 +12,13 @@ statik dosyaları sabit yollardan sunar:
 | `web/styles.css` | `GET /styles.css` |
 | `node_modules/mermaid/dist/mermaid.min.js` | `GET /vendor/mermaid.min.js` (sunucu doğrudan servis eder) |
 
-> Not: `web/` klasörü bu görev kapsamında silinmiştir. Yeni arayüz bu üç dosyayı
-> yeniden oluşturduğunda `GET /` doğrudan `web/index.html` dosyasını sunar. Dosyalar
-> yokken `/` isteği `500` dönmez: `200` + `application/json` ile `api-only` modunda
-> bir karşılama yanıtı verir (ad, sürüm, `FRONTEND_SPEC.md` referansı ve aktif
-> `/api/*` uç listesi); diğer tüm API uçları çalışmaya devam eder. Aynı şekilde
-> `web/app.js` ve `web/styles.css` yokken bu istekler `500` değil `404` +
-> `not_found` hata zarfı döner.
+> Durum: arayüz `web/index.html`, `web/styles.css` ve `web/app.js` olarak
+> **uygulandı**; `GET /` doğrudan `web/index.html` dosyasını sunar. Dosyalar yokken
+> `/` isteği `500` dönmez: `200` + `application/json` ile `api-only` modunda bir
+> karşılama yanıtı verir (ad, sürüm, `FRONTEND_SPEC.md` referansı ve aktif `/api/*`
+> uç listesi); diğer tüm API uçları çalışmaya devam eder. Aynı şekilde `web/app.js`
+> ve `web/styles.css` yokken bu istekler `500` değil `404` + `not_found` hata zarfı
+> döner.
 
 ---
 

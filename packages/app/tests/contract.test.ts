@@ -98,11 +98,12 @@ describe("FRONTEND_SPEC.md parity", () => {
 
 describe("GET contract", () => {
   it("root, health, version, i18n, sandboxes and rea match their schemas", async () => {
-    const welcome = await expectSchema(await fetch(`${baseUrl}/`), rootWelcomeSchema);
-    expect(welcome.version).toBe("2.2.0");
-    expect(welcome.mode).toBe("api-only");
-    expect(welcome.endpoints).toContain("GET /api/health");
-    expect(welcome.endpoints).toContain("POST /api/generate");
+    // The UI is shipped again, so `/` serves the shell; the api-only welcome
+    // payload remains the documented fallback when `web/index.html` is absent.
+    const root = await fetch(`${baseUrl}/`);
+    expect(root.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(root.headers.get("content-security-policy")).toContain("default-src 'self'");
+    expect((await root.text()).length).toBeGreaterThan(500);
 
     expect(await expectSchema(await fetch(`${baseUrl}/api/health`), healthSchema)).toMatchObject({ ok: true });
 
@@ -274,12 +275,15 @@ describe("error contract", () => {
     });
   }
 
-  it("returns 404 not_found for the optional UI assets when web/ is absent", async () => {
+  it("serves the UI assets and still answers 404 for unknown ones", async () => {
     for (const asset of ["/app.js", "/styles.css"]) {
       const response = await fetch(`${baseUrl}${asset}`);
-      expect(response.status).toBe(404);
-      expect(errorEnvelopeSchema.parse(await response.json()).code).toBe("not_found");
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("no-store");
     }
+    const missing = await fetch(`${baseUrl}/missing.css`);
+    expect(missing.status).toBe(404);
+    expect(errorEnvelopeSchema.parse(await missing.json()).code).toBe("not_found");
   });
 
   it("rejects an empty chat message with empty_message", async () => {
