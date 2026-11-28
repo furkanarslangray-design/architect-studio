@@ -1,0 +1,5 @@
+{
+  "id": "event-driven-orders",
+  "idea": "Event driven order service with a Redis queue and background workers",
+  "expect": { "minNodes": 3, "minEntities": 1, "minDecisions": 1 }
+}

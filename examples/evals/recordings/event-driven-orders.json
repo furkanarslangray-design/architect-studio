@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "svc-orders", "kind": "service", "name": "Order API", "props": { "runtime": "node" } },
+    { "id": "queue-events", "kind": "queue", "name": "Domain Events", "props": { "engine": "redis" } },
+    { "id": "svc-worker", "kind": "service", "name": "Order Worker", "props": { "runtime": "node" } }
+  ],
+  "edges": [
+    { "id": "edge-api-queue", "from": "svc-orders", "to": "queue-events", "protocol": "event" },
+    { "id": "edge-worker-queue", "from": "svc-worker", "to": "queue-events", "protocol": "event" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-001",
+      "title": "Use Redis Streams for order events",
+      "context": "Order writes must not wait for downstream consumers.",
+      "decision": "Publish order events to Redis Streams and consume them in workers.",
+      "alternatives": ["Kafka", "SQS"]
+    }
+  ],
+  "entities": [
+    {
+      "id": "ent-order",
+      "name": "Order",
+      "description": "A customer order handled asynchronously.",
+      "serviceId": "svc-orders",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "unique": false, "primary": true },
+        { "name": "status", "type": "string", "required": true, "unique": false, "primary": false },
+        { "name": "total", "type": "decimal", "required": true, "unique": false, "primary": false }
+      ],
+      "relations": []
+    }
+  ]
+}

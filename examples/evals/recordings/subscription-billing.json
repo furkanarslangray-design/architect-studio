@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "ui-admin", "kind": "ui", "name": "Admin UI", "props": { "framework": "react" } },
+    { "id": "svc-billing", "kind": "service", "name": "Billing API", "props": { "runtime": "node" } },
+    { "id": "db-main", "kind": "database", "name": "Primary DB", "props": { "engine": "postgres" } },
+    { "id": "stripe", "kind": "external", "name": "Stripe", "props": { "evidence": "web: https://stripe.com/docs" } }
+  ],
+  "edges": [
+    { "id": "edge-ui-api", "from": "ui-admin", "to": "svc-billing", "protocol": "http" },
+    { "id": "edge-api-db", "from": "svc-billing", "to": "db-main", "protocol": "sql" },
+    { "id": "edge-api-stripe", "from": "svc-billing", "to": "stripe", "protocol": "http" }
+  ],
+  "decisions": [
+    {
+      "id": "adr-001",
+      "title": "Use Stripe for billing",
+      "context": "Subscriptions and invoices should not be rebuilt in-house.",
+      "decision": "Use Stripe Billing and keep only subscription references locally.",
+      "alternatives": ["Paddle", "In-house billing"]
+    }
+  ],
+  "entities": [
+    {
+      "id": "ent-subscription",
+      "name": "Subscription",
+      "description": "A customer subscription billed through Stripe.",
+      "serviceId": "svc-billing",
+      "databaseId": "db-main",
+      "fields": [
+        { "name": "id", "type": "uuid", "required": true, "unique": false, "primary": true },
+        { "name": "customerId", "type": "string", "required": true, "unique": false, "primary": false },
+        { "name": "status", "type": "string", "required": true, "unique": false, "primary": false }
+      ],
+      "relations": []
+    }
+  ]
+}

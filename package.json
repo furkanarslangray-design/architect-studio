@@ -13,6 +13,7 @@
     "build": "nx run-many -t typecheck test",
     "affected": "nx affected -t typecheck test",
     "architect": "tsx packages/app/src/cli.ts",
+    "eval": "tsx packages/app/src/eval-cli.ts",
     "generate": "tsx packages/app/src/cli.ts",
     "mcp": "tsx packages/mcp/src/index.ts"
   },
