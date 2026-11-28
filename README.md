@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-314%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-325%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![pnpm](https://img.shields.io/badge/pnpm-10-F69220?logo=pnpm&logoColor=white)](pnpm-lock.yaml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -847,7 +847,7 @@ flowchart LR
 ## Tests
 
 ```bash
-pnpm test        # nx run-many -t test — 314 tests, 32 files, 8 packages
+pnpm test        # nx run-many -t test — 325 tests, 35 files, 8 packages
 pnpm typecheck   # nx run-many -t typecheck — 9 projects
 pnpm build       # typecheck + test
 ```
@@ -858,7 +858,7 @@ pnpm build       # typecheck + test
 | generators | 10 |
 | validators | 10 |
 | packager | 53 |
-| app | 154 |
+| app | 165 |
 | reverse | 24 |
 | sandbox | 12 |
 | mcp | 7 |
@@ -870,6 +870,34 @@ MCP tools and the projects CLI. Contract tests (`packages/app/tests/contract.tes
 validate every endpoint against `packages/app/src/contract.ts`, bind the ZIP headers and
 compare the endpoint list in `FRONTEND_SPEC.md` §4 with `ENDPOINTS` in both directions.
 Store tests cover the file/memory modes and two worker processes writing one database.
+
+### Module boundaries
+
+Packages are imported only through their public entry point
+(`@architect-studio/core`, `…/generators`, `…/packager`, `…/validators`, `…/reverse`,
+`…/sandbox`): `tsconfig.base.json` maps each name to `packages/<pkg>/src/index.ts` and
+`vitest.config.ts` mirrors the mapping for tests. `implicitDependencies` is gone from every
+`project.json`. `packages/app/tests/module-boundaries.test.ts` enforces three rules without
+an eslint dependency: no deep import (`@architect-studio/core/src/diff` fails), no relative
+cross-package import (`../../core/src/…` fails), and no application importing a
+`type:tooling` package.
+
+### Eval harness
+
+`pnpm eval` replays committed model recordings without an API key, so CI measures quality
+deterministically:
+
+```bash
+pnpm eval            # replay examples/evals/recordings/*.json (default)
+pnpm eval --record   # call the configured model (BYOK) and rewrite the recordings
+pnpm eval --dir examples/evals
+```
+
+Each case in `examples/evals/*.json` declares `id`, `idea` and expectations (`minNodes`,
+`minEntities`, `minDecisions`). The report lists pass/fail per case plus valid-state rate,
+fallback rate (a recording identical to the deterministic engine's output) and average
+tokens per state. A missing recording is a hard error, never a skipped case. The same run is
+available as the `app:eval` Nx target.
 
 Golden corpus: `examples/corpus/*.json` holds eleven architecture states (single node, 54
 nodes, with and without entities, every edge protocol, a legacy state with no `version`

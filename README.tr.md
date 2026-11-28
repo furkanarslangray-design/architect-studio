@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanarslangray-design/architect-studio/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-24.22.1-339933?logo=node.js&logoColor=white)](.nvmrc)
-[![Tests](https://img.shields.io/badge/tests-314%20passed-brightgreen)](README.md#tests)
+[![Tests](https://img.shields.io/badge/tests-325%20passed-brightgreen)](README.md#tests)
 [![Nx](https://img.shields.io/badge/Nx-24-143055?logo=nx&logoColor=white)](https://nx.dev)
 [![pnpm](https://img.shields.io/badge/pnpm-10-F69220?logo=pnpm&logoColor=white)](pnpm-lock.yaml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -758,7 +758,7 @@ flowchart LR
 ## Testler
 
 ```bash
-pnpm test        # nx run-many -t test — 314 test, 32 dosya, 8 paket
+pnpm test        # nx run-many -t test — 325 test, 35 dosya, 8 paket
 pnpm typecheck   # nx run-many -t typecheck — 9 proje
 pnpm build       # typecheck + test
 ```
@@ -769,7 +769,7 @@ pnpm build       # typecheck + test
 | generators | 10 |
 | validators | 10 |
 | packager | 53 |
-| app | 154 |
+| app | 165 |
 | reverse | 24 |
 | sandbox | 12 |
 | mcp | 7 |
@@ -781,6 +781,33 @@ araçları ve `projects` CLI. Sözleşme testleri (`packages/app/tests/contract.
 ucu `packages/app/src/contract.ts` şemasına karşı doğrular, ZIP başlıklarını bağlar ve
 `FRONTEND_SPEC.md` §4'teki uç listesini `ENDPOINTS` ile iki yönlü karşılaştırır. Store
 testleri dosya/bellek modlarını ve tek veritabanına yazan iki worker sürecini kapsar.
+
+### Modül sınırları
+
+Paketler yalnızca genel giriş noktalarından import edilir (`@architect-studio/core`,
+`…/generators`, `…/packager`, `…/validators`, `…/reverse`, `…/sandbox`):
+`tsconfig.base.json` her adı `packages/<pkg>/src/index.ts` dosyasına eşler, `vitest.config.ts`
+aynı eşlemeyi testler için yineler. `project.json` dosyalarındaki `implicitDependencies`
+kaldırıldı. `packages/app/tests/module-boundaries.test.ts` eslint bağımlılığı olmadan üç
+kuralı uygular: derin import (`@architect-studio/core/src/diff`) yasak, paketler arası göreli
+import (`../../core/src/…`) yasak ve uygulamalar `type:tooling` paketine bağlanamaz.
+
+### Eval koşum takımı
+
+`pnpm eval` API anahtarı olmadan commit'lenmiş model kayıtlarını oynatır; CI kaliteyi
+deterministik ölçer:
+
+```bash
+pnpm eval            # examples/evals/recordings/*.json oynat (varsayılan)
+pnpm eval --record   # yapılandırılmış modeli çağır (BYOK) ve kayıtları yenile
+pnpm eval --dir examples/evals
+```
+
+`examples/evals/*.json` içindeki her vaka `id`, `idea` ve beklentileri (`minNodes`,
+`minEntities`, `minDecisions`) tanımlar. Rapor vaka başına geçti/kaldı, geçerli state oranı,
+deterministik motora düşme oranı (kayıt deterministik çıktıyla birebir aynıysa) ve state
+başına ortalama token verir. Eksik kayıt atlanmaz, açık hata verir. Aynı koşu `app:eval` Nx
+hedefi olarak da var.
 
 Altın korpus: `examples/corpus/*.json` on bir mimari state tutar (tek düğüm, 54 düğüm,
 entity'li/entity'siz, her edge protokolü, migrasyonla yükseltilen `version`'sız eski state,

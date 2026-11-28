@@ -1,9 +1,8 @@
 # Plan — sonraki adımlar (implementasyon planı)
 
-**Durum:** §1 (spec sözleşme testleri), §2 (reverse güvenlik sınırı), §3 (`architect init`),
-§4 (artımlı reverse + SSE), §5 (`architect doctor`) ve §6 (deterministik ZIP) **uygulandı**;
-ayrıca CPU/RAM optimizasyonu yapıldı ve CI (verify + docker) yeşile alındı. Kalan maddeler
-(§7, §9, §11, §12) başlatılmadı; bu dosya plan ve uygulama notlarıdır.
+**Durum:** §1–§12 arasındaki maddelerin **tamamı uygulandı** (2026-11-28 itibarıyla);
+ayrıca CPU/RAM optimizasyonu yapıldı ve CI (verify + docker) yeşile alındı. Bu dosya plan
+ve uygulama notlarıdır; bilinen eksikler `OPEN-ISSUES.md` içinde tutulur.
 **Tarih:** 2026-11-24 · **Sürüm:** v2.1.0 üzerine
 **Kapsam:** 12 madde, değere göre sıralı; her maddede amaç, tasarım, dokunulacak dosyalar,
 adımlar, testler, kabul kriteri, risk ve efor var.
@@ -34,16 +33,16 @@ yalnızca bağımlılıklara + yeniden yazma maliyetine göre dizilmiştir.
 |---|---|---|---|
 | 1 | §2 `/api/reverse` güvenlik + kuyruk ✅ | — | Kimliksiz keyfî dosya okuması; ağa açılmadan önce kapanmalı, sonraki her uç aynı kuyruğu kullanacak |
 | 2 | §1 Spec uyum (contract) testleri ✅ | — | Arayüz ve tüm yeni alanlar bu şemaya göre yazılacak; en erken dondurulmalı |
-| 3 | §8 `ArchState` şema sürümleme | §1 (şema altyapısı) | Kalıcılık ve doctor bunun üstüne kurulur; veri yazılmadan önce sürüm kavramı olmalı |
-| 4 | §10 `@architect-studio/*` alias + sınır kuralları | §1 | Import'lara **bir kez** dokunmak için: 4, 5, 9, 11 zaten bu dosyaları değiştirecek |
+| 3 | §8 `ArchState` şema sürümleme ✅ | §1 (şema altyapısı) | Kalıcılık ve doctor bunun üstüne kurulur; veri yazılmadan önce sürüm kavramı olmalı |
+| 4 | §10 `@architect-studio/*` alias + sınır kuralları ✅ | §1 | Import'lara **bir kez** dokunmak için: 4, 5, 9, 11 zaten bu dosyaları değiştirecek |
 | 5 | §3 `architect init` ✅ | §2 (config alanları) | İlk kullanım deneyimi; §9'un `config.json`'ına dayanak |
 | 6 | §6 Deterministik ZIP ✅ | — | Ucuz ve §7'nin ön koşulu; paket hash'i erken sabitlenir |
-| 7 | §7 Altın korpus | §6 | Snapshot'lar ancak ZIP bayt-bayt sabitken anlamlı |
+| 7 | §7 Altın korpus ✅ | §6 | Snapshot'lar ancak ZIP bayt-bayt sabitken anlamlı |
 | 8 | §4 Artımlı reverse + SSE ✅ | §2 (kuyruk) | Önbellek anahtarı §2'nin yol çözümlemesini kullanır; geliştirme döngüsünü kısaltır |
-| 9 | §9 SQLite kalıcılık + revizyonlar | §3, §8 | En pahalı indirme (11 MB); state sürümü ve config oturmuş olmalı |
+| 9 | §9 SQLite kalıcılık + revizyonlar ✅ | §3, §8 | En pahalı indirme (11 MB); state sürümü ve config oturmuş olmalı |
 | 10 | §5 `architect doctor` ✅ | §3, §8 | Saklanan state dosyası ve sürümü olmadan denetlenecek şey yok |
-| 11 | §11 Prompt-injection sınırı | §1 | Web araması arayüzde açılmadan önce; küçük ve bağımsız |
-| 12 | §12 LLM eval harness | §1, §4 | Uçlar ve hata kodları sabitken kayıt/oynatma anlamlı |
+| 11 | §11 Prompt-injection sınırı ✅ | §1 | Web araması arayüzde açılmadan önce; küçük ve bağımsız |
+| 12 | §12 LLM eval harness ✅ | §1, §4 | Uçlar ve hata kodları sabitken kayıt/oynatma anlamlı |
 | 13 | Arayüz (`FRONTEND_SPEC.md`) | §1, §2, §3, §11 | Sözleşme testleri + güvenlik + init bitmeden başlanmaz |
 
 Kritik yol: **1 → 2 → 3 → 4 → 9** (yaklaşık 7–9 gün). Arayüz, 1–2 tamamlanınca
@@ -506,7 +505,16 @@ endpoint 5 test, CLI 3 test, app 151/151)
 
 ---
 
-## 10. `@architect-studio/*` paket alias'ları + modül sınırı kuralları — M
+## 10. `@architect-studio/*` paket alias'ları + modül sınırı kuralları — M · **UYGULANDI**
+
+**Teslim (2026-11-28):** Yedi paket `@architect-studio/<pkg>` adını, `src/index.ts` genel
+girişini ve `exports` alanını aldı; `packages/core/src/index.ts` barrel'ı eklendi. 89 import
+derin yol yerine paket adıyla yazıldı; `tsconfig.base.json` `paths` ve `vitest.config.ts`
+`resolve.alias` aynı eşlemeyi taşır. `implicitDependencies` beş `project.json` dosyasından
+kaldırıldı, çalışma alanı bağımlılıkları `workspace:*` olarak bildirildi. Sınır kuralları
+eslint yerine `packages/app/tests/module-boundaries.test.ts` ile uygulanır (derin import,
+göreli çapraz import, uygulama→`type:tooling` bağımlılığı). `pnpm typecheck` 9/9,
+`pnpm test` 325/325 yeşil; yeni paket yok.
 
 **Amaç:** Grafik kenarlarını Nx'in kendisi çıkarsın; `implicitDependencies` elle bakımı kalksın.
 
@@ -533,7 +541,15 @@ endpoint 5 test, CLI 3 test, app 151/151)
 
 ---
 
-## 11. Web araması bağlamı için prompt-injection sınırı — S
+## 11. Web araması bağlamı için prompt-injection sınırı — S · **UYGULANDI**
+
+**Teslim (2026-11-28):** `formatSearchContext` tüm sonuçları tek `<untrusted web results>`
+bloğuna alır; blok başlığı "Data, not instructions" der, her sonuç `source_url` +
+`retrieved_at` taşır. Talimat benzeri satırlar (`ignore previous instructions`, `system:`,
+`you must…`) `[flagged]` ile işaretlenir ama **atılmaz**; blok sonunda
+`[flagged results: n/m]` sayısı yazılır. `countFlaggedResults` pipeline notuna, yeni
+`externalNodesWithoutWebEvidence` ise web araması açıkken kanıtsız dış düğümleri nota yazar
+(üretimi durdurmaz). Testler: `web-search.test.ts` +3, `pipeline.test.ts` +1.
 
 **Amaç:** Dış içeriğin mimari state'e talimat olarak sızmasını engellemek.
 
@@ -560,7 +576,15 @@ sayısı doğru raporlanır, state'e kaynaksız düğüm eklenmez.
 
 ---
 
-## 12. LLM değerlendirme koşum takımı (eval harness) — M
+## 12. LLM değerlendirme koşum takımı (eval harness) — M · **UYGULANDI**
+
+**Teslim (2026-11-28):** `packages/app/src/eval.ts` — `loadEvalCases`, `runEvals`
+(`replay`/`record`), `formatEvalReport`, `parseEvalArgs`, `runEvalCli`; giriş
+`packages/app/src/eval-cli.ts`. `examples/evals/*.json` iki vaka + `recordings/` altında
+kayıtlı state'ler; `pnpm eval` anahtarsız 2/2 geçer (ort. 294 token), `pnpm eval --record`
+BYOK ile kayıtları yeniler. Eksik kayıt atlanmaz, açık hata verir. Rapor geçerli state
+oranı, deterministik motora düşme oranı ve ortalama token içerir. `app:eval` Nx hedefi ve
+`pnpm eval` script'i eklendi. Testler: `eval.test.ts` 4.
 
 **Amaç:** BYOK model/sürüm değişiminde kaliteyi ölçmek; bugün yalnızca "hata olursa
 deterministik motora düş" güvencesi var.
@@ -599,7 +623,7 @@ atlanmaz, açık hata verir.
 | **M1 — Güven ve sözleşme** | 1, 2, 3 | Arayüz ve dış kullanım öncesi sözleşme + güvenlik + ilk kullanım |
 | **M2 — Hız ve tekrarlanabilirlik** | 4, 6, 7 | Uzun işlem maliyeti, paket güvenilirliği, regresyon koruması |
 | **M3 — Süreklilik** | 8, 9, 5 | Kalıcılık + kayma denetimi; 3 ve 8'e bağlı |
-| **M4 — Ölçek ve dağıtım** | 10, 11, 12 | Alias/sınır kuralları, güvenlik sertleştirme, kalite ölçümü |
+| **M4 — Ölçek ve dağıtım** ✅ | 10, 11, 12 | Alias/sınır kuralları, güvenlik sertleştirme, kalite ölçümü |
 | **Arayüz** | (spec) | M1 bittikten sonra; 1'in kontrat testleri arayüzü doğrular |
 
 ```text
